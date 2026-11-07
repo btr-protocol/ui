@@ -8,12 +8,14 @@ import { Tooltip } from '../ui/FloatingPanel';
 import { Icon } from '../ui/Icon';
 import { FormRow } from '../ui/Primitives';
 import { SelectionModal } from '../ui/Select';
+import { WalletGlyph } from './WalletGlyph';
 import {
   disconnectWallet,
   openConnectModal,
   switchWalletChain,
   walletAddress,
   walletChainId,
+  walletEntry,
 } from './wallet';
 
 export interface WalletChain {
@@ -53,6 +55,7 @@ export function WalletButton({
   labels = { wallet: 'Wallet', disconnect: 'Disconnect', copied: 'Copied wallet address' },
 }: WalletButtonProps) {
   const [showAccountModal, setShowAccountModal] = useState(false);
+  const info = walletEntry.value?.info;
 
   if (!address) {
     return (
@@ -79,7 +82,7 @@ export function WalletButton({
       className={`${MODAL_PADDING} border-b border-border py-2`}
       label={
         <div className="flex items-center gap-2 min-w-0">
-          <Icon name="wallet" className="w-4 h-4 text-fg-2 shrink-0" />
+          {info ? <WalletGlyph info={info} size={16} /> : <Icon name="wallet" className="w-4 h-4 text-fg-2 shrink-0" />}
           <span className="font-numeric text-xs text-fg-0 truncate" title={address}>
             {address}
           </span>
@@ -119,7 +122,9 @@ export function WalletButton({
           onClick={() => setShowAccountModal(true)}
           aria-label={`Wallet ${shortenAddress(address)} on ${chainName}, open account`}
           leftIcon={
-            chain?.icon ? (
+            info ? (
+              <WalletGlyph info={info} size={16} />
+            ) : chain?.icon ? (
               <img src={chain.icon} alt="" className="w-4 h-4 shrink-0 icon-tint-primary" />
             ) : (
               <Icon name="wallet" className="w-4 h-4 shrink-0" />
