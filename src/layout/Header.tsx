@@ -84,6 +84,8 @@ export interface HeaderProps {
   /** Accessible name of the logo link. */
   brandLabel?: string;
   logoSrc?: string;
+  /** Replaces the logo mask (a co-branded lockup). Sized by the caller to the 2rem header row. */
+  brand?: ComponentChildren;
   moreLabel?: string;
   /** Optional bordered tools group left of the right slot: `<HeaderTool/>` children. */
   tools?: ComponentChildren;
@@ -101,6 +103,7 @@ export function Header({
   homePath = '/',
   brandLabel = 'Home',
   logoSrc = LOGO_URL,
+  brand,
   moreLabel = 'More',
   tools,
   right,
@@ -122,7 +125,7 @@ export function Header({
           }}
           className="flex items-center coarse:min-h-10"
         >
-          <MaskIcon src={logoSrc} width="6rem" height="2rem" color="var(--fg-0)" />
+          {brand ?? <MaskIcon src={logoSrc} width="6rem" height="2rem" color="var(--fg-0)" />}
         </a>
 
         <nav className="hidden lg:flex items-center gap-1">

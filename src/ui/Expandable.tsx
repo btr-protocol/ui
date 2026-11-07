@@ -14,6 +14,8 @@ export interface ExpandableProps {
   icon?: ComponentChildren;
   /** Inline summary row: no side padding, a control-height header instead of a section header. */
   dense?: boolean;
+  /** Side gutter. `panel` = a Panel's `px-3`, so header and body align with the Panel title. Default `px-4`. */
+  gutter?: 'default' | 'panel';
 }
 
 export function Expandable({
@@ -25,9 +27,11 @@ export function Expandable({
   className = '',
   icon,
   dense = false,
+  gutter = 'default',
 }: ExpandableProps) {
   const [own, setOwn] = useState(defaultExpanded);
   const isExpanded = open ?? own;
+  const px = gutter === 'panel' ? 'px-3' : 'px-4';
   const toggle = onToggle ?? (() => setOwn(!own));
 
   return (
@@ -36,7 +40,7 @@ export function Expandable({
         onClick={toggle}
         aria-expanded={isExpanded}
         className={`w-full cursor-pointer transition-colors hover:bg-bg-2 ${
-          dense ? 'px-1 py-1 coarse:min-h-[var(--ctl-m)]' : 'px-4 py-3'
+          dense ? 'px-1 py-1 coarse:min-h-[var(--ctl-m)]' : `${px} py-3`
         } ${isExpanded ? 'text-fg-0' : 'text-fg-2'}`}
       >
         <FormRow
@@ -58,7 +62,7 @@ export function Expandable({
           }
         />
       </button>
-      {isExpanded && <div className={dense ? 'pt-1' : 'px-4 pt-3 pb-4'}>{children}</div>}
+      {isExpanded && <div className={dense ? 'pt-1' : `${px} pt-3 pb-4`}>{children}</div>}
     </div>
   );
 }
