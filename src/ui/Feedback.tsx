@@ -110,7 +110,7 @@ export function Notice({
         'flex flex-wrap items-start',
         note
           ? 'mt-1 gap-1.5 px-1 text-3xs leading-snug'
-          : 'gap-2 rounded-lg border px-4 py-3 text-sm text-fg-2',
+          : cn('surface gap-2 rounded-lg border px-4 py-3 text-sm', neutral && 'text-fg-2'),
         neutral && (note ? 'text-fg-2' : 'border-border bg-bg-2'),
         className,
       )}
@@ -118,6 +118,7 @@ export function Notice({
         note
           ? tint && { color: tint }
           : tint && {
+              color: tint,
               borderColor: `color-mix(in srgb, ${tint} 40%, transparent)`,
               backgroundColor: `color-mix(in srgb, ${tint} 8%, transparent)`,
             }
@@ -279,7 +280,7 @@ export function Toast({
       aria-live="polite"
       onClick={auto ? onDismiss : undefined}
       className={cn(
-        'pointer-events-auto relative overflow-hidden flex items-start gap-2 px-2.5 py-2 rounded-lg bg-bg-1 shadow-sm border border-border',
+        'surface pointer-events-auto relative overflow-hidden flex items-start gap-2 px-2.5 py-2 rounded-lg bg-bg-1 shadow-sm border border-border',
         auto && onDismiss && 'cursor-pointer',
         className,
       )}

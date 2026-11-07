@@ -192,12 +192,9 @@
   --bg-blue: color-mix(in srgb, var(--blue) 17%, var(--bg-1));
   --bg-secondary: var(--bg-blue);
 
-  /* Layout - Border Radius (4 levels) */
-  --radius-xs: 5px; /* checkboxes and small panel items. NOT badges/tags/kbd - those are
-                       `rounded-sm` (8px), the xs button scale, via the Badge component. */
-  --radius-sm: 8px; /* 8px - buttons, inputs */
-  --radius-md: 12px; /* 12px - cards, forms */
-  --radius-lg: 16px; /* 16px - modals, containers */
+  /* Layout - Border Radius. ONE base (--r) drives the whole scale; nesting lowers it (index.css
+     "Nested radius"), so no component hard-codes a radius for its depth. */
+  --r: 16px;
   --border-width: 0.08rem;
   --border-color: var(--bg-4); /* decorative dividers only */
   /* Boundary of a CONTROL (input, select, switch, checkbox, segmented): 3.3-3.7:1 on bg-0..2 (1.4.11). */

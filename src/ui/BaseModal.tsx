@@ -259,7 +259,7 @@ export function BaseModal({
         aria-labelledby={titleId}
         className={cn(
           'modal-card z-modal outline-none',
-          'fixed left-1/2 top-1/2 grid w-full -translate-x-1/2 -translate-y-1/2 border bg-bg-1 shadow-lg sm:rounded-lg',
+          'surface fixed left-1/2 top-1/2 grid w-full -translate-x-1/2 -translate-y-1/2 border bg-bg-1 shadow-lg sm:rounded-lg',
           MODAL_WIDTH[size],
           anchor === 'top' && 'sm:top-16 sm:translate-y-0',
           'flex flex-col max-h-[min(50rem,calc(80*var(--dvh)))] overflow-hidden font-title',
@@ -268,7 +268,7 @@ export function BaseModal({
           'max-sm:left-0 max-sm:translate-x-0 max-sm:translate-y-0 max-sm:border-x-0 max-sm:border-b-0',
           isSearch
             ? 'max-sm:top-0 max-sm:h-[calc(100*var(--dvh))] max-sm:max-h-none max-sm:rounded-none max-sm:border-t-0 max-sm:pt-[var(--sat)]'
-            : 'max-sm:top-auto max-sm:bottom-0 max-sm:max-h-[calc(90*var(--dvh))] max-sm:rounded-t-lg',
+            : 'max-sm:top-auto max-sm:bottom-0 max-sm:max-h-[calc(90*var(--dvh))] max-sm:rounded-t-[inherit]',
           !hasFooter && 'max-sm:pb-[var(--sab)]',
         )}
       >
@@ -282,7 +282,7 @@ export function BaseModal({
         {/* Header: also the drag surface of the sheet (touch-none; buttons/inputs opt out). */}
         <div
           className={cn(
-            'relative shrink-0 border-b border-border rounded-t-lg',
+            'relative shrink-0 border-b border-border rounded-t-[inherit]',
             headerBg,
             !isSearch && 'max-sm:touch-none',
             isSearch && 'max-sm:rounded-none',
@@ -356,21 +356,21 @@ export function BaseModal({
             >
               {footerNav && (
                 <div
-                  className={`modal-footer-nav bg-bg-1 ${MODAL_PADDING} py-1.5 flex justify-center ${!footerContent && !footerControls ? 'sm:rounded-b-lg' : ''}`}
+                  className={`modal-footer-nav bg-bg-1 ${MODAL_PADDING} py-1.5 flex justify-center ${!footerContent && !footerControls ? 'sm:rounded-b-[inherit]' : ''}`}
                 >
                   {footerNav}
                 </div>
               )}
               {footerContent && (
                 <div
-                  className={`${footerBg} ${MODAL_PADDING} py-2.5 ${footerNav ? 'border-t border-border' : ''} ${!footerControls ? 'sm:rounded-b-lg' : ''}`}
+                  className={`${footerBg} ${MODAL_PADDING} py-2.5 ${footerNav ? 'border-t border-border' : ''} ${!footerControls ? 'sm:rounded-b-[inherit]' : ''}`}
                 >
                   {footerContent}
                 </div>
               )}
               {footerControls && (
                 <div
-                  className={`${footerBg} ${MODAL_PADDING} py-2.5 flex justify-end gap-2 ${footerNav || footerContent ? 'border-t border-border' : ''} sm:rounded-b-lg`}
+                  className={`${footerBg} ${MODAL_PADDING} py-2.5 flex justify-end gap-2 ${footerNav || footerContent ? 'border-t border-border' : ''} sm:rounded-b-[inherit]`}
                 >
                   {footerControls}
                 </div>

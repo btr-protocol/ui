@@ -13,7 +13,7 @@ export function StickyActionBar({
     <div
       role={role}
       className={cn(
-        'sticky bottom-[var(--chrome-b)] z-10 mt-auto flex items-center justify-between gap-3 rounded-lg border border-border bg-bg-1 px-3 py-2 text-sm',
+        'surface sticky bottom-[var(--chrome-b)] z-10 mt-auto flex items-center justify-between gap-3 rounded-lg border border-border bg-bg-1 px-3 py-2 text-sm',
         className,
       )}
     >

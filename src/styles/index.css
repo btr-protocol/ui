@@ -5,6 +5,23 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * Nested radius. The scale below is rederived from --r on EVERY element (custom properties that
+ * reference another var resolve where they are declared, so a :root-only scale would never change).
+ * A `.surface` (Panel, Notice, modal, sheet...) rounds itself at its own level and lowers --r for
+ * everything inside: top level 16px, one deep 12px, two deep 8px, deeper 6px. Controls (`rounded-sm`
+ * = r/2) therefore sit visibly tighter than the card holding them, at any depth. Zero specificity.
+ */
+:where(*, ::before, ::after) {
+  --radius-lg: var(--r);
+  --radius-md: calc(var(--r) * 0.75);
+  --radius-sm: calc(var(--r) * 0.5);
+  --radius-xs: calc(var(--r) * 0.3125);
+}
+:where(.surface) * { --r: 12px; }
+:where(.surface .surface) * { --r: 8px; }
+:where(.surface .surface .surface) * { --r: 6px; }
+
 /* Validation feedback must never inherit focus/hover color interpolation. */
 input[aria-invalid="true"],
 select[aria-invalid="true"],

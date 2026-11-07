@@ -31,7 +31,7 @@ export function Panel({
     <div
       ref={ref}
       className={cn(
-        variant === 'default' && 'bg-bg-1 border border-border rounded-lg shadow-sm',
+        variant === 'default' && 'surface bg-bg-1 border border-border rounded-lg shadow-sm',
         className,
       )}
       {...props}
