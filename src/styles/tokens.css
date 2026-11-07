@@ -1,0 +1,294 @@
+/*
+ * LAYOUT OFFSETS - the one source. Header/Footer/App/Notifications/modals consume these; nothing
+ * else hardcodes 3rem/2rem chrome or env(). --sa* = safe-area insets (`env()` on Chrome 69+, and
+ * `--safe-area-inset-*` injected by Capacitor 8 on WebViews where env() reports 0). --chrome-t /
+ * --chrome-b = fixed header / footer height INCLUDING the inset (below lg the footer is the 56dp tab
+ * bar, 48dp in short landscape): pad content with them
+ * (`pt-[var(--chrome-t)]`), pad the bar itself with --sat / --sab. Control heights: --ctl-s/m/l.
+ */
+:root {
+  --sat: max(env(safe-area-inset-top), var(--safe-area-inset-top, 0px));
+  --sab: max(env(safe-area-inset-bottom), var(--safe-area-inset-bottom, 0px));
+  --sal: max(env(safe-area-inset-left), var(--safe-area-inset-left, 0px));
+  --sar: max(env(safe-area-inset-right), var(--safe-area-inset-right, 0px));
+  /* Page side gutter: PageShell, sticky bars and every bleed read this one value. */
+  --page-x: 1rem;
+  --chrome-t: calc(3rem + var(--sat));
+  --chrome-b: calc(2rem + var(--sab));
+
+  /* Control scale (Button/Input/Select/Dropdown). Desktop 24/32/40; touch and narrow windows 32/44/48 below. */
+  --ctl-s: 1.5rem;
+  --ctl-m: 2rem;
+  --ctl-l: 2.5rem;
+  /* 2xs/3xs micro labels: desktop keeps 10/11px, touch floors at 12px. */
+  --fs-2xs: 0.625rem;
+  --fs-3xs: 0.6875rem;
+
+  --dvh: 1vh; /* dynamic viewport unit, vh where dvh is unknown (iOS < 15.4) */
+  --dur-2: 180ms;
+  --dur-3: 280ms;
+  --ease: cubic-bezier(0.2, 0, 0, 1);
+}
+
+/* Below lg the fixed bottom bar is the tab bar (layout/TabBar.tsx), not the 2rem footer. */
+@media (min-width: 768px) {
+  :root {
+    --page-x: 1.5rem;
+  }
+}
+@media (max-width: 1023.98px) {
+  :root {
+    --chrome-b: calc(3.5rem + var(--sab));
+  }
+}
+@media (max-width: 1023.98px) and (max-height: 480px) {
+  :root {
+    --chrome-b: calc(3rem + var(--sab));
+  }
+}
+
+@supports (height: 1dvh) {
+  :root {
+    --dvh: 1dvh;
+  }
+}
+
+/* Touch scale (pointer: coarse, or any window narrower than lg): same proportions as desktop,
+   standard control (--ctl-m) at the 44px AAA target, primary (--ctl-l) 48px. The ::after hit-area
+   in index.css stays as the safety net for icon-only and dense rows. */
+@media (pointer: coarse), (max-width: 1023.98px) {
+  :root {
+    --ctl-s: 2rem;
+    --ctl-m: 2.75rem;
+    --ctl-l: 3rem;
+    --chrome-t: calc(3.5rem + var(--sat));
+  }
+}
+
+@media (pointer: coarse) {
+  :root {
+    --fs-2xs: 0.75rem;
+    --fs-3xs: 0.75rem;
+  }
+}
+
+:root {
+  /* Extended palette */
+  --blue: #3d7eff;
+  --green: #10b981;
+  --orange: #e99339;
+  --red: #db4e5c;
+  --red-solid: #c73f4d; /* fill under white text: 4.74:1 (--red was 3.83) */
+  --yellow: #ffd61e;
+  --cyan: #2ee7e7;
+  --pink: #e94cef;
+  --violet: #a273f5;
+  --black: #1b1b1b; /* Carbon Black - dark font on light theme, bg on dark theme */
+  --white: #fafafa; /* Parchment - light font on dark theme, bg on light theme */
+
+  /* Brand Colors */
+  --primary: var(--orange); /* Deep Saffron - main actions, highlights, active states */
+
+  /* Icon tint - THE one CSS filter chain that recolors an <img> glyph into --primary.
+       Computed numerically against our actual glyph set (public/networks/*-mono.svg: solid
+       #000 fills): brightness(0) normalizes ANY source to black first, then invert -> sepia ->
+       saturate -> hue-rotate -> brightness -> contrast lands exactly on rgb(233,147,57).
+       Never redeclare the chain - consume via .icon-tint-primary (index.css) or this var. */
+  --icon-tint-primary: brightness(0) invert(1) sepia(1) saturate(17.05) hue-rotate(-55.25deg)
+    brightness(0.74) contrast(1.72);
+
+  --secondary: var(--blue); /* Azure Blue - secondary highlights, charts */
+  --oev: var(--blue); /* OEV arbitrage band - ONE blue shared by the chart drawables
+        and the order-book rows (bg-oev/text-oev). */
+
+  /* Theme aliases */
+  --success: var(--green);
+  --error: var(--red);
+  --warning: var(--orange); /* every warning/caution state is the primary orange, app-wide */
+
+  /* Scrollbar - driven by ramp + alpha foregrounds so it themes itself. Thumb sits at
+       2.7-2.8:1 on the track in both themes: visible as chrome, below the 3:1 where it
+       would read as content. */
+  --scrollbar-track: var(--bg-1);
+  --scrollbar-thumb: var(--fg-3);
+  --scrollbar-thumb-hover: var(--fg-2);
+  --scrollbar-thumb-active: var(--fg-1);
+  /* NX Rates-style: narrow track, squared thumb (no pill radius). */
+  --scrollbar-width: 6px;
+
+  /* Fonts. --font-mono/--font-sans live in fonts.css (single source, with lazy Geist). */
+  --font-title: "Mozilla Text", sans-serif;
+  --font-body: var(--font-sans);
+  /* Mono for numbers - tabular, consistent across OS (prefers lazy Geist Mono) */
+  --font-numbers: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+  /* Dark theme colors (default) */
+  /* Alpha-based foregrounds - adapt naturally to any background color */
+  --fg-0: var(--white); /* Main text - 100% */
+  --fg-1: rgb(251 248 244 / 80%); /* Secondary text - 80% */
+  /* 57%, raised from 50%. Light's alphas were retuned against a near-white page and dark's were
+       assumed fine because they clear on bg-0 (4.97:1); nobody checked further down the ramp. At
+       50% muted text measured 4.31:1 on bg-2 (`input`, `muted`, Card `inset`, the placeholder rule
+       at index.css:260) and 3.91:1 on bg-3 (row hover, ghost-button hover, `accent`), both under
+       the AA floor. 57% is the lowest alpha holding >=4.5:1 all the way down to bg-3, the same
+       contract the light block states for its 64%. */
+  --fg-2: rgb(251 248 244 / 57%); /* Muted text - 6.06:1 on bg-0, 4.58:1 on bg-3 */
+  --fg-3: rgb(251 248 244 / 32%); /* Borders, outlines, scrollbar thumb - never text */
+
+  /* The TEXT rung `text-fg-3` resolves to (tailwind.config.js maps textColor['fg-3'] here, the
+       same indirection `text-primary` -> --fg-primary already uses). --fg-3 itself is a BORDER
+       value: 2.82:1 dark / 2.85:1 light on bg-0, under even the 3:1 large-text floor, so it can
+       never legally be text at any size, which is what its own comment has always said.
+       This is an ALIAS, not a fourth tier, because the ramp has no room for one: clearing 4.5:1
+       down to bg-3 needs >=62.5% alpha in light (vs fg-2's 64%, two points apart) and >=56.2% in
+       dark (vs fg-2's 57%). A distinct dimmer-but-compliant tier would have to be BRIGHTER than
+       fg-2 in dark. Text tiers are therefore fg-0/fg-1/fg-2, and fg-3 stays chrome.
+       Declared once: `.light` is a class on documentElement, so it and `:root` are the same
+       element and the later, equal-specificity --fg-2 wins before this substitutes. */
+  --fg-3-text: var(--fg-2);
+
+  --bg-0: var(--black); /* Main background */
+  --bg-1: color-mix(in srgb, var(--black) 95%, var(--white)); /* Slightly lighter */
+  --bg-2: color-mix(in srgb, var(--black) 90%, var(--white)); /* Cards */
+  --bg-3: color-mix(in srgb, var(--black) 85%, var(--white)); /* Hover states */
+  --bg-4: color-mix(in srgb, var(--black) 80%, var(--white)); /* Active states */
+
+  /* The only two TRANSLUCENT surfaces. Tailwind cannot alpha-blend `var(--bg-N)`, so every
+       `bg-bg-0/95`-style utility in this app compiled to nothing and the chrome bars, the modal
+       backdrop and the loading veils all painted fully transparent. These are the alpha the ramp
+       cannot express, defined once so glass and scrim stay identical everywhere.
+       --glass: chrome that sits ON TOP of content and pairs with backdrop-blur (header, footer,
+       mobile nav, loading veils).  --scrim: the dialog backdrop, deliberately see-through. */
+  --glass: color-mix(in srgb, var(--bg-1) 92%, transparent);
+  --scrim: color-mix(in srgb, var(--bg-0) 55%, transparent);
+
+  /* Sentiment FOREGROUNDS. The rule: --green/--red/--orange/--blue/--cyan are FILL swatches,
+       identical in both themes; these --fg-* tokens are the only thing coloured TEXT and icons
+       may use. Tailwind's text-* utilities are mapped onto these, so every existing
+       `text-primary` / `text-success` / `text-red` call site resolves correctly per theme.
+       Dark was assumed to be able to keep the raw swatch on the strength of a bg-0 reading, but
+       "already >=4.3:1" was itself under the 4.5 floor and the ramp only falls from there. Each
+       token below now clears 4.5:1 down to bg-3 AND on its own --bg-* tint, the same contract
+       .light states. Orange and cyan are bright enough to keep the raw swatch; green, red and
+       blue are mixed toward --white by the SMALLEST amount that clears, mirroring how .light
+       mixes toward black, so the hue stays recognisable. */
+  --fg-success: color-mix(in srgb, var(--white) 5%, var(--green)); /* 5.32:1 on bg-2, 4.50:1 on bg-3, 4.70:1 on --bg-green (raw was 4.32 / 4.51) */
+  --fg-error: color-mix(in srgb, var(--white) 37%, var(--red)); /* 5.32:1 on bg-2, 4.50:1 on bg-3, 5.17:1 on --bg-red (raw #DB4E5C was 3.24 / 2.74 / 3.15) */
+  --fg-warning: var(--orange); /* 5.36:1 on bg-2, 4.54:1 on bg-3 - raw swatch clears */
+  --fg-info: var(--cyan); /* 8.45:1 on bg-2, 7.15:1 on bg-3 - raw swatch clears */
+  /* Declared names in code blocks. Raw --violet (#a273f5) clears on dark but lands near 3.6:1 on
+     the light ground, so it gets a token like every other semantic colour rather than being used
+     directly. */
+  --fg-violet: var(--violet); /* 5.98:1 on bg-2, 5.05:1 on bg-3 */
+  --fg-primary: var(--primary); /* = --orange, as above */
+  --fg-secondary: color-mix(in srgb, var(--white) 32%, var(--blue)); /* 5.32:1 on bg-2, 4.50:1 on bg-3, 5.04:1 on --bg-blue (raw #3d7eff was 3.47 / 2.94 / 3.29) */
+
+  /* Sentiment backgrounds */
+  --bg-green: color-mix(in srgb, var(--green) 17%, var(--bg-1));
+  --bg-red: color-mix(in srgb, var(--red) 17%, var(--bg-1));
+  --bg-negative: var(--bg-red);
+  --bg-orange: color-mix(in srgb, var(--orange) 17%, var(--bg-1));
+  --bg-primary: var(--bg-orange);
+  --bg-blue: color-mix(in srgb, var(--blue) 17%, var(--bg-1));
+  --bg-secondary: var(--bg-blue);
+
+  /* Layout - Border Radius (4 levels) */
+  --radius-xs: 5px; /* checkboxes and small panel items. NOT badges/tags/kbd - those are
+                       `rounded-sm` (8px), the xs button scale, via the Badge component. */
+  --radius-sm: 8px; /* 8px - buttons, inputs */
+  --radius-md: 12px; /* 12px - cards, forms */
+  --radius-lg: 16px; /* 16px - modals, containers */
+  --border-width: 0.08rem;
+  --border-color: var(--bg-4); /* decorative dividers only */
+  /* Boundary of a CONTROL (input, select, switch, checkbox, segmented): 3.3-3.7:1 on bg-0..2 (1.4.11). */
+  --line-ui: rgb(251 248 244 / 40%);
+  --border-color-primary: color-mix(in srgb, var(--primary) 50%, var(--border-color)); /* Primary border for hover states */
+  --border: 1px solid var(--border-color);
+
+  /* Z-indexes. Chrome (header/footer) sits BELOW the modal layer: both used to be a
+       hardcoded z-50, tying with the dialog overlay, so the header painted over the
+       backdrop that was supposed to cover it. */
+  --z-index-rail: 30;
+  --z-index-header: 40;
+  --z-index-footer: 40;
+  --z-index-modal: 100;
+  --z-index-dropdown: 110;
+  --z-index-tooltip: 120;
+  --z-index-toast: 130;
+
+}
+
+/* Light theme overrides */
+.light {
+  /* Alpha-based foregrounds - adapt naturally to any background color.
+       fg-2/fg-3 are RAISED vs dark's 57/32%: the same alpha over a near-white page yields far
+       less contrast than over #1B1B1B (fg-2 measured 3.26:1 on the old page, under the 4.5 floor).
+       64% is the lowest alpha that keeps muted text >=4.5:1 all the way down to bg-3. */
+  --fg-0: var(--black); /* Main text - 100% */
+  --fg-1: rgb(27 27 27 / 80%); /* Secondary text - 80% */
+  --fg-2: rgb(27 27 27 / 64%); /* Muted text - 4.71:1 on bg-3, 5.08:1 on bg-0 */
+  /* Chrome only, and the ONLY rung that is not text: 2.85:1 on bg-0, below even the 3:1
+       large-text floor. `text-fg-3` no longer resolves here (see --fg-3-text above), so the
+       "never text" contract this comment has always stated is now enforced by the token layer
+       instead of by convention. Borders, outlines, scrollbar thumb. */
+  --fg-3: rgb(27 27 27 / 45%); /* Borders, outlines, scrollbar thumb - never text */
+
+  /* COMPRESSED, not mirrored. Dark separates surfaces by lightness alone because shadow does not
+       read on black; light gets ~half the step and recovers separation from borders. The mirrored
+       ramp put cards at 23% ink (#d9d9d9 on a #efefef page), which is why every pill and input read
+       as a grey block. Surface band (0-4) steps 1.06-1.10:1; the border band (5-7) deliberately
+       widens because a border must be seen, not felt. */
+  --bg-0: var(--white); /* Main background #fafafa */
+  --bg-1: color-mix(in srgb, var(--white) 97%, var(--black)); /* Slightly lighter #f3f3f3 */
+  --bg-2: color-mix(in srgb, var(--white) 94%, var(--black)); /* Cards #ededed */
+  --bg-3: color-mix(in srgb, var(--white) 90.5%, var(--black)); /* Hover states #e5e5e5 */
+  --bg-4: color-mix(in srgb, var(--white) 86%, var(--black)); /* Active states #dbdbdb */
+  --bg-5: color-mix(in srgb, var(--white) 74%, var(--black)); /* Borders light #c0c0c0 */
+
+  /* bg-4 is only 1.33:1 on the page once the ramp is compressed, so cards outlined with it would
+       dissolve. Borders move one step down; dark keeps bg-4. */
+  --border-color: var(--bg-5);
+  --line-ui: rgb(27 27 27 / 50%); /* 3.2-3.3:1 on bg-0..2 */
+
+  /* Foreground sentiments: darkened so coloured TEXT clears 4.5:1 on bg-0..bg-3. Each is the
+       LIGHTEST mix that still clears the floor, so the hue stays recognisable. The fill swatches
+       (--green/--red/--orange/--blue/--cyan) are deliberately NOT touched. */
+  --fg-success: #157555; /* 5.43:1 on bg-0, 4.50:1 on bg-3 (raw #10B981 was 2.43:1) */
+  --fg-error: #ad424c; /* 5.50:1 on bg-0, 4.55:1 on bg-3 (raw #DB4E5C was 3.83:1) */
+  --fg-warning: #8a5c2b; /* 5.52:1 on bg-0, 4.57:1 on bg-3 (raw #E99339 was 2.31:1) */
+  --fg-info: #237171; /* 5.48:1 on bg-0, 4.54:1 on bg-3 */
+  --fg-violet: #6d3bb0; /* 5.61:1 on bg-0, 4.65:1 on bg-3 (raw #a273f5 was 3.62:1) */
+  --fg-primary: #8a5c2b;
+  --fg-secondary: #3463c1; /* 5.44:1 on bg-0, 4.50:1 on bg-3 */
+
+  /* Sentiment backgrounds, mixed over bg-1. 10% is the ceiling that still leaves the matching
+       --fg-* token >=4.5:1 on the tint (12% drops --fg-error to 4.47). Orange is the exception at
+       17%: it is the lightest, least chromatic swatch, so 10% of it is invisible against a white
+       page, and --fg-warning still clears at 4.58:1.
+       --bg-primary/--bg-negative/--bg-secondary are :root aliases of these, so they follow
+       automatically: redeclaring them here would be two sources of truth. */
+  --bg-green: color-mix(in srgb, var(--green) 10%, var(--bg-1));
+  --bg-red: color-mix(in srgb, var(--red) 10%, var(--bg-1));
+  --bg-blue: color-mix(in srgb, var(--blue) 10%, var(--bg-1));
+
+  /* Primary border: raw orange vanishes on white (1.77:1), but the full --fg-primary is 5.52:1,
+       a TEXT weight on a border. 70% lands at 3.80:1 vs page / 3.15:1 on the primary tint, over the
+       1.4.11 non-text floor without out-weighting every neutral border in the app. */
+  --border-color-primary: color-mix(in srgb, var(--fg-primary) 70%, var(--bg-5));
+}
+
+/* LITE (P2 sets `data-lite` on <html> for weak GPUs / data saver): opaque surfaces, no blur, no
+   shadows, decorative loops stop. Focus rings are outlines, so they survive. */
+:root[data-lite] {
+  --glass: var(--bg-1);
+  --scrim: color-mix(in srgb, var(--bg-0) 88%, transparent);
+}
+:root[data-lite] * {
+  backdrop-filter: none !important;
+}
+:root[data-lite] *:not(:focus-visible) {
+  box-shadow: none !important;
+}
+:root[data-lite] *:not(.animate-spin) {
+  animation-iteration-count: 1 !important;
+}

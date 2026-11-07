@@ -1,29 +1,52 @@
 {
   "name": "@btr-protocol/ui",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "license": "MIT",
   "type": "module",
-  "description": "BTR shared UI kit: Svelte components, kit.css, wallet sign-in helpers and the theme tokens. Source only, no build step.",
-  "svelte": "./src/Button.svelte",
+  "description": "BTR shared UI kit: the btr.markets Preact components, layout shell, theme tokens and Tailwind preset. Source only, no build step.",
   "exports": {
-    "./kit.css": "./src/kit.css",
-    "./wallet.js": "./src/wallet.js",
-    "./theme/*": "./src/theme/*",
-    "./*.svelte": {
-      "svelte": "./src/*.svelte",
-      "default": "./src/*.svelte"
-    },
-    "./fonts.css": "./src/fonts.css",
+    ".": "./src/index.ts",
+    "./ui": "./src/ui/index.ts",
+    "./ui/*": "./src/ui/*.tsx",
+    "./layout": "./src/layout/index.ts",
+    "./wallet": "./src/wallet/index.ts",
+    "./lib/*": "./src/lib/*.ts",
+    "./styles": "./src/styles/index.css",
+    "./styles/tokens.css": "./src/styles/tokens.css",
+    "./styles/fonts.css": "./src/styles/fonts.css",
+    "./tailwind.preset": "./src/styles/tailwind.preset.js",
     "./assets/*": "./src/assets/*"
   },
   "files": [
-    "src"
+    "src",
+    "LICENSE"
   ],
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "bun test"
+  },
   "peerDependencies": {
-    "svelte": "^5.0.0"
+    "@preact/signals": "^2.0.0",
+    "lucide-preact": ">=0.400.0",
+    "preact": "^10.22.0",
+    "tailwind-merge": "^2.6.0",
+    "tailwindcss": "^3.4.0"
+  },
+  "devDependencies": {
+    "@preact/signals": "^2.5.1",
+    "@types/bun": "latest",
+    "lucide-preact": "^0.468.0",
+    "preact": "^10.22.0",
+    "preact-render-to-string": "^6.5.0",
+    "tailwind-merge": "^2.6.1",
+    "tailwindcss": "^3.4.1",
+    "typescript": "^5.6.0"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/btr-protocol/ui.git"
+  },
+  "dependencies": {
+    "@noble/hashes": "^2.3.0"
   }
 }

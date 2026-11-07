@@ -1,0 +1,30 @@
+/* Font faces: Mozilla Text (title, brand) + Geist Mono (lazy, variable). Paths are kit-relative. */
+@font-face {
+  font-family: "Mozilla Text";
+  src: url("../assets/fonts/MozillaText-Variable.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Geist Mono - ASCII-only variable (wght 400-700), 14k WOFF2 (code+numerics are ASCII). Geist pairs
+   with Mozilla Text (both modern geometric). LAZY: no preload, `font-display: swap` → text renders
+   in system mono immediately, this swaps in when fetched (browser caches it). Site is fully usable
+   without it; the fallback stack below guarantees that. */
+@font-face {
+  font-family: "Geist Mono";
+  src: url("../assets/fonts/geist-mono.woff2") format("woff2");
+  font-weight: 100 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Font families. Title: Mozilla Text (brand, --font-title in tokens.css); body: system-ui stack
+   (0k), consistent across macOS (San Francisco), Windows (Segoe UI), Android (Roboto), Linux;
+   mono: Geist first (lazy), then system mono (SFMono, Cascadia, ...). */
+:root {
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial,
+    "Noto Sans", "Liberation Sans", sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    "DejaVu Sans Mono", "Liberation Mono", "Courier New", monospace;
+}

@@ -1,0 +1,369 @@
+@import "./fonts.css";
+@import "./tokens.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Validation feedback must never inherit focus/hover color interpolation. */
+input[aria-invalid="true"],
+select[aria-invalid="true"],
+input[aria-invalid="true"]:focus,
+select[aria-invalid="true"]:focus {
+  border-color: var(--red);
+  transition: none;
+}
+
+/*
+ * Touch targets: a centred ::after grows the HIT AREA of small controls to 44px. No layout, no
+ * paint, and a no-op on anything already >=44px (`width/height:100%` + a 44px floor). Hosts:
+ * `button`, `a`, and `.tap-target` (Switch/Checkbox/Select-trigger wrappers: an <input> cannot
+ * carry ::after, so its <label> does and forwards the tap). `[data-notap]` opts out; `:where()` is
+ * LOAD-BEARING: zero specificity, so a call site's own `absolute`/`sticky` utility still wins.
+ */
+@media (pointer: coarse) {
+  :where(button, a, .tap-target):where(:not([data-notap])) {
+    position: relative;
+  }
+
+  :where(button, a, .tap-target):where(:not([data-notap]))::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 100%;
+    height: 100%;
+    min-width: 44px;
+    min-height: 44px;
+    transform: translate(-50%, -50%);
+  }
+
+  /* Keyboard-hint strip in a modal footer (BaseModal `footerNav`): meaningless with no keyboard.
+     Drop the whole footer bar when the hints were its only content. */
+  .modal-footer-nav,
+  .modal-footer:not(:has(> :not(.modal-footer-nav))) {
+    display: none;
+  }
+}
+
+/* Above 1920px, scale the rem-based UI 125% (root font-size keeps type, spacing and max-widths
+   proportional without CSS zoom's rendering/input quirks). */
+@media (min-width: 1920px) {
+  html {
+    font-size: 125%;
+  }
+}
+
+@layer base {
+  /* The one focus ring; a utility (`outline-none`, `focus-visible:ring-*`) still overrides it. */
+  :focus-visible {
+    outline: 2px solid var(--fg-primary);
+    outline-offset: 2px;
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+    width: 100%;
+    font-family: var(--font-body);
+    color: var(--fg-0);
+    font-weight: 400;
+    background-color: var(--bg-0);
+    overflow-x: hidden;
+    /* Firefox scrollbar styling */
+    scrollbar-width: thin;
+    scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+  }
+
+  /* Scrollbar styling for WebKit - squared thumb, fills narrow track (NX Rates). */
+  ::-webkit-scrollbar {
+    width: var(--scrollbar-width);
+    height: var(--scrollbar-width);
+  }
+
+  ::-webkit-scrollbar-track {
+    background: var(--scrollbar-track);
+    border-radius: 0;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: var(--scrollbar-thumb);
+    border-radius: 0;
+    transition: background-color 0.2s ease;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--scrollbar-thumb-hover);
+  }
+
+  ::-webkit-scrollbar-thumb:active {
+    background: var(--scrollbar-thumb-active);
+  }
+
+  ::-webkit-scrollbar-corner {
+    background: var(--scrollbar-track);
+  }
+
+  /* Hide browser native increment/decrement controls on number inputs */
+  input[type="number"]::-webkit-outer-spin-button,
+  input[type="number"]::-webkit-inner-spin-button {
+    appearance: none;
+    margin: 0;
+  }
+
+  input[type="number"] {
+    appearance: textfield;
+  }
+
+  /* Numbers, inputs, labels use Mozilla Text */
+  input,
+  textarea,
+  select,
+  [type="number"] {
+    font-family: var(--font-numbers);
+    font-optical-sizing: auto;
+  }
+
+  /* Title fonts: Mozilla Text, no italic */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--font-title);
+    font-weight: 900;
+    font-style: normal;
+  }
+
+  /* Placeholder colors use theme */
+  input::placeholder,
+  textarea::placeholder {
+    color: var(--fg-2);
+    opacity: 1;
+  }
+}
+
+/* Reusable primary hover effect for buttons, tabs, cards */
+.hover-primary {
+  transition: background-color var(--dur-2), border-color var(--dur-2), color var(--dur-2);
+}
+
+@media (hover: hover) {
+  .hover-primary:hover:not(:disabled) {
+    background-color: var(--bg-primary) !important;
+    border-color: var(--border-color-primary) !important;
+    color: var(--fg-primary);
+  }
+}
+
+.hover-primary:active:not(:disabled) {
+  background-color: var(--bg-4) !important;
+}
+
+/* Pseudo-element chrome shared by call sites (cheaper than `before:`/`after:` utilities, which each
+   repeat `content`): safe-area fills behind the fixed header/footer, the slider hit area, the
+   toolbar's trailing fade. */
+.safe-t::before,
+.safe-b::before,
+.slider-hit::before,
+.toolbar-fade::after {
+  content: "";
+  position: absolute;
+}
+.safe-t::before,
+.safe-b::before {
+  left: 0;
+  right: 0;
+  background-color: var(--bg-0);
+}
+.safe-t::before {
+  top: 0;
+  height: var(--sat);
+}
+.safe-b::before {
+  bottom: 0;
+  height: var(--sab);
+}
+.slider-hit::before {
+  inset: -0.75rem 0;
+}
+.toolbar-fade::after {
+  position: sticky;
+  right: 0;
+  width: 1.5rem;
+  height: 2rem;
+  flex-shrink: 0;
+  pointer-events: none;
+  background-image: linear-gradient(to left, var(--bg-0), rgb(255 255 255 / 0));
+}
+
+/* Enforce font-title on all interactive UI elements */
+.toolbar-btn,
+.toolbar-btn span,
+.toolbar-item,
+.toolbar-item span,
+button,
+button span,
+select,
+[role="button"],
+[role="menuitem"],
+[role="option"] {
+  font-family: var(--font-title) !important;
+}
+
+/* Book/ladder figures: the row is role=button for click-to-fill; that rule
+   would otherwise stamp Mozilla Text over the mono stack. */
+[role="button"].font-mono,
+[role="button"].font-mono span,
+[role="button"].font-numeric,
+[role="button"].font-numeric span {
+  font-family: var(--font-mono) !important;
+}
+
+/* Print: chrome is `.no-print`, paper is white. */
+@media print {
+  .no-print,
+  .no-print * {
+    display: none !important;
+  }
+
+  html,
+  body {
+    background: #fff !important;
+    color: #111 !important;
+  }
+
+  :root {
+    --chrome-t: 0px !important;
+    --chrome-b: 0px !important;
+  }
+}
+
+/* ── Modal / bottom sheet motion (BaseModal keeps them mounted for --dur-3 on exit) ─────────── */
+@keyframes modal-in {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes modal-out {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes sheet-in {
+  from {
+    transform: translateY(100%);
+  }
+}
+@keyframes sheet-out {
+  to {
+    transform: translateY(100%);
+  }
+}
+.modal-card,
+.modal-scrim {
+  animation: modal-in var(--dur-2) var(--ease);
+}
+[data-closing] {
+  animation: modal-out var(--dur-2) var(--ease) forwards;
+  pointer-events: none;
+}
+@media (max-width: 639.98px) {
+  .modal-card {
+    animation: sheet-in var(--dur-3) var(--ease);
+  }
+  .modal-card[data-closing] {
+    animation: sheet-out var(--dur-3) var(--ease) forwards;
+  }
+}
+
+/* Scrollable SegmentedControl: fade whichever edge still has content (data-l / data-r). */
+.seg-fade {
+  mask-image: linear-gradient(
+    90deg,
+    transparent,
+    #000 var(--fl, 0px),
+    #000 calc(100% - var(--fr, 0px)),
+    transparent
+  );
+}
+.seg-fade[data-l] {
+  --fl: 1.25rem;
+}
+.seg-fade[data-r] {
+  --fr: 1.25rem;
+}
+
+/* ── Touch feel (one block; keep last so it wins ties) ──────────────────────────────────────── */
+html {
+  -webkit-tap-highlight-color: transparent;
+}
+html,
+body {
+  overscroll-behavior: none;
+}
+main,
+.overflow-y-auto,
+.overflow-auto {
+  overscroll-behavior: contain;
+}
+button,
+a,
+[role="button"],
+[role="tab"],
+input,
+select,
+label {
+  touch-action: manipulation;
+}
+/* Chrome is not selectable text; prose, fields and code are. */
+button,
+[role="button"],
+[role="tab"],
+nav,
+header,
+footer {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+input,
+textarea {
+  -webkit-user-select: text;
+  user-select: text;
+}
+/* A finger has no hover: dim on press instead. Instant (colour-only transitions ignore filter). */
+@media (pointer: coarse) {
+  :is(button, a, [role="button"], [role="tab"], label.tap-target):active:not(
+      :disabled,
+      [aria-disabled="true"]
+    ) {
+    filter: brightness(0.9);
+  }
+  button:active:not(:disabled) {
+    scale: 0.97; /* not `transform`: it would clobber a button's -translate-y-1/2 */
+  }
+}
+
+/* ── Reduced motion: one global switch; spinners slow down instead of stopping ──────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .animate-spin {
+    animation-duration: 2s !important;
+    animation-iteration-count: infinite !important;
+  }
+}
+
+/* Tints an <img> glyph into the primary color (chain / network glyphs). */
+.icon-tint-primary {
+  filter: var(--icon-tint-primary);
+}
