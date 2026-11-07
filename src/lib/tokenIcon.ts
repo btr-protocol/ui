@@ -1,6 +1,6 @@
 /** Token marks bundled with the kit (the btr.markets rasters, 1x WebP). GENERATED from front/public/tokens: one
  *  `new URL` per file so the consumer's bundler emits each as an asset (set `assetsInlineLimit: 0` in Vite to keep them files). */
-import { canonicalTokenSymbol } from '@btr-protocol/sdk/eth/tokens';
+import { canonicalTokenSymbol } from '@btr-protocol/sdk/eth';
 
 const TOKENS: Record<string, string> = {
   '1inch': new URL('../assets/tokens/1inch.webp', import.meta.url).href,
