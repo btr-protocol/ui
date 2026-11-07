@@ -48,11 +48,11 @@ export function MaskIcon({
       style={{
         ...customSize,
         backgroundColor: color,
-        WebkitMaskImage: `url(${src})`,
+        WebkitMaskImage: `url("${src}")`,
         WebkitMaskSize: 'contain',
         WebkitMaskRepeat: 'no-repeat',
         WebkitMaskPosition: 'center',
-        maskImage: `url(${src})`,
+        maskImage: `url("${src}")`,
         maskSize: 'contain',
         maskRepeat: 'no-repeat',
         maskPosition: 'center',
