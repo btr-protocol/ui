@@ -55,6 +55,16 @@ export function ChainGlyph({
   );
 }
 
+/** Chain mark + name, inline: the one way to print a chain in a label, badge or table cell. */
+export function ChainLabel({ chainId, name, className }: { chainId: number; name?: string; className?: string }) {
+  return (
+    <span className={cn('inline-flex min-w-0 items-center gap-1.5', className)}>
+      <ChainGlyph chainId={chainId} name={name} role="trigger" />
+      <span className="truncate">{name ?? `Chain ${chainId}`}</span>
+    </span>
+  );
+}
+
 /** Right-aligned numeric column of the chain picker, sized to the `SelectionModal` sort header
  *  so the cells sit under `Chain ID` rather than beside it. */
 function ChainIdBadge({ chainId }: { chainId: number }) {

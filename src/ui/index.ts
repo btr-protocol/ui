@@ -17,6 +17,7 @@ export * from './FloatingPanel';
 export * from './HoldButton';
 export * from './Icon';
 export * from './InfoBox';
+export * from './Inset';
 export * from './Input';
 export * from './KeyboardShortcut';
 export * from './MaskIcon';
