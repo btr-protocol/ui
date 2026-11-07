@@ -12,7 +12,9 @@
     "./*.svelte": {
       "svelte": "./src/*.svelte",
       "default": "./src/*.svelte"
-    }
+    },
+    "./fonts.css": "./src/fonts.css",
+    "./assets/*": "./src/assets/*"
   },
   "files": [
     "src"

@@ -18,6 +18,8 @@ Alias `@btr-protocol/ui` to `node_modules/@btr-protocol/ui/src` in your bundler.
 |---|---|
 | `@btr-protocol/ui/kit.css` | base, buttons, pill, card, table, segmented toggle, empty and error surfaces |
 | `@btr-protocol/ui/theme/{tokens,dark,light}.css` | the palette and scales as CSS variables |
+| `@btr-protocol/ui/fonts.css` | Mozilla Text and Geist Mono (woff2, SIL OFL 1.1, licences in `assets/fonts/`), `--title` and `--mono` |
+| `assets/brand/logo-b.svg` | the BTR mark |
 | `Button.svelte` | the action button, with a `pending` state and a `why` reason when disabled |
 | `Spinner.svelte`, `EmptyState.svelte`, `ErrorState.svelte`, `Icon.svelte` | loading, empty and error surfaces, inline icons |
 | `wallet.js` | EIP-6963 discovery, `connectProvider`, `personalSign`, `assertSiweMessage` |
