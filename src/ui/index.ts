@@ -37,6 +37,7 @@ export * from './Spinner';
 export * from './StickyActionBar';
 export * from './Switch';
 export * from './Table';
+export * from './TokenGlyph';
 export * from './useDismiss';
 export * from './VisuallyHidden';
 export * from './WalletItemButton';
