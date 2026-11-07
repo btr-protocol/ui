@@ -1,0 +1,60 @@
+/* Light theme. Mirrors every token in dark.css so the two themes stay at parity
+   (every colour token is declared in both). */
+:root[data-theme="light"] {
+  color-scheme: light;
+
+  /* surfaces */
+  --bg: #ffffff;
+  --bg-side: #f3f3f3;
+  --bg-raised: #f0f0f0;
+  --bg-hover: #e8e8e8;
+  --bg-sel: #f6e6d3;
+
+  /* lines */
+  --border: #e0e0e0;
+  --border-strong: #c8c8c8;
+
+  /* text */
+  --text: #1f1f1f;
+  --dim: #5c5c5c;
+
+  /* accent */
+  --accent: #b85c00;
+  --accent-bg: rgba(184, 92, 0, 0.1);
+  --on-accent: #ffffff;
+
+  /* status */
+  --run: #0b63d6;
+  --ok: #1a7f3c;
+  --warn: #8a5a00;
+  --bad: #c62828;
+  --on-warn: #1b1208;
+
+  /* work-state / priority codes */
+  --p0: #c62828;
+  --p1: #b25c00;
+  --p2: #8a7300;
+  --p3: #5c6675;
+  --p4: #454b55;
+
+  /* overlay + opaque mask */
+  --overlay: rgba(0, 0, 0, 0.25);
+  --mask: #000000;
+
+  /* harness marks */
+  --mark-text: #ffffff;
+  --mark-claude: #a8482e;
+  --mark-codex: #0b7d63;
+  --mark-opencode: #3355cc;
+
+  /* taxonomy palette */
+  --c-blue: #0b63d6;
+  --c-green: #1a7f3c;
+  --c-yellow: #8a7300;
+  --c-red: #c62828;
+  --c-orange: #b85c00;
+  --c-purple: #6d4fc4;
+  --c-teal: #0f7a6b;
+  --c-pink: #b03a72;
+  --c-slate: #5c6675;
+}

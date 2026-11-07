@@ -1,0 +1,27 @@
+{
+  "name": "@btr-protocol/ui",
+  "version": "0.1.0",
+  "license": "MIT",
+  "type": "module",
+  "description": "BTR shared UI kit: Svelte components, kit.css, wallet sign-in helpers and the theme tokens. Source only, no build step.",
+  "svelte": "./src/Button.svelte",
+  "exports": {
+    "./kit.css": "./src/kit.css",
+    "./wallet.js": "./src/wallet.js",
+    "./theme/*": "./src/theme/*",
+    "./*.svelte": {
+      "svelte": "./src/*.svelte",
+      "default": "./src/*.svelte"
+    }
+  },
+  "files": [
+    "src"
+  ],
+  "peerDependencies": {
+    "svelte": "^5.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/btr-protocol/ui.git"
+  }
+}

@@ -1,0 +1,65 @@
+/* BTR UI kit rules: base, button family, pill, card, table, segmented toggle, empty and error states.
+   Every value is a CSS variable from theme/ (tokens.css + dark.css + light.css): theme by overriding those variables. */
+* { box-sizing: border-box; }
+code, pre, .mono { font-family: var(--mono); font-size: var(--fs-sm); }
+a { color: var(--accent); }
+.dim { color: var(--dim); }
+.grow { flex: 1; min-width: 0; }
+.row { display: flex; align-items: center; gap: 8px; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+::selection { background: var(--accent-bg); }
+:is(button, .btn) {
+  font: inherit;
+  font-size: var(--btn-fs-md);
+  font-weight: var(--fw-medium);
+  color: inherit;
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 0 var(--btn-px-md);
+  min-height: var(--btn-h-md);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-3);
+  justify-content: center;
+  white-space: nowrap;
+}
+:is(button, .btn):hover:not(:disabled) { background: var(--bg-hover); border-color: var(--border-strong); }
+:is(button, .btn):disabled { opacity: 0.45; cursor: default; }
+:is(button, .btn).primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); font-weight: var(--fw-semibold); }
+:is(button, .btn).primary:hover:not(:disabled) { background: var(--accent); filter: brightness(1.1); }
+:is(button, .btn).ghost { background: transparent; border-color: transparent; color: var(--dim); }
+:is(button, .btn).ghost:hover:not(:disabled) { background: var(--bg-hover); color: var(--text); border-color: transparent; }
+input, select, textarea {
+  font: inherit;
+  color: inherit;
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: var(--sp-1) var(--sp-4);
+  min-height: var(--row-md);
+}
+.pill { font-size: var(--fs-xs); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0 var(--sp-3); color: var(--dim); white-space: nowrap; }
+.pill.ok { color: var(--ok); border-color: color-mix(in srgb, var(--ok) 45%, transparent); }
+.pill.bad { color: var(--bad); border-color: color-mix(in srgb, var(--bad) 45%, transparent); }
+.card { border: 1px solid var(--border); border-radius: var(--r); background: var(--bg); }
+.empty { display: grid; place-items: center; text-align: center; gap: var(--sp-4); padding: var(--sp-7) var(--sp-6); color: var(--dim); }
+.empty.compact { padding: var(--sp-4); gap: var(--sp-2); }
+.empty h3 { margin: 0; color: var(--text); font-size: var(--fs-lg); }
+.empty p { margin: 0; max-width: 420px; }
+.errstate { display: flex; align-items: center; justify-content: center; gap: var(--sp-4); flex-wrap: wrap; color: var(--bad); font-size: var(--fs-sm); text-align: center; overflow-wrap: anywhere; }
+.errstate.compact { justify-content: flex-start; text-align: left; }
+.tbl { border-collapse: separate; border-spacing: 0; width: 100%; font-size: var(--fs-sm); border: 1px solid var(--border); border-radius: var(--radius-md); }
+.tbl :is(th, td) { padding: var(--sp-2) var(--sp-4); border-bottom: 1px solid var(--border); text-align: left; white-space: nowrap; }
+.tbl tbody tr:last-child :is(th, td) { border-bottom: 0; }
+.tbl th { color: var(--dim); font-weight: var(--fw-medium); position: sticky; top: 0; background: var(--bg-side); }
+.seg { display: inline-flex; border: 1px solid var(--border); border-radius: var(--r); overflow: hidden; }
+.seg button { border: 0; border-radius: 0; background: transparent; padding: 0 var(--sp-3); height: var(--btn-h-sm); min-height: var(--btn-h-sm); font-size: var(--fs-xs); color: var(--dim); }
+.seg button[aria-pressed="true"] { background: var(--bg-sel); color: var(--text); }
+button.pending[aria-disabled="true"] { cursor: progress; }
+:is(button, .btn)[aria-disabled="true"] { opacity: 0.45; cursor: default; }
+:is(button, .btn)[aria-disabled="true"]:hover { background: var(--bg-raised); border-color: var(--border); }
+:is(button, .btn).primary[aria-disabled="true"]:hover { background: var(--accent); border-color: var(--accent); filter: none; }
+button.pending { --spinner-color: currentColor; --spinner-head: currentColor; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }

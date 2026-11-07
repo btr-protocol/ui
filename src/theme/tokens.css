@@ -1,0 +1,61 @@
+/* Non-colour design tokens: ONE lean scale shared by every view. Colours live
+   only in dark.css / light.css so a single theme switch recolours the whole app.
+   Components use these variables only, never a raw off-scale value. */
+:root {
+  /* phone layer: touch target, safe areas, dynamic viewport height */
+  --touch: 44px;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --app-vh: 100dvh;
+  /* type: 5 sizes, 4 weights */
+  --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --fs-xs: 11px;
+  --fs-sm: 12px;
+  --fs-md: 13px;
+  --fs-lg: 15px;
+  --fs-xl: 18px;
+  --fw-regular: 400;
+  --fw-medium: 500;
+  --fw-semibold: 600;
+  --fw-bold: 700;
+
+  /* spacing: 4px base */
+  --sp-1: 2px;
+  --sp-2: 4px;
+  --sp-3: 6px;
+  --sp-4: 8px;
+  --sp-5: 12px;
+  --sp-6: 16px;
+  --sp-7: 24px;
+  --sp-8: 32px;
+
+  /* radii: 4 values (compact: gentler corners, less visual weight) */
+  --radius-sm: 3px;
+  --radius-md: 5px;
+  --radius-lg: 7px;
+  --radius-full: 999px;
+  --r: var(--radius-md); /* legacy alias */
+
+  /* icons: 4 sizes */
+  --icon-xs: 12px;
+  --icon-sm: 14px;
+  --icon-md: 16px;
+  --icon-lg: 20px;
+
+  /* rows + shell */
+  --row-sm: 24px;
+  --row-md: 28px;
+  --row-lg: 40px;
+  --activity: 44px;
+  --status: 22px;
+  --sbw: 264px;
+
+  /* buttons: exactly three sizes; md is the default */
+  --btn-h-sm: 22px; --btn-px-sm: 8px;  --btn-fs-sm: var(--fs-xs); --btn-ico-sm: var(--icon-xs);
+  --btn-h-md: 28px; --btn-px-md: 10px; --btn-fs-md: var(--fs-sm); --btn-ico-md: var(--icon-sm);
+  --btn-h-lg: 36px; --btn-px-lg: 16px; --btn-fs-lg: var(--fs-md); --btn-ico-lg: var(--icon-lg);
+  --btn-h-nav: var(--touch); /* bottom nav bar + sheet bottom padding */
+}
