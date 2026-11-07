@@ -55,3 +55,65 @@ test('BaseModal renders nothing while closed, Table and WalletButton render', ()
   );
   expect(html).toContain('row1');
 });
+
+import {
+  ChainGlyph,
+  ChainSelect,
+  Field,
+  MultiInput,
+  PercentLadderSlider,
+  SettingRow,
+  Slider,
+  chainIcon,
+  chainSelectItems,
+  fmtApr,
+  formatAmountDisplay,
+  formatBalance,
+  formatCompact,
+  fmtUsd,
+  parseAmountInput,
+} from '../src';
+
+test('formatters: sdk core, metric dash, amount ladder', () => {
+  expect(formatCompact(1234567)).toBe('1.23M');
+  expect(fmtUsd(null)).toBe('-');
+  expect(fmtApr(0.12)).toBe('12%');
+  expect(formatBalance(0)).toBe('-');
+  expect(parseAmountInput('1,2.3.4')).toBe('12.34');
+  expect(formatAmountDisplay('1234567.5')).toBe('1,234,567.5');
+});
+
+test('chainIcon resolves id, slug and testnet; unknown is undefined', () => {
+  expect(chainIcon(8453)).toContain('base.svg');
+  expect(chainIcon('bnb-chain', { mono: true })).toContain('bnb-chain-mono.svg');
+  expect(chainIcon(5042002)).toContain('arc.svg');
+  expect(chainIcon(10)).toContain('optimism.svg');
+  expect(chainIcon(999999)).toBeUndefined();
+});
+
+const chains = [
+  { id: 1, name: 'Ethereum' },
+  { id: 8453, name: 'Base' },
+  { id: 5042, name: 'Arc', planned: true },
+];
+
+test('chain items hide planned unless asked', () => {
+  expect(chainSelectItems(chains).map((i) => i.id)).toEqual(['1', '8453']);
+  expect(chainSelectItems(chains, { includePlanned: true })[2]!.disabled).toBe(true);
+});
+
+test('ChainSelect trigger and ChainGlyph render', () => {
+  expect(render(<ChainSelect chains={chains} value={8453} onChange={() => {}} />)).toContain('Base');
+  expect(render(<ChainGlyph chainId={424242} />)).toContain('424');
+});
+
+test('form components render', () => {
+  expect(render(<MultiInput value={['A']} onChange={() => {}} length={4} />)).toContain('Invite code');
+  expect(render(<SettingRow label="Slippage" description="d">x</SettingRow>)).toContain('Slippage');
+  expect(render(<Slider value={[5]} min={0} max={10} />)).toContain('slider');
+  expect(render(<PercentLadderSlider stops={[1, 2, 5]} value={2} onChange={() => {}} />)).toContain('input');
+  const f = render(<Field label="Name" htmlFor="n" error="Bad" hint="h" maxW="md"><input id="n" /></Field>);
+  expect(f).toContain('text-red');
+  expect(f).toContain('max-w-md');
+  expect(f).not.toContain('>h<');
+});

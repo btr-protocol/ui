@@ -62,6 +62,14 @@ src/assets    brand/logo.svg, icons/, fonts/
 
 Exports: `.`, `./ui`, `./layout`, `./wallet`, `./styles`, `./styles/tokens.css`, `./styles/fonts.css`, `./tailwind.preset`, `./lib/*`, `./assets/*`.
 
+## 0.3 additions
+
+Needs peer `@btr-protocol/sdk` (formatters).
+
+- Formatters (`lib/format`, from the index): SDK `formatCompact/Number/Price/Currency/CurrencyCompact/Percent/PercentSig/Yield/Units`, `parseUnits`; metrics `DASH num fmtUsd fmtSignedPct fmtCount fmtRatio fmtApr fmtAge fmtFixed fmtWindowMs feeSplit weightedRate`; amounts `formatBalance formatAmount parseAmountInput formatAmountDisplay parseAmountToBig useAmountInput`. Numbers font: `className="font-numeric"`.
+- Chains: `chainIcon(idOrSlug, {mono?})`, `chainSlug`, `ChainGlyph`, `ChainSelect`, `ChainSelectModal`, `chainSelectItems` (props: `{id,name,icon?,explorer?,testnet?,planned?}[]`).
+- Forms: `MultiInput`, `SettingRow`, `Slider`, `PercentLadderSlider`, `Field` (label, hint, error, `maxW`).
+
 ## Checks
 
 `bun install && bunx tsc --noEmit && bun test`

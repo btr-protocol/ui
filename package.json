@@ -1,6 +1,6 @@
 {
   "name": "@btr-protocol/ui",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "license": "MIT",
   "type": "module",
   "description": "BTR shared UI kit: the btr.markets Preact components, layout shell, theme tokens and Tailwind preset. Source only, no build step.",
@@ -30,9 +30,11 @@
     "lucide-preact": ">=0.400.0",
     "preact": "^10.22.0",
     "tailwind-merge": "^2.6.0",
-    "tailwindcss": "^3.4.0"
+    "tailwindcss": "^3.4.0",
+    "@btr-protocol/sdk": "github:btr-protocol/sdk"
   },
   "devDependencies": {
+    "@btr-protocol/sdk": "github:btr-protocol/sdk#dc1d1f11d9d3aab7b38b5653e092c06bbd9efb3f",
     "@preact/signals": "^2.5.1",
     "@types/bun": "latest",
     "lucide-preact": "^0.468.0",
