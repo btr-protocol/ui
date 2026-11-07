@@ -47,6 +47,7 @@ export function AddressField({
   placeholder = '0x…',
   disabled,
   className,
+  labels,
 }: {
   value: string;
   /** The raw text plus its verdict, so the parent never re-validates. */
@@ -55,6 +56,8 @@ export function AddressField({
   placeholder?: string;
   disabled?: boolean;
   className?: string;
+  /** Button texts, for a translated host. */
+  labels?: { paste?: string; clear?: string };
 }) {
   const id = useId();
   const check = checkAddress(value);
@@ -94,7 +97,7 @@ export function AddressField({
           {value && !disabled && (
             <button
               type="button"
-              aria-label="Clear address"
+              aria-label={labels?.clear ?? 'Clear address'}
               onClick={() => set('')}
               className="absolute right-1 top-1/2 -translate-y-1/2 p-1.5 text-fg-3 hover:text-fg-0"
             >
@@ -103,7 +106,7 @@ export function AddressField({
           )}
         </div>
         <Button size="sm" disabled={disabled} onClick={paste}>
-          Paste
+          {labels?.paste ?? 'Paste'}
         </Button>
       </div>
       <div id={`${id}-msg`} aria-live="polite" className="text-xs">

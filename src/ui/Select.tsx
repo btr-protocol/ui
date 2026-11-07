@@ -519,6 +519,30 @@ export interface SelectionSortColumn {
   className?: string;
 }
 
+/** Every fixed string of the modal, so a host can translate it. */
+export interface SelectionLabels {
+  navigate: string;
+  select: string;
+  toggle: string;
+  close: string;
+  selected: (n: number) => string;
+  selectAll: string;
+  unselectAll: string;
+  unselectAllBut: (n: number) => string;
+  reset: string;
+}
+const SELECTION_LABELS: SelectionLabels = {
+  navigate: 'Navigate',
+  select: 'Select',
+  toggle: 'Toggle',
+  close: 'Close',
+  selected: (n) => `${n} selected`,
+  selectAll: 'Select All',
+  unselectAll: 'Unselect All',
+  unselectAllBut: (n) => `Unselect all but ${n}`,
+  reset: 'Reset',
+};
+
 interface SelectionModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -550,6 +574,7 @@ interface SelectionModalProps {
   size?: ModalSize;
   multiSelect?: boolean;
   applyLabel?: string;
+  labels?: Partial<SelectionLabels>;
 }
 
 /** Same cycle as `useTableSort`: new key → asc → desc → off. */
@@ -585,7 +610,9 @@ export function SelectionModal({
   size = 'md',
   multiSelect = false,
   applyLabel = 'Ok',
+  labels,
 }: SelectionModalProps) {
+  const L = { ...SELECTION_LABELS, ...labels };
   const [search, setSearch] = useState('');
   const [tempSelected, setTempSelected] = useState<string[]>(selectedIds);
   const [sort, setSort] = useState<{ key: string | null; dir: SortDir }>({
@@ -763,16 +790,16 @@ export function SelectionModal({
       footerNav={
         <KeyboardShortcutGroup
           shortcuts={[
-            { keys: '↑↓', label: 'Navigate' },
-            { keys: 'Enter', label: isMulti ? 'Toggle' : 'Select' },
-            { keys: 'Esc', label: 'Close' },
+            { keys: '↑↓', label: L.navigate },
+            { keys: 'Enter', label: isMulti ? L.toggle : L.select },
+            { keys: 'Esc', label: L.close },
           ]}
         />
       }
       footerContent={
         isMulti ? (
           <FormRow
-            label={`${tempSelected.length} selected`}
+            label={L.selected(tempSelected.length)}
             labelClassName="text-sm text-fg-2"
             value={
               <div className="flex items-center gap-2">
@@ -783,9 +810,9 @@ export function SelectionModal({
                 >
                   {allSelected
                     ? minSelections > 0
-                      ? `Unselect all but ${minSelections}`
-                      : 'Unselect All'
-                    : 'Select All'}
+                      ? L.unselectAllBut(minSelections)
+                      : L.unselectAll
+                    : L.selectAll}
                 </Button>
                 <Button variant="primary" size="default" onClick={handleApply}>
                   {applyLabel}
@@ -851,7 +878,7 @@ export function SelectionModal({
             action={
               hasActiveFilters || !!search
                 ? {
-                    label: 'Reset',
+                    label: L.reset,
                     onClick: onResetFilters || (() => setSearch('')),
                   }
                 : undefined
