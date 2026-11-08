@@ -24,6 +24,8 @@ export interface DropdownItem<T = string> {
   tooltip?: string;
   /** Renders the item as an external link rather than a button. */
   href?: string;
+  /** Muted right-aligned value on the row (an amount, a count). Inert: the whole row stays the hit target. */
+  detail?: ComponentChildren;
   /** Control rendered immediately after the label (e.g. InfoBox), before the check. */
   trailing?: ComponentChildren;
 }

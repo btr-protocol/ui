@@ -418,6 +418,7 @@ export function Dropdown<T = string>({
                 <span className={cn(selected && !disabled && 'text-primary font-medium')}>
                   {item.label}
                 </span>
+                {item.detail != null && <span className="ml-auto shrink-0 pl-3 font-normal tabular-nums text-fg-2">{item.detail}</span>}
                 {item.trailing ? (
                   <div
                     // Same active color as the label: the trailing ⓘ is part of the row's
