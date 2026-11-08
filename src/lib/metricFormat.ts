@@ -3,10 +3,10 @@
 
 import {
   formatCompact,
-  formatCurrencyCompact,
   formatPercentSig,
   formatYield,
 } from '@btr-protocol/sdk/utils/format';
+import { formatUsd } from './format';
 import { DASH } from './metricPhase';
 
 export { DASH };
@@ -18,7 +18,7 @@ export function num(v: number | null | undefined): number | null {
 
 export function fmtUsd(v: number | null | undefined, stale = false): string {
   if (stale || v == null || !Number.isFinite(v)) return DASH;
-  return formatCurrencyCompact(v);
+  return formatUsd(v);
 }
 
 /** Signed percent through the shared magnitude-adaptive formatter (three significant figures);
