@@ -70,6 +70,30 @@ Needs peer `@btr-protocol/sdk` (formatters).
 - Chains: `chainIcon(idOrSlug, {mono?})`, `chainSlug`, `ChainGlyph`, `ChainSelect`, `ChainSelectModal`, `chainSelectItems` (props: `{id,name,icon?,explorer?,testnet?,planned?}[]`).
 - Forms: `MultiInput`, `SettingRow`, `Slider`, `PercentLadderSlider`, `Field` (label, hint, error, `maxW`).
 
+## 0.4 additions (master-detail kit)
+
+```tsx
+import { MasterDetail, Table, StackedIcons, Timeline, ChainMultiSelect } from '@btr-protocol/ui';
+
+// Master list + detail. >= lg: clamp(280px, 22%, 360px) | 1fr. < lg: list -> detail drill-down by `selected`.
+<MasterDetail
+  selected={!!safeId}            // derive from your route; URL-agnostic
+  onBack={() => setSafeId(null)} // Back row and Esc on phones; focus moves to detail, then back to the row
+  placeholder={<Empty>Select a Safe</Empty>}
+  master={
+    <Table bare searchable={false} columns={cols} data={safes} rowKey={(s) => s.addr}
+      selectedKey={safeId} onSelect={(_, key) => setSafeId(key)} stackBelow="lg" />
+  }
+  detail={<SafeDetail id={safeId} />}
+/>
+```
+
+- `Table` `onSelect` + `selectedKey` make rows selectable: `aria-selected`, roving tabindex, ArrowUp/Down/Home/End move focus, Enter/Space/click select. Selected row = detail-pane surface + left primary bar + bold (`SELECTED_ROW`). `bare` drops frame and radius so the table sits flush in a pane.
+- `NavItem.badge` / `badgeLabel` (Header + TabBar): `{ path, title, badge: 3, badgeLabel: '3 transactions awaiting your signature' }`. Hidden at 0, `99+` cap, count is visual, the sentence is read. TabBar labels now ellipsise (no crowding at 360px).
+- `<StackedIcons items={[{ id, label, icon }]} max={3} size="sm|md" />`: first N icons, `+N` chip, full list as accessible name.
+- `<Timeline items={[{ id, icon: 'check', title, meta, href, linkLabel, group: 'Today' }]} empty="No activity yet" />`.
+- `<ChainMultiSelect chains={chains} value={ids} onChange={setIds} />`: trigger with stacked chain icons ("All" when full), modal with search, sort and Select All, at least one stays selected.
+
 ## Checks
 
 `bun install && bunx tsc --noEmit && bun test`

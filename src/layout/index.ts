@@ -9,6 +9,7 @@ export {
   type FooterProps,
 } from './Footer';
 export { TabBar, TAB_BAR_ROW, type TabBarProps } from './TabBar';
+export { NavBadge, type NavBadgeProps } from './NavBadge';
 export { PageShell } from './PageShell';
 export { PageToolbar } from './PageToolbar';
 export { Notifications } from './Notifications';

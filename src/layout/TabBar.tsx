@@ -6,6 +6,7 @@ import { scrollPane } from '../lib/scroll';
 import { BaseModal, MODAL_PADDING } from '../ui/BaseModal';
 import { Icon } from '../ui/Icon';
 import { MaskIcon } from '../ui/MaskIcon';
+import { NavBadge } from './NavBadge';
 import { type NavItem, isNavActive } from './nav';
 
 /** Nav icons are either an Icon name or an svg path (starts with `/`, `.` or `http`). */
@@ -17,6 +18,11 @@ function NavIcon({ icon }: { icon?: string }) {
     <Icon name={icon} className="w-5 h-5" />
   );
 }
+
+/** Label that ellipsises instead of touching its neighbour: five tabs leave ~70px each at 360px. */
+const TabLabel = ({ children }: { children: ComponentChildren }) => (
+  <span className="max-w-full truncate leading-tight">{children}</span>
+);
 
 const ROW = `w-full flex items-center gap-3 ${MODAL_PADDING} py-3 text-left hover:bg-bg-2 transition-colors`;
 
@@ -65,7 +71,7 @@ export function TabBar({
 
   const tab = (active: boolean) =>
     cn(
-      'flex h-full min-w-0 flex-col items-center justify-center gap-0.5 rounded-sm px-2 text-2xs font-medium font-title transition-colors',
+      'flex h-full min-w-0 flex-col items-center justify-center gap-0.5 rounded-sm px-0.5 text-2xs font-medium font-title transition-colors',
       active ? 'bg-bg-primary text-primary' : 'text-fg-2',
     );
 
@@ -88,8 +94,11 @@ export function TabBar({
               aria-current={isActive(item.path) ? 'page' : undefined}
               className={tab(isActive(item.path))}
             >
-              <NavIcon icon={item.icon} />
-              {item.title}
+              <span className="relative inline-flex">
+                <NavIcon icon={item.icon} />
+                <NavBadge count={item.badge} label={item.badgeLabel} />
+              </span>
+              <TabLabel>{item.title}</TabLabel>
             </button>
           ))}
           {hasMore && (
@@ -104,7 +113,7 @@ export function TabBar({
               className={tab(moreActive)}
             >
               <Icon name="menu" className="w-5 h-5" />
-              {moreLabel}
+              <TabLabel>{moreLabel}</TabLabel>
             </button>
           )}
         </div>
