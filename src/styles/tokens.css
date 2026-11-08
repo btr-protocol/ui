@@ -83,6 +83,13 @@
   --cyan: #2ee7e7;
   --pink: #e94cef;
   --violet: #a273f5;
+  /* Chart series (value tables, multi-area): orange, blue, green, pink, violet, teal. No yellow/cyan (vanish on light). */
+  --series-1: #f0a04b;
+  --series-2: #5b93ff;
+  --series-3: #34d399;
+  --series-4: #f06af5;
+  --series-5: #a090ff;
+  --series-6: #2dd4bf;
   --black: #1b1b1b; /* Carbon Black - dark font on light theme, bg on dark theme */
   --white: #fafafa; /* Parchment - light font on dark theme, bg on light theme */
 
@@ -257,6 +264,13 @@
   --fg-info: #237171; /* 5.48:1 on bg-0, 4.54:1 on bg-3 */
   --fg-violet: #6d3bb0; /* 5.61:1 on bg-0, 4.65:1 on bg-3 (raw #a273f5 was 3.62:1) */
   --fg-primary: #8a5c2b;
+  /* Series on light: >=3:1 against bg-0 (graphical objects). */
+  --series-1: #c26a00;
+  --series-2: #2f63e0;
+  --series-3: #0a8f64;
+  --series-4: #c02ac7;
+  --series-5: #6d55e6;
+  --series-6: #0e8a96;
   --fg-secondary: #3463c1; /* 5.44:1 on bg-0, 4.50:1 on bg-3 */
 
   /* Sentiment backgrounds, mixed over bg-1. 10% is the ceiling that still leaves the matching

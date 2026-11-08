@@ -29,10 +29,10 @@ test('PageHeader puts controls beside the title (row from sm)', () => {
   expect(h).toContain('<b>C</b>');
 });
 
-test('ChartPanel: header readout, table left of chart on lg, order-last on phones', () => {
+test('ChartPanel: header readout, table left of chart on lg, order-last below xl', () => {
   const h = render(<ChartPanel title="Holdings" value="$1" date="today" table={<i>tbl</i>} controls={<u>c</u>}><canvas /></ChartPanel>);
   expect(h).toContain('Holdings');
-  expect(h).toContain('lg:grid-cols-');
-  expect(h).toContain('max-lg:order-last');
+  expect(h).toContain('xl:grid-cols-');
+  expect(h).toContain('max-xl:order-last');
   expect(h.indexOf('tbl')).toBeLessThan(h.indexOf('<canvas'));
 });

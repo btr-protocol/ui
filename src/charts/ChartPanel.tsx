@@ -1,6 +1,6 @@
 // ChartPanel: the bordered frame for a metrics chart (front metrics stack style). Header = title + live
 // readout (hovered value and date) on the left, controls on the right; body = optional value table
-// (the legend) left of the chart on lg+, stacked under it on phones.
+// (the legend) left of the chart on xl+, stacked under it below xl.
 import type { ComponentChildren, Ref } from 'preact';
 import { cn } from '../lib/cn';
 
@@ -14,9 +14,9 @@ export interface ChartPanelProps {
   dateRef?: Ref<HTMLSpanElement>;
   /** Right side of the header: range, units, view and chart-type toggles. */
   controls?: ComponentChildren;
-  /** Value table (the legend). Left of the chart on lg+, under it on phones. */
+  /** Value table (the legend). Left of the chart on lg+, under it below xl. */
   table?: ComponentChildren;
-  /** Table column width on lg+ (CSS length). */
+  /** Table column width on xl+ (CSS length). */
   tableWidth?: string;
   /** Accessible name of the table region. */
   tableLabel?: string;
@@ -38,11 +38,11 @@ export function ChartPanel({ title, value, date, valueRef, dateRef, controls, ta
         {controls && <div className="flex flex-wrap items-center gap-2">{controls}</div>}
       </header>
       <div
-        className={cn('grid min-w-0', table && 'lg:grid-cols-[var(--cp-w)_minmax(0,1fr)]')}
+        className={cn('grid min-w-0', table && 'xl:grid-cols-[var(--cp-w)_minmax(0,1fr)]')}
         style={table ? ({ '--cp-w': tableWidth } as Record<string, string>) : undefined}
       >
         {table && (
-          <div role="region" aria-label={tableLabel} className="min-w-0 border-t border-border max-lg:order-last lg:border-r lg:border-t-0">
+          <div role="region" aria-label={tableLabel} className="min-w-0 border-t border-border max-xl:order-last xl:border-r xl:border-t-0">
             {table}
           </div>
         )}
