@@ -36,3 +36,13 @@ test('ChartPanel: header readout, table left of chart on lg, order-last below xl
   expect(h).toContain('max-xl:order-last');
   expect(h.indexOf('tbl')).toBeLessThan(h.indexOf('<canvas'));
 });
+
+test('protocolIcon: known protocols resolve (versions ignored), Wallet is a glyph, unknown has none', async () => {
+  const { protocolIcon, ProtocolGlyph } = await import('../src');
+  for (const n of ['Aave V3', 'Aave V2', 'Venus', 'Morpho Blue', 'Euler V2', 'Fluid', 'Wombat Exchange', 'Wombex', 'Merkl', 'BTR', 'BC-USDC', 'Compound V3'])
+    expect(protocolIcon(n), n).toBeTruthy();
+  expect(protocolIcon('Wallet')).toBeUndefined();
+  expect(protocolIcon('Nonexistent')).toBeUndefined();
+  expect(render(<ProtocolGlyph name="Wallet" />)).toContain('lucide-wallet');
+  expect(render(<ProtocolGlyph name="Aave V3" />)).toContain('rounded-full');
+});
