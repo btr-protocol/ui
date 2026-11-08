@@ -75,6 +75,24 @@ export type NoticeSize = 'bar' | 'note';
 
 const NEUTRAL: ReadonlySet<NoticeTone> = new Set<NoticeTone>(['default', 'debug', 'info']);
 
+export interface NoticeActionProps {
+  label: string;
+  onClick: () => void;
+  disabled?: boolean;
+}
+
+const isActionSpec = (a: unknown): a is NoticeActionProps =>
+  typeof a === 'object' && a !== null && !('props' in a) && typeof (a as NoticeActionProps).label === 'string';
+
+/** The notice's own button: tint, border and hover come from the notice tone (`--nt`), not the neutral Button. */
+export function NoticeAction({ label, onClick, disabled }: NoticeActionProps) {
+  return (
+    <button type="button" className="notice-action" onClick={onClick} disabled={disabled}>
+      {label}
+    </button>
+  );
+}
+
 export function Notice({
   label,
   tone = 'default',
@@ -91,7 +109,8 @@ export function Notice({
   icon?: IconName | false;
   role?: 'alert' | 'status';
   children?: ComponentChildren;
-  action?: ComponentChildren;
+  /** `{ label, onClick }` renders a tone-matched button; any node is placed as is. */
+  action?: NoticeActionProps | ComponentChildren;
   className?: string;
 }) {
   const neutral = NEUTRAL.has(tone);
@@ -110,28 +129,31 @@ export function Notice({
         'flex flex-wrap items-start',
         note
           ? 'mt-1 gap-1.5 px-1 text-3xs leading-snug'
-          : cn('surface gap-2 rounded-lg border px-4 py-3 text-sm', neutral && 'text-fg-2'),
+          : cn('surface gap-x-3 gap-y-2 rounded-lg border px-4 py-3 text-sm', neutral && 'text-fg-2'),
         neutral && (note ? 'text-fg-2' : 'border-border bg-bg-2'),
         className,
       )}
       style={
         note
           ? tint && { color: tint }
-          : tint && {
-              color: tint,
-              borderColor: `color-mix(in srgb, ${tint} 40%, transparent)`,
-              backgroundColor: `color-mix(in srgb, ${tint} 8%, transparent)`,
+          : {
+              '--nt': tint ?? 'var(--fg-1)',
+              ...(tint && {
+                color: tint,
+                borderColor: `color-mix(in srgb, ${tint} 40%, transparent)`,
+                backgroundColor: `color-mix(in srgb, ${tint} 8%, transparent)`,
+              }),
             }
       }
     >
       {glyph && (
         <Icon
           name={glyph}
-          className={cn('mt-0.5 shrink-0', note ? 'w-3 h-3' : 'w-4 h-4', neutral && 'text-fg-3')}
+          className={cn('shrink-0', note ? 'mt-0.5 w-3 h-3' : cn('w-4 h-4', action ? 'mt-1.5' : 'mt-0.5'), neutral && 'text-fg-3')}
           style={note ? undefined : tint && { color: tint }}
         />
       )}
-      <div className="min-w-0 flex-1 basis-48">
+      <div className={cn('min-w-0 flex-1 basis-64', action && !note && 'py-1')}>
         {label && (
           <span
             className={cn('font-medium', neutral && !note && 'text-fg-1')}
@@ -143,7 +165,11 @@ export function Notice({
         {label && body && <span className="mx-2 text-fg-3">·</span>}
         {body && children}
       </div>
-      {action && <span className="ml-auto shrink-0 self-center">{action}</span>}
+      {action && (
+        <span className="ml-auto shrink-0 max-sm:pl-7">
+          {isActionSpec(action) ? <NoticeAction {...action} /> : (action as ComponentChildren)}
+        </span>
+      )}
     </div>
   );
 }

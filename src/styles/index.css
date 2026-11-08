@@ -22,6 +22,26 @@
 :where(.surface .surface) * { --r: 8px; }
 :where(.surface .surface .surface) * { --r: 6px; }
 
+/* Notice action: subtle tint of the notice tone (--nt, set by Notice), tighter radius than the notice itself. */
+@layer components {
+  .notice-action {
+    display: inline-flex;
+    align-items: center;
+    height: 1.75rem;
+    padding: 0 0.75rem;
+    border-radius: var(--radius-sm);
+    border: 1px solid color-mix(in srgb, var(--nt) 28%, transparent);
+    background: color-mix(in srgb, var(--nt) 10%, transparent);
+    color: var(--nt);
+    font: 500 0.75rem/1 var(--font-title);
+    transition: background-color 0.15s, border-color 0.15s;
+  }
+  .notice-action:hover { background: color-mix(in srgb, var(--nt) 18%, transparent); border-color: color-mix(in srgb, var(--nt) 50%, transparent); }
+  .notice-action:active { background: color-mix(in srgb, var(--nt) 26%, transparent); }
+  .notice-action:focus-visible { outline: 2px solid var(--nt); outline-offset: 2px; }
+  .notice-action:disabled { opacity: 0.5; pointer-events: none; }
+}
+
 /* Validation feedback must never inherit focus/hover color interpolation. */
 input[aria-invalid="true"],
 select[aria-invalid="true"],
