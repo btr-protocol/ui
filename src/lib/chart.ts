@@ -2,7 +2,8 @@
  *  charts (`components/shared/metrics/MetricChart.tsx`, `metricChartMath.ts`, `charts/chartShared.ts`).
  *  No lightweight-charts import: the factory returns plain options the caller hands to `createChart`. */
 
-import { formatCompact, formatCurrencyCompact } from '@btr-protocol/sdk/utils/format';
+import { formatCompact } from '@btr-protocol/sdk/utils/format';
+import { formatUsd } from './format';
 
 export type ChartValueFormat = 'usd' | 'count' | 'bps' | 'compact';
 
@@ -12,11 +13,11 @@ export const fmtBps = (v: number) => `${Number(v.toFixed(2))} bps`;
 /** A tick that is float noise around zero reads 0, not "0.0₁₄694%". */
 const snap0 = (v: number) => (Math.abs(v) < 1e-9 ? 0 : v);
 
-/** Axis tick / crosshair label / legend formatter. 'usd' is the front's compact ladder with 2
- *  fraction digits ($280.00K, $400.00); a chart and the tile above it must read the same. */
+/** Axis tick / crosshair label / legend formatter. 'usd' is `formatUsd` (lib/format), the one
+ *  magnitude rule shared with the app, so a chart and the tile above it read the same. */
 export function chartFormatter(format: ChartValueFormat): (v: number) => string {
   const f = (v: number): string => {
-    if (format === 'usd') return formatCurrencyCompact(v);
+    if (format === 'usd') return formatUsd(v);
     if (format === 'bps') return fmtBps(v);
     if (format === 'count')
       return Math.abs(v) < 1000 ? String(Math.round(v)) : formatCompact(Math.round(v));

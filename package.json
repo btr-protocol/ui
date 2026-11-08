@@ -26,21 +26,13 @@
     "test": "bun test"
   },
   "peerDependencies": {
-    "@preact/signals": "^2.0.0",
-    "lucide-preact": ">=0.400.0",
-    "preact": "^10.22.0",
-    "tailwind-merge": "^2.6.0",
     "tailwindcss": "^3.4.0",
     "@btr-protocol/sdk": "github:btr-protocol/sdk"
   },
   "devDependencies": {
     "@btr-protocol/sdk": "github:btr-protocol/sdk#dc1d1f11d9d3aab7b38b5653e092c06bbd9efb3f",
-    "@preact/signals": "^2.5.1",
     "@types/bun": "latest",
-    "lucide-preact": "^0.468.0",
-    "preact": "^10.22.0",
     "preact-render-to-string": "^6.5.0",
-    "tailwind-merge": "^2.6.1",
     "tailwindcss": "^3.4.1",
     "typescript": "^5.6.0"
   },
@@ -49,6 +41,10 @@
     "url": "git+https://github.com/btr-protocol/ui.git"
   },
   "dependencies": {
-    "@noble/hashes": "^2.3.0"
+    "@noble/hashes": "^2.3.0",
+    "@preact/signals": "^2.5.1",
+    "lucide-preact": "^0.468.0",
+    "preact": "^10.22.0",
+    "tailwind-merge": "^2.6.1"
   }
 }

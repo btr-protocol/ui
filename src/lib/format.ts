@@ -22,3 +22,21 @@ export {
 } from '@btr-protocol/sdk/utils/format';
 export * from './metricFormat';
 export * from './amount';
+
+/** USD, auto by magnitude: whole dollars from $100 up, cents below. */
+export function formatUsd(v: number, locale = 'en-US'): string {
+  const d = Math.abs(v) >= 100 ? 0 : 2;
+  return new Intl.NumberFormat(locale, {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: d,
+    maximumFractionDigits: d,
+  }).format(v);
+}
+
+/** Quantity, auto by magnitude: >=1000 whole, >=1 2dp, >=0.01 4dp, else 6dp; trailing zeros trimmed. */
+export function formatQty(v: number, locale?: string): string {
+  const a = Math.abs(v);
+  const d = a >= 1000 ? 0 : a >= 1 ? 2 : a >= 0.01 ? 4 : 6;
+  return new Intl.NumberFormat(locale, { maximumFractionDigits: d }).format(v);
+}

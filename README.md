@@ -8,7 +8,7 @@ The btr.markets UI kit: Preact components, the fixed-shell layout (Header, Foote
 { "dependencies": { "@btr-protocol/ui": "github:btr-protocol/ui#<commit>" } }
 ```
 
-Peers: `preact`, `@preact/signals`, `lucide-preact`, `tailwindcss` 3, `tailwind-merge`. Fonts (Mozilla Text, Geist Mono; SIL OFL 1.1, licences in `src/assets/fonts/`) ship with the kit.
+Peers: `tailwindcss` 3 (preset). Runtime deps (`preact`, `@preact/signals`, `lucide-preact`, `tailwind-merge`) ship with the kit. Fonts (Mozilla Text, Geist Mono; SIL OFL 1.1, licences in `src/assets/fonts/`) ship with the kit.
 
 ## Setup
 
@@ -66,7 +66,7 @@ Exports: `.`, `./ui`, `./layout`, `./wallet`, `./styles`, `./styles/tokens.css`,
 
 Needs peer `@btr-protocol/sdk` (formatters).
 
-- Formatters (`lib/format`, from the index): SDK `formatCompact/Number/Price/Currency/CurrencyCompact/Percent/PercentSig/Yield/Units`, `parseUnits`; metrics `DASH num fmtUsd fmtSignedPct fmtCount fmtRatio fmtApr fmtAge fmtFixed fmtWindowMs feeSplit weightedRate`; amounts `formatBalance formatAmount parseAmountInput formatAmountDisplay parseAmountToBig useAmountInput`. Numbers font: `className="font-numeric"`.
+- Formatters (`lib/format`, from the index): `formatUsd`/`formatQty` (auto by magnitude, the one implementation), SDK `formatCompact/Number/Price/Currency/CurrencyCompact/Percent/PercentSig/Yield/Units`, `parseUnits`; metrics `DASH num fmtUsd fmtSignedPct fmtCount fmtRatio fmtApr fmtAge fmtFixed fmtWindowMs feeSplit weightedRate`; amounts `formatBalance formatAmount parseAmountInput formatAmountDisplay parseAmountToBig useAmountInput`. Numbers font: `className="font-numeric"`.
 - Chains: `chainIcon(idOrSlug, {mono?})`, `chainSlug`, `ChainGlyph`, `ChainSelect`, `ChainSelectModal`, `chainSelectItems` (props: `{id,name,icon?,explorer?,testnet?,planned?}[]`).
 - Forms: `MultiInput`, `SettingRow`, `Slider`, `PercentLadderSlider`, `Field` (label, hint, error, `maxW`).
 
