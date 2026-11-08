@@ -317,7 +317,7 @@ export function MetricChart({
       if (r && ext) {
         // Whitespace room on the left (logical range: the time-range API clips to the data) so the first tick label,
         // centred on its tick, is not cut at the edge.
-        const from = secToLogical(r.from / 1000, ext);
+        const from = Math.max(secToLogical(r.from / 1000, ext), 0); // never before the data: a short history fits, as the time-range API did
         const to = secToLogical(r.to / 1000, ext);
         const w = Math.max(chart.timeScale().width(), 1);
         chart.timeScale().setVisibleLogicalRange({ from: from - (to - from) * Math.min(0.08, 36 / w), to });
