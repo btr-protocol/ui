@@ -227,7 +227,7 @@ export interface TableProps<Row> {
   onSelect?: (row: Row, key: string) => void;
   /** `rowKey` of the selected row, or null. */
   selectedKey?: string | null;
-  /** No frame, radius or fill: the table sits flush in a pane (MasterDetail master). */
+  /** No frame, radius or fill: the table sits flush in a pane (MasterDetail master); the column header is visually hidden, kept for screen readers. */
   bare?: boolean;
   rowKey: (row: Row, idx: number) => string;
   /** Rows held above the body: never searched, sorted or counted as empty (aggregates that frame
@@ -584,7 +584,7 @@ export function Table<Row>({
                   className={cn(TABLE_BASE, compact && 'text-xs')}
                   style={{ paddingRight: sbGutter }}
                 >
-                  <thead>{head}</thead>
+                  <thead className={bare ? 'sr-only' : undefined}>{head}</thead>
                 </table>
                 <div
                   ref={bodyRef}
@@ -689,7 +689,7 @@ export function Table<Row>({
               style={maxHeight ? { maxHeight } : undefined}
             >
               <table data-table={variant} {...tableRole} className={cn(TABLE_BASE, compact && 'text-xs')}>
-                <thead>{head}</thead>
+                <thead className={bare ? 'sr-only' : undefined}>{head}</thead>
                 <tbody>
                   {pinned?.map((row, idx) => (
                     <tr
