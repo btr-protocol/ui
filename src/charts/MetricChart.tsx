@@ -44,6 +44,7 @@ import {
   legendValueNodes,
   logicalToSec,
   nonNegative,
+  paddedRange,
   ownValueAt,
   paintOrder,
   restingValue,
@@ -493,6 +494,18 @@ export function MetricChart({
                   const lo = b ? Math.max(r.priceRange.minValue, b[0]) : r.priceRange.minValue;
                   const live = seriesNowRef.current.find((x) => x.id === spec.id);
                   const floor = scaleId !== 'hidden' && live != null && nonNegative(live.points);
+                  // An area opted out of the zero base reads its own min/max, padded (the fill still
+                  // runs to the bottom of the plot).
+                  if (spec.type === 'area' && spec.zeroBase === false && scaleId !== 'hidden') {
+                    const pr = paddedRange(r.priceRange.minValue, r.priceRange.maxValue, floor);
+                    return {
+                      ...r,
+                      priceRange: {
+                        minValue: b ? Math.max(pr.min, b[0]) : pr.min,
+                        maxValue: b ? Math.min(pr.max, b[1]) : pr.max,
+                      },
+                    };
+                  }
                   return {
                     ...r,
                     priceRange: {

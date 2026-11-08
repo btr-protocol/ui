@@ -120,6 +120,21 @@ export function fmtApr(v: number | null | undefined, stale = false): string {
   return formatYield(v * 100);
 }
 
+/**
+ * Allocation / share column: `pct` is already in percent units (0.912 = 0.912%).
+ * Floored (never rounded up) to 0.01% with exactly 2 decimals, so the cell is at most "100.00%" wide
+ * and never switches to subscript notation. Anything above 0 but under 0.01% reads "<0.01%": an
+ * allocation that small is insignificant, which is why this deliberately differs from the auto
+ * formatter (`formatPercentSig`) used for rates.
+ */
+export function fmtShare(pct: number | null | undefined): string {
+  if (pct == null || !Number.isFinite(pct)) return DASH;
+  if (pct < 0) return `-${fmtShare(-pct)}`;
+  if (pct === 0) return '0.00%';
+  const floored = Math.floor(pct * 100 + 1e-9) / 100; // 1e-9: 0.29 * 100 = 28.999999999999996
+  return floored < 0.01 ? '<0.01%' : `${floored.toFixed(2)}%`;
+}
+
 /** Window length from milliseconds: "7d", "36h", "20m". Missing = dash. */
 export function fmtWindowMs(ms: number | null | undefined): string {
   if (ms == null || !Number.isFinite(ms) || ms <= 0) return DASH;
