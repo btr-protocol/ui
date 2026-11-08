@@ -551,7 +551,7 @@ export function Table<Row>({
       {!title && search}
 
       <Panel
-        variant={compact || bare ? 'plain' : 'default'}
+        variant={bare ? 'plain' : 'default'} // every table wears the frame (outer border + radius, divided rows); only a headerless `bare` list is frameless
         className={cn('overflow-hidden', compact && 'flex flex-col flex-1 min-h-0')}
       >
         {title && (

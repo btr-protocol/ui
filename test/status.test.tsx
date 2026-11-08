@@ -28,3 +28,16 @@ test('ClickMenu renders its trigger; BatchBar renders summary, primary and menu 
   expect(html).toContain('Review');
   expect(html).toContain('menu');
 });
+
+test('SelectModal shows the current label on its trigger; KeyValueTable is one bordered block; every Table wears the frame', async () => {
+  const { SelectModal, KeyValueTable, Table } = await import('../src');
+  const html = render(<SelectModal routeKey="t" label="Safe" value="b" onChange={() => {}} items={[{ value: 'a', label: 'Alpha' }, { value: 'b', label: 'Beta' }]} />);
+  expect(html).toContain('Beta');
+  expect(html).toContain('aria-haspopup="dialog"');
+  const kv = render(<KeyValueTable sections={[{ id: 'h', rows: [{ key: 'a', label: 'Nonce', value: '3' }] }, { id: 'c', title: 'Calls', children: <div>x</div> }]} />);
+  expect(kv).toContain('rounded-lg border border-border');
+  expect(kv).toContain('Nonce');
+  expect(kv).toContain('Calls');
+  const compact = render(<Table variant="compact" searchable={false} rowKey={(r: { a: number }) => String(r.a)} data={[{ a: 1 }]} columns={[{ key: 'a', label: 'A' }]} />);
+  expect(compact).toContain('border');
+});
