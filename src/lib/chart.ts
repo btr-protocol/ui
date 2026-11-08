@@ -42,15 +42,12 @@ export function tickMarkFormatter(time: number, type: number, locale = 'en-US'):
 export const timeLabel = (time: number, locale = 'en-US') =>
   `${tickMarkFormatter(time, 2, locale)}, ${tickMarkFormatter(time, 3, locale)}`;
 
-/** `autoscaleInfoProvider` for a non-negative stacked series: pins the floor at 0 and keeps 14px of
- *  room under it, so the "$0.00" tick is not cut in half by the time axis. */
-export function zeroBased<T extends { priceRange: { minValue: number } } | null>(orig: () => T): T {
-  const r = orig() as (T & { margins?: { above: number; below: number } }) | null;
-  if (r) {
-    r.priceRange.minValue = 0;
-    r.margins = { above: 4, below: 14 };
-  }
-  return r as T;
+/** `autoscaleInfoProvider` for a non-negative stacked series: floor just under 0 (5% of the span), so
+ *  the "$0.00" tick sits inside the pane instead of being cut in half by the time axis. */
+export function zeroBased<T extends { priceRange: { minValue: number; maxValue: number } } | null>(orig: () => T): T {
+  const r = orig();
+  if (r) r.priceRange.minValue = -r.priceRange.maxValue * 0.05;
+  return r;
 }
 
 export const NUMERIC_FONT_FAMILY =
