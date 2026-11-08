@@ -17,7 +17,7 @@
  * metric cell can never grow an inner scrollbar.
  */
 
-import { NUMERIC_FONT_FAMILY, SCALE_ON, scrollOn } from '../lib/chart';
+import { NUMERIC_FONT_FAMILY, SCALE_ON, scrollOn, tickMarkFormatter, timeLabel } from '../lib/chart';
 import { cn } from '../lib/cn';
 import { Spinner } from '../ui/Spinner';
 import { ChartShell } from './ChartShell';
@@ -363,12 +363,14 @@ export function MetricChart({
               enableResize: false,
             },
           },
+          localization: { timeFormatter: (time: number) => timeLabel(time) },
           grid: { vertLines: { visible: false }, horzLines: { visible: false } },
           timeScale: {
             borderColor: colors.chartBorder,
             timeVisible: true,
             secondsVisible: false,
             rightOffset: 4,
+            tickMarkFormatter: (time: number, type: number) => tickMarkFormatter(time, type),
             visible: timeAxis,
           },
           rightPriceScale: {
@@ -482,11 +484,11 @@ export function MetricChart({
                   return {
                     ...r,
                     priceRange: {
-                      // A filled series is read against its baseline: zero-based, never an exaggerated slice.
+                      // A filled series is read against its baseline: zero-based (a 5% floor keeps the $0 tick off the time axis).
                       minValue: floor
                         ? spec.type === 'line' || spec.zeroBase === false
                           ? Math.max(lo, 0)
-                          : 0
+                          : -r.priceRange.maxValue * 0.05
                         : lo,
                       maxValue: b ? Math.min(r.priceRange.maxValue, b[1]) : r.priceRange.maxValue,
                     },
