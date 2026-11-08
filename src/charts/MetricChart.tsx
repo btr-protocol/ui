@@ -109,6 +109,7 @@ export function MetricChart({
   loading = false,
   emptyMessage = 'No data in range',
   actions,
+  legend = true,
   range,
   timeAxis = true,
   syncId,
@@ -124,6 +125,8 @@ export function MetricChart({
   loading?: boolean;
   emptyMessage?: string;
   actions?: preact.ComponentChildren;
+  /** Floating legend chips over the plot. `false` when the legend lives in a value table (ChartPanel). */
+  legend?: boolean;
   /** Queried window, in ms. Pins the x axis so stacked charts align. */
   range?: { from: number; to: number };
   /** Stacked charts share one x axis: only the bottom one draws it. */
@@ -817,7 +820,7 @@ export function MetricChart({
           // third rows on top of the series. From `sm` up it wraps instead of clipping a label
           // mid-word ("Afric"): a pane with nine categories cannot fit them on one line at any
           // honest font size, and the glass chip grows with the rows so the text stays legible.
-          className="flex flex-col min-w-0 rounded-md bg-glass backdrop-blur px-1.5 py-0.5 pointer-events-auto"
+          className={cn('flex flex-col min-w-0 rounded-md bg-glass backdrop-blur px-1.5 py-0.5 pointer-events-auto', !legend && 'hidden')}
           ref={legendRef}
         >
           {title && <h3 className="shrink-0 text-sm font-semibold text-fg-0">{title}</h3>}
