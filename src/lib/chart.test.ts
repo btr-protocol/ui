@@ -1,6 +1,6 @@
 import { expect, test } from 'bun:test';
 import { formatUsd } from './format';
-import { chartFormatter, chartOptions, fmtBps } from './chart';
+import { chartFormatter, chartOptions, fmtBps, tickMarkFormatter, timeLabel } from './chart';
 
 const colors = { chartText: '#t', chartBorder: '#b', bg2: '#2', fg2: '#f' };
 
@@ -24,4 +24,13 @@ test('chartOptions matches the front: no grid, 10px mono, 44px scale', () => {
   expect(o.rightPriceScale.minimumWidth).toBe(44);
   expect(o.timeScale.visible).toBe(false);
   expect(o.handleScroll.vertTouchDrag).toBe(false);
+});
+
+test('time ticks: dates at day boundaries, clock inside the day', () => {
+  const t = Date.UTC(2026, 10, 6, 12, 17) / 1000;
+  expect(tickMarkFormatter(t, 3)).toBe('12:17');
+  expect(tickMarkFormatter(t, 2)).toBe('Nov 6');
+  expect(tickMarkFormatter(t, 1)).toBe('Nov');
+  expect(tickMarkFormatter(t, 0)).toBe('2026');
+  expect(timeLabel(t)).toBe('Nov 6, 12:17');
 });

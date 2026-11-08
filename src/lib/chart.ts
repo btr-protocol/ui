@@ -26,6 +26,22 @@ export function chartFormatter(format: ChartValueFormat): (v: number) => string 
   return (v) => f(snap0(v));
 }
 
+/** Time-axis ticks: lightweight-charts' default prints a bare day number or clock time ("6", "12:17",
+ *  "7"), which reads as noise. Day boundaries and months get a short date; the rest the clock.
+ *  UTC, like the library's own crosshair label. `type` is lightweight-charts' TickMarkType. */
+export function tickMarkFormatter(time: number, type: number, locale = 'en-US'): string {
+  const f = (o: Intl.DateTimeFormatOptions) =>
+    new Intl.DateTimeFormat(locale, { timeZone: 'UTC', hourCycle: 'h23', ...o }).format(new Date(time * 1000));
+  if (type === 0) return f({ year: 'numeric' });
+  if (type === 1) return f({ month: 'short' });
+  if (type === 2) return f({ month: 'short', day: 'numeric' });
+  return f({ hour: '2-digit', minute: '2-digit' });
+}
+
+/** Crosshair time label, same UTC clock as the ticks: "Nov 6, 12:17". */
+export const timeLabel = (time: number, locale = 'en-US') =>
+  `${tickMarkFormatter(time, 2, locale)}, ${tickMarkFormatter(time, 3, locale)}`;
+
 export const NUMERIC_FONT_FAMILY =
   '"Geist Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace';
 
@@ -73,7 +89,9 @@ export function chartOptions(c: ChartColors, opts: { timeAxis?: boolean } = {}) 
       secondsVisible: false,
       rightOffset: 4,
       visible: opts.timeAxis ?? true,
+      tickMarkFormatter,
     },
+    localization: { timeFormatter: (t: number) => timeLabel(t) },
     rightPriceScale: scale(c, true),
     leftPriceScale: scale(c, false),
     crosshair: {
