@@ -15,7 +15,8 @@
     "./styles/tokens.css": "./src/styles/tokens.css",
     "./styles/fonts.css": "./src/styles/fonts.css",
     "./tailwind.preset": "./src/styles/tailwind.preset.js",
-    "./assets/*": "./src/assets/*"
+    "./assets/*": "./src/assets/*",
+    "./charts": "./src/charts/index.ts"
   },
   "files": [
     "src",
@@ -43,6 +44,7 @@
   "dependencies": {
     "@noble/hashes": "^2.3.0",
     "@preact/signals": "^2.5.1",
+    "lightweight-charts": "^5.0.9",
     "lucide-preact": "^0.468.0",
     "preact": "^10.22.0",
     "tailwind-merge": "^2.6.1"
