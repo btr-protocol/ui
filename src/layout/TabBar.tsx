@@ -87,10 +87,14 @@ export function TabBar({
           style={{ gridTemplateColumns: `repeat(${tabs.length + (hasMore ? 1 : 0)}, minmax(0, 1fr))` }}
         >
           {tabs.map((item) => (
-            <button
+            <a
               key={item.path}
-              type="button"
-              onClick={() => goTab(item.path)}
+              href={item.path}
+              onClick={(e) => {
+                if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button) return; // new tab / window: native
+                e.preventDefault();
+                goTab(item.path);
+              }}
               aria-current={isActive(item.path) ? 'page' : undefined}
               className={tab(isActive(item.path))}
             >
@@ -99,7 +103,7 @@ export function TabBar({
                 <NavBadge count={item.badge} label={item.badgeLabel} />
               </span>
               <TabLabel>{item.title}</TabLabel>
-            </button>
+            </a>
           ))}
           {hasMore && (
             <button

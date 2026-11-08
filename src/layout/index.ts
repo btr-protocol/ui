@@ -14,3 +14,4 @@ export { PageShell } from './PageShell';
 export { PageToolbar } from './PageToolbar';
 export { Notifications } from './Notifications';
 export { type NavItem, isNavActive } from './nav';
+export { AuthShell, type AuthShellProps } from './AuthShell';

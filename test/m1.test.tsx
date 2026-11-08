@@ -92,3 +92,31 @@ test('ChainMultiSelect trigger: stacked picked chains, All when full', () => {
   const all = render(<ChainMultiSelect chains={chains} value={[1, 8453, 10]} onChange={() => {}} />);
   expect(all).toContain('>All<');
 });
+
+import { AuthShell, SegmentedControl } from '../src';
+import { trimZeros } from '../src/charts/metricChartMath';
+
+test('axis labels drop trailing zeros', () => {
+  expect(trimZeros('$800.00K')).toBe('$800K');
+  expect(trimZeros('$1.20M')).toBe('$1.2M');
+  expect(trimZeros('$689.14K')).toBe('$689.14K');
+  expect(trimZeros('$0.00')).toBe('$0');
+  expect(trimZeros('$400.00')).toBe('$400');
+  expect(trimZeros('100%')).toBe('100%');
+});
+
+test('Header / TabBar items and SegmentedControl link mode are real anchors', () => {
+  const items = [{ path: '/safes', title: 'Safes' }, { path: '/actions', title: 'Actions' }];
+  expect(render(<Header items={items} activePath="/safes" onNavigate={() => {}} />)).toContain('href="/actions"');
+  expect(render(<TabBar tabs={items} activePath="/safes" onNavigate={() => {}} />)).toContain('<a href="/actions"');
+  const html = render(<SegmentedControl value="a" onChange={() => {}} options={[{ value: 'a', label: 'A', href: '/x/a' }, { value: 'b', label: 'B', href: '/x/b' }]} />);
+  expect(html).toContain('role="tab" href="/x/b"');
+});
+
+test('AuthShell: card only, no nav', () => {
+  const html = render(<AuthShell brand={<b>BTR</b>} hint="Signers only" corner={<i>theme</i>}><button>Sign in</button></AuthShell>);
+  expect(html).toContain('Sign in');
+  expect(html).not.toContain('<header');
+  expect(html).not.toContain('<nav');
+  expect(html).not.toContain('<footer');
+});

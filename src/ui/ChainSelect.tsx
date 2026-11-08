@@ -1,5 +1,6 @@
 import type { ComponentChildren } from 'preact';
 import { useMemo, useState } from 'preact/hooks';
+import { useOpen } from '../lib/modalRoute';
 import { chainIcon } from '../lib/chainIcon';
 import { cn } from '../lib/cn';
 import { Button } from './Button';
@@ -179,11 +180,13 @@ interface ChainSelectProps {
   value: number;
   onChange: (chainId: number) => void;
   title?: string;
+  /** Opt-in: the modal gets a history entry (`?modal=<routeKey>`): Back closes, Forward reopens, deep link opens. */
+  routeKey?: string;
 }
 
 /** The standard chain trigger: a button over `ChainSelectModal`. Reports ids only. */
-export function ChainSelect({ chains, value, onChange, title }: ChainSelectProps) {
-  const [open, setOpen] = useState(false);
+export function ChainSelect({ chains, value, onChange, title, routeKey }: ChainSelectProps) {
+  const [open, setOpen] = useOpen(routeKey);
   const current = chains.find((c) => c.id === value);
   return (
     <>

@@ -12,15 +12,13 @@ import { type NavItem, isNavActive } from './nav';
 function NavButton({
   item,
   active,
-  onClick,
 }: {
   item: NavItem;
   active: boolean;
-  onClick: () => void;
 }) {
   return (
     <Tooltip content={item.description || item.title} side="bottom">
-      <Button type="button" onClick={onClick} size="sm" variant="ghost" active={active}>
+      <Button href={item.path} size="sm" variant="ghost" active={active}>
         {item.title}
         <NavBadge count={item.badge} label={item.badgeLabel} inline />
       </Button>
@@ -136,7 +134,6 @@ export function Header({
               key={item.path}
               item={item}
               active={isActive(item.path)}
-              onClick={() => onNavigate(item.path)}
             />
           ))}
           {more.length > 0 && (
