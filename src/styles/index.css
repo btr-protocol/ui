@@ -24,7 +24,8 @@
 
 /* Notice action: subtle tint of the notice tone (--nt, set by Notice), tighter radius than the notice itself. */
 @layer components {
-  .notice-action {
+  .notice-action,
+  .notice-slot > :is(button, a) {
     display: inline-flex;
     align-items: center;
     height: 1.75rem;
@@ -36,9 +37,15 @@
     font: 500 0.75rem/1 var(--font-title);
     transition: background-color 0.15s, border-color 0.15s;
   }
-  .notice-action:hover { background: color-mix(in srgb, var(--nt) 18%, transparent); border-color: color-mix(in srgb, var(--nt) 50%, transparent); }
+  /* A Button passed as a Notice child inherits the tone too (neutral grey would clash with the tinted bar). */
+  .notice-slot > :is(button, a) { text-decoration: none; }
+  .notice-action:hover,
+  .notice-slot > :is(button, a):hover { background: color-mix(in srgb, var(--nt) 18%, transparent); border-color: color-mix(in srgb, var(--nt) 50%, transparent); }
+  .notice-slot > :is(button, a):active,
   .notice-action:active { background: color-mix(in srgb, var(--nt) 26%, transparent); }
+  .notice-slot > :is(button, a):focus-visible,
   .notice-action:focus-visible { outline: 2px solid var(--nt); outline-offset: 2px; }
+  .notice-slot > :is(button, a):disabled,
   .notice-action:disabled { opacity: 0.5; pointer-events: none; }
 }
 

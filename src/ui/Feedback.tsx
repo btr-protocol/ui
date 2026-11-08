@@ -129,7 +129,7 @@ export function Notice({
         'flex flex-wrap items-start',
         note
           ? 'mt-1 gap-1.5 px-1 text-3xs leading-snug'
-          : cn('surface gap-x-3 gap-y-2 rounded-lg border px-4 py-3 text-sm', neutral && 'text-fg-2'),
+          : cn('surface gap-x-3 gap-y-2 rounded-lg border px-4 py-3 text-[0.9375rem] leading-6', neutral && 'text-fg-2'),
         neutral && (note ? 'text-fg-2' : 'border-border bg-bg-2'),
         className,
       )}
@@ -146,14 +146,16 @@ export function Notice({
             }
       }
     >
-      {glyph && (
-        <Icon
-          name={glyph}
-          className={cn('shrink-0', note ? 'mt-0.5 w-3 h-3' : cn('w-4 h-4', action ? 'mt-1.5' : 'mt-0.5'), neutral && 'text-fg-3')}
-          style={note ? undefined : tint && { color: tint }}
-        />
-      )}
-      <div className={cn('min-w-0 flex-1 basis-64', action && !note && 'py-1')}>
+      {glyph &&
+        (note ? (
+          <Icon name={glyph} className={cn('mt-0.5 h-3 w-3 shrink-0', neutral && 'text-fg-3')} />
+        ) : (
+          // One line-height tall (1.5rem): the glyph centres on the first line, so a single-line notice is centred and a wrapped one keeps it on line one.
+          <span className="flex h-6 shrink-0 items-center">
+            <Icon name={glyph} className={cn('h-5 w-5', neutral && 'text-fg-3')} style={tint ? { color: tint } : undefined} />
+          </span>
+        ))}
+      <div className={cn('min-w-0 flex-1 basis-64')}>
         {label && (
           <span
             className={cn('font-medium', neutral && !note && 'text-fg-1')}
@@ -166,7 +168,7 @@ export function Notice({
         {body && children}
       </div>
       {action && (
-        <span className="ml-auto shrink-0 max-sm:pl-7">
+        <span className={cn('notice-slot ml-auto shrink-0 self-center', !note && 'max-sm:pl-8')}>
           {isActionSpec(action) ? <NoticeAction {...action} /> : (action as ComponentChildren)}
         </span>
       )}

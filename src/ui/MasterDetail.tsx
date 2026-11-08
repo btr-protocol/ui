@@ -16,6 +16,8 @@ export interface MasterDetailProps {
   backLabel?: string;
   /** Detail pane while nothing is selected (>= lg only). */
   placeholder?: ComponentChildren;
+  /** Master column width on lg+ (CSS length). Default clamp(280px, 22%, 360px). */
+  masterWidth?: string;
   className?: string;
 }
 
@@ -34,6 +36,7 @@ export function MasterDetail({
   onBack,
   backLabel = 'Back',
   placeholder,
+  masterWidth,
   className,
 }: MasterDetailProps) {
   const detailRef = useRef<HTMLDivElement>(null);
@@ -59,9 +62,10 @@ export function MasterDetail({
   return (
     <div
       className={cn(
-        'overflow-hidden rounded-lg border border-border bg-bg-1 lg:grid lg:grid-cols-[clamp(280px,22%,360px)_minmax(0,1fr)]',
+        'overflow-hidden rounded-lg border border-border bg-bg-1 lg:grid lg:grid-cols-[var(--md-w,clamp(280px,22%,360px))_minmax(0,1fr)]',
         className,
       )}
+      style={masterWidth ? ({ '--md-w': masterWidth } as Record<string, string>) : undefined}
     >
       <div
         ref={masterRef}

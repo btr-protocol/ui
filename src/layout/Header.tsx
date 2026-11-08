@@ -18,7 +18,7 @@ function NavButton({
 }) {
   return (
     <Tooltip content={item.description || item.title} side="bottom">
-      <Button href={item.path} size="sm" variant="ghost" active={active}>
+      <Button href={item.path} size="sm" variant="ghost" active={active} className="whitespace-nowrap">
         {item.title}
         <NavBadge count={item.badge} label={item.badgeLabel} inline />
       </Button>

@@ -53,3 +53,9 @@ export function chartColors(): ThemeColors {
 
 /** One theme token (e.g. `--orange`) as #rrggbb. */
 export const themeColor = (name: string): string => parseColor(getComputedStyle(document.documentElement).getPropertyValue(name));
+
+export const SERIES_COUNT = 6;
+/** CSS variable of the n-th series colour (cycles after 6). Pair with `themeColor` for the canvas. */
+export const seriesVar = (i: number): string => `--series-${(((i % SERIES_COUNT) + SERIES_COUNT) % SERIES_COUNT) + 1}`;
+/** The first `n` series colours as #rrggbb for the live theme (re-read after a theme switch). */
+export const seriesColors = (n: number): string[] => Array.from({ length: n }, (_, i) => themeColor(seriesVar(i)));

@@ -97,3 +97,20 @@ import { MasterDetail, Table, StackedIcons, Timeline, ChainMultiSelect } from '@
 ## Checks
 
 `bun install && bunx tsc --noEmit && bun test`
+
+## Light theme
+
+Designed, not mirrored from dark (Linear / Stripe / Mercury family). Dark separates surfaces by lightness; light keeps one warm off-white canvas and lifts content onto white-ish raised surfaces with quiet 1px borders, so nothing glares and nothing reads as a grey block. Text is near-black (never `#000`), muted text stays AA on every surface, the orange accent is darkened for text and used as a tinted background for chips and banners, and the series palette drops yellow/cyan (they vanish on white). Everything is a token in `src/styles/tokens.css` (`.light` block); components use no raw colours. `test/contrast.test.ts` computes WCAG ratios from the tokens (text 4.5:1, series / lines / brand mark 3:1) for both themes.
+
+| Token | Light | Role |
+|---|---|---|
+| `--bg-0` (`--paper`) | `#f6f6f4` | canvas |
+| `--bg-1` (`--raised`) | `#fdfdfc` | panels, header, modals |
+| `--bg-2` / `--bg-3` / `--bg-4` | `#f0f0ed` / `#e9e9e5` / `#e0e0db` | inset, hover, active |
+| `--border-color` / `--bg-5` | `#dcdcd6` / `#d2d2cc` | quiet line / strong line |
+| `--fg-0` / `--fg-1` / `--fg-2` | `#1a1a18` / `#3a3a36` / `#5b5b55` | text, secondary, muted (>=4.5:1 on bg-0..3) |
+| `--fg-primary` (orange text) | `#9a5200` | AA on canvas and on `--bg-orange` |
+| `--fg-success/error/warning/info/secondary` | `#0f6b49 #a7323f #8f4f00 #1d6670 #2b55b8` | tone text, AA on its `--bg-*` tint |
+| `--series-1..6` | `#c26a00 #2f63e0 #0a8f64 #c02ac7 #6d55e6 #0e8a96` | chart series, >=3:1 |
+| `--brand-safe` | `#0a7a43` (dark: `#12ff80`) | Safe mark |
+| `--shadow-float` | `0 1px 2px / 0 6px 16px` at 6-7% ink | popovers only; cards use borders |

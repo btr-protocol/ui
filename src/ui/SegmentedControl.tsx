@@ -25,6 +25,8 @@ export interface SegmentedControlProps<T extends string> {
   className?: string;
   /** compact size for inline use (e.g. swap mode row) */
   size?: 'sm' | 'md';
+  /** Every option as wide as the widest label (toggles that should not jump or look ragged). */
+  equal?: boolean;
 }
 
 export function SegmentedControl<T extends string>({
@@ -33,6 +35,7 @@ export function SegmentedControl<T extends string>({
   onChange,
   className,
   size = 'md',
+  equal = false,
 }: SegmentedControlProps<T>) {
   const ref = useRef<HTMLDivElement>(null);
   const pad =
@@ -80,7 +83,8 @@ export function SegmentedControl<T extends string>({
         );
       }}
       className={cn(
-        'seg-fade relative inline-flex max-w-full snap-x items-center scroll-x bg-bg-2 p-0.5 border border-border',
+        'seg-fade relative max-w-full snap-x items-center scroll-x bg-bg-2 p-0.5 border border-border',
+        equal ? 'inline-grid grid-flow-col auto-cols-fr' : 'inline-flex',
         BORDER_RADIUS,
         className,
       )}
@@ -89,6 +93,7 @@ export function SegmentedControl<T extends string>({
         const cls = cn(
           pad,
           'shrink-0 snap-center whitespace-nowrap font-semibold transition-colors focus-visible:outline-offset-[-2px]',
+          equal && 'justify-center text-center',
           BORDER_RADIUS,
           // Selected = navbar-active look, identical to Button variant="navActive".
           value === opt.value ? 'bg-bg-primary text-primary' : 'text-fg-2 hover:text-fg-0',
@@ -108,7 +113,7 @@ export function SegmentedControl<T extends string>({
               aria-selected={value === opt.value}
               tabIndex={value === opt.value ? 0 : -1}
               title={opt.title}
-              className={cn(cls, 'inline-flex items-center')}
+              className={cn(cls, 'inline-flex items-center', equal && 'justify-center')}
               onClick={(e) => {
                 if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button) return;
                 e.preventDefault();
