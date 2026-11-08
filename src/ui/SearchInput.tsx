@@ -65,7 +65,7 @@ export function SearchInput({
           onChange={handle}
           onKeyDown={onKeyDown}
           aria-label={ariaLabel ?? placeholder}
-          className={`w-full pr-7 ${variant === 'boxed' ? 'pl-9' : ''}`}
+          className={`w-full pr-7 touch:min-h-11 ${variant === 'boxed' ? 'pl-9' : ''}`}
           // Preact-flavoured intrinsic attrs (autocomplete, spellcheck) on a
           // compat-typed component: the DOM takes them, the two prop tables differ.
           {...(inputProps as InputProps)}
@@ -79,7 +79,7 @@ export function SearchInput({
                 onChange('');
                 (ref as { current: HTMLInputElement | null }).current?.focus();
               }}
-              className="absolute right-1 top-1/2 -translate-y-1/2 p-1 hover:bg-bg-3 rounded-sm text-fg-2 hover:text-fg-0 transition-colors"
+              className="absolute right-1 top-1/2 -translate-y-1/2 p-1 touch:min-h-11 touch:min-w-11 touch:inline-flex touch:items-center touch:justify-center hover:bg-bg-3 rounded-sm text-fg-2 hover:text-fg-0 transition-colors"
               aria-label="Clear search"
             >
               <Icon name="x" className="w-3 h-3" />
