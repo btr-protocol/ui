@@ -48,3 +48,14 @@ test('protocolIcon: known protocols resolve (versions ignored), Wallet is a glyp
   expect(render(<ProtocolGlyph name="Wallet" />)).toContain('lucide-wallet');
   expect(render(<ProtocolGlyph name="Aave V3" />)).toContain('rounded-full');
 });
+
+test('ChartPanel: the chart fills the body (floor on phones, as tall as the table on xl); the full-size button only with a key', () => {
+  const plain = render(<ChartPanel title="T" table={<table />}>c</ChartPanel>);
+  expect(plain).toContain('min-h-[18rem]');
+  expect(plain).toContain('absolute inset-0');
+  expect(plain).not.toContain('aria-expanded');
+  const full = render(<ChartPanel title="T" fullscreenKey="holdings-chart" fullscreenLabels={{ open: 'Full size', close: 'Close' }}>c</ChartPanel>);
+  expect(full).toContain('aria-label="Full size"');
+  expect(full).toContain('aria-expanded="false"');
+  expect(full).not.toContain('fixed inset-0');
+});
