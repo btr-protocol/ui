@@ -15,6 +15,7 @@ export { SEVERITIES, SEVERITY_COLOR, SEVERITY_ICON, isCritical, type Severity } 
 export { cn, type ClassValue } from './lib/cn';
 export { cva } from './lib/cva';
 export { configureNav } from './lib/nav';
+export { ROUTE_EVENT, useModalRoute, useOpen } from './lib/modalRoute';
 export { copyText } from './lib/clipboard';
 export { haptic } from './lib/haptic';
 export { scrollPane } from './lib/scroll';

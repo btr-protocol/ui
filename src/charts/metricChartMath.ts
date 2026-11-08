@@ -70,6 +70,10 @@ export const fmtBps = (v: number) => `${Number(v.toFixed(2))} bps`;
  *  "0.0₁₄694%". */
 const snap0 = (v: number) => (Math.abs(v) < 1e-9 ? 0 : v);
 
+/** Axis / last-value labels drop trailing zeros: "$800.00K" -> "$800K", "$1.20M" -> "$1.2M", "$0.00" -> "$0". The legend keeps the fixed ladder. */
+export const trimZeros = (s: string): string =>
+  s.replace(/(\.\d*?)0+(?=\D*$)/, '$1').replace(/\.(?=\D*$)/, '');
+
 export function formatter(format: MetricValueFormat): (v: number) => string {
   const f = formatRaw(format);
   return (v) => f(snap0(v));

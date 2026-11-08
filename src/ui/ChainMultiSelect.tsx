@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'preact/hooks';
+import { useMemo } from 'preact/hooks';
+import { useOpen } from '../lib/modalRoute';
 import { Button } from './Button';
 import { type ChainItem, ChainGlyph, chainSelectItems, CHAIN_SORT_COLUMNS } from './ChainSelect';
 import { Icon } from './Icon';
@@ -17,6 +18,8 @@ export interface ChainMultiSelectProps {
   title?: string;
   /** Icons on the trigger before "+N". Default 3. */
   maxVisible?: number;
+  /** Opt-in: the picker gets a history entry (`?modal=<routeKey>`): Back closes, Forward reopens, deep link opens. */
+  routeKey?: string;
 }
 
 /** Multi-select chain filter: trigger shows the picked chains as StackedIcons, the modal is the
@@ -29,8 +32,9 @@ export function ChainMultiSelect({
   allLabel = 'All',
   title = 'Select networks',
   maxVisible = 3,
+  routeKey,
 }: ChainMultiSelectProps) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useOpen(routeKey);
   const items = useMemo(() => chainSelectItems(chains), [chains]);
   const picked = chains.filter((c) => value.includes(c.id));
   const all = items.length > 0 && picked.length >= items.length;

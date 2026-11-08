@@ -14,6 +14,8 @@ export interface SegmentedOption<T extends string> {
   label: ComponentChildren;
   disabled?: boolean;
   title?: string;
+  /** Link mode: the tab is a real anchor (middle-click, new tab, copy link); a plain click still calls `onChange`. */
+  href?: string;
 }
 
 export interface SegmentedControlProps<T extends string> {
@@ -83,32 +85,55 @@ export function SegmentedControl<T extends string>({
         className,
       )}
     >
-      {options.map((opt) => (
-        <button
-          key={opt.value}
-          type="button"
-          role="tab"
-          aria-selected={value === opt.value}
-          tabIndex={value === opt.value ? 0 : -1}
-          disabled={opt.disabled}
-          title={opt.title}
-          className={cn(
-            pad,
-            'shrink-0 snap-center whitespace-nowrap font-semibold transition-colors focus-visible:outline-offset-[-2px]',
-            BORDER_RADIUS,
-            // Selected = navbar-active look, identical to Button variant="navActive".
-            value === opt.value ? 'bg-bg-primary text-primary' : 'text-fg-2 hover:text-fg-0',
-            opt.disabled && 'opacity-50 cursor-not-allowed hover:text-fg-2',
-          )}
-          onClick={() => {
-            if (opt.disabled) return;
-            if (opt.value !== value) haptic('tap');
-            onChange(opt.value);
-          }}
-        >
-          {opt.label}
-        </button>
-      ))}
+      {options.map((opt) => {
+        const cls = cn(
+          pad,
+          'shrink-0 snap-center whitespace-nowrap font-semibold transition-colors focus-visible:outline-offset-[-2px]',
+          BORDER_RADIUS,
+          // Selected = navbar-active look, identical to Button variant="navActive".
+          value === opt.value ? 'bg-bg-primary text-primary' : 'text-fg-2 hover:text-fg-0',
+          opt.disabled && 'opacity-50 cursor-not-allowed hover:text-fg-2',
+        );
+        const pick = () => {
+          if (opt.disabled) return;
+          if (opt.value !== value) haptic('tap');
+          onChange(opt.value);
+        };
+        if (opt.href && !opt.disabled)
+          return (
+            <a
+              key={opt.value}
+              role="tab"
+              href={opt.href}
+              aria-selected={value === opt.value}
+              tabIndex={value === opt.value ? 0 : -1}
+              title={opt.title}
+              className={cn(cls, 'inline-flex items-center')}
+              onClick={(e) => {
+                if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button) return;
+                e.preventDefault();
+                pick();
+              }}
+            >
+              {opt.label}
+            </a>
+          );
+        return (
+          <button
+            key={opt.value}
+            type="button"
+            role="tab"
+            aria-selected={value === opt.value}
+            tabIndex={value === opt.value ? 0 : -1}
+            disabled={opt.disabled}
+            title={opt.title}
+            className={cls}
+            onClick={pick}
+          >
+            {opt.label}
+          </button>
+        );
+      })}
     </div>
   );
 }

@@ -51,6 +51,7 @@ import {
   seriesPaint,
   stackedPoints,
   timeGrid,
+  trimZeros,
 } from './metricChartMath';
 
 /** Cross-chart time-range + crosshair sync for metrics panes that share a syncId. */
@@ -312,7 +313,15 @@ export function MetricChart({
     const r = rangeNowRef.current;
     try {
       syncingRef.current = true;
-      if (r) {
+      const ext = extentRef.current;
+      if (r && ext) {
+        // Whitespace room on the left (logical range: the time-range API clips to the data) so the first tick label,
+        // centred on its tick, is not cut at the edge.
+        const from = Math.max(secToLogical(r.from / 1000, ext), 0); // never before the data: a short history fits, as the time-range API did
+        const to = secToLogical(r.to / 1000, ext);
+        const w = Math.max(chart.timeScale().width(), 1);
+        chart.timeScale().setVisibleLogicalRange({ from: from - (to - from) * Math.min(0.08, 36 / w), to });
+      } else if (r) {
         chart.timeScale().setVisibleRange({
           from: (r.from / 1000) as UTCTimestamp,
           to: (r.to / 1000) as UTCTimestamp,
@@ -461,7 +470,7 @@ export function MetricChart({
           priceLineVisible: !stacked && !spec.extent && spec.scale !== 'hidden',
           priceLineWidth: 1 as const,
           priceLineStyle: 2,
-          priceFormat: { type: 'custom' as const, formatter: fmt, minMove: 0.00000001 },
+          priceFormat: { type: 'custom' as const, formatter: (v: number) => trimZeros(fmt(v)), minMove: 0.00000001 },
         };
         // Clamp the autoscale, never the data. autoScaleProvider intersects the
         // library's own range with the pane's bounds, so a calm pane still fits
