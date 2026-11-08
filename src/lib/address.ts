@@ -27,5 +27,5 @@ export function shortenAddress(address: string, start = 4, end = 4, sep = '...')
   return `${address.slice(0, 2 + start)}${sep}${address.slice(-end)}`;
 }
 
-/** 0x+`lead`+…+4. Wallets use 0x+4+4; the 6 default suits 32-byte hashes, which collide more often. */
-export const shortAddr = (a: string, lead = 6) => shortenAddress(a, lead, 4, '…');
+/** 0x+`lead`+…+4: `0x4B1D…1521` for a 20-byte address (the wallet form); 32-byte hashes default to 6, they collide more often. */
+export const shortAddr = (a: string, lead = a.length > 42 ? 6 : 4) => shortenAddress(a, lead, 4, '…');

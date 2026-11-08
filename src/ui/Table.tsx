@@ -227,8 +227,8 @@ export interface TableProps<Row> {
   onSelect?: (row: Row, key: string) => void;
   /** `rowKey` of the selected row, or null. */
   selectedKey?: string | null;
-  /** No frame, radius or fill: the table sits flush in a pane (MasterDetail master); the column header is visually hidden, kept for screen readers. */
-  bare?: boolean;
+  /** Visually hides the column header (kept for screen readers). The frame (outer border, nested radius, row dividers) stays. */
+  noHeader?: boolean;
   rowKey: (row: Row, idx: number) => string;
   /** Rows held above the body: never searched, sorted or counted as empty (aggregates that frame
    *  the rows beneath them). Plain desktop table only: the virtual body and the mobile stack
@@ -421,7 +421,7 @@ export function Table<Row>({
   onRowClick,
   onSelect,
   selectedKey = null,
-  bare = false,
+  noHeader = false,
   rowKey,
   pinned,
   emptyMessage = 'No results',
@@ -551,7 +551,7 @@ export function Table<Row>({
       {!title && search}
 
       <Panel
-        variant={compact || bare ? 'plain' : 'default'}
+        // every table wears the frame (outer border, radius by nesting, divided rows)
         className={cn('overflow-hidden', compact && 'flex flex-col flex-1 min-h-0')}
       >
         {title && (
@@ -584,7 +584,7 @@ export function Table<Row>({
                   className={cn(TABLE_BASE, compact && 'text-xs')}
                   style={{ paddingRight: sbGutter }}
                 >
-                  <thead className={bare ? 'sr-only' : undefined}>{head}</thead>
+                  <thead className={noHeader ? 'sr-only' : undefined}>{head}</thead>
                 </table>
                 <div
                   ref={bodyRef}
@@ -689,7 +689,7 @@ export function Table<Row>({
               style={maxHeight ? { maxHeight } : undefined}
             >
               <table data-table={variant} {...tableRole} className={cn(TABLE_BASE, compact && 'text-xs')}>
-                <thead className={bare ? 'sr-only' : undefined}>{head}</thead>
+                <thead className={noHeader ? 'sr-only' : undefined}>{head}</thead>
                 <tbody>
                   {pinned?.map((row, idx) => (
                     <tr
