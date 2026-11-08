@@ -153,14 +153,15 @@ export interface IconProps extends Omit<LucideProps, 'size'> {
   className?: string;
 }
 
-export function Icon({ name, size = 16, ...props }: IconProps) {
+export function Icon({ name, size = 16, className, ...props }: IconProps) {
   const Component = ICONS[name as IconName];
   if (!Component) {
     console.warn(`Icon "${name}" is not registered`);
     return null;
   }
   const parsedSize = typeof size === 'number' ? size : Number.parseInt(size, 10);
-  return <Component size={parsedSize} {...props} />;
+  // lucide-preact reads `class`; passing only `className` leaves the glyph at its 16px default.
+  return <Component size={parsedSize} {...props} {...(className ? { class: className } : {})} />;
 }
 
 export type IconName = keyof typeof ICONS;
