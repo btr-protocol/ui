@@ -197,6 +197,7 @@
   --r: 16px;
   --border-width: 0.08rem;
   --border-color: var(--bg-4); /* decorative dividers only */
+  --chart-text: var(--fg-2); /* Chart axis labels */
   /* Boundary of a CONTROL (input, select, switch, checkbox, segmented): 3.3-3.7:1 on bg-0..2 (1.4.11). */
   --line-ui: rgb(251 248 244 / 40%);
   --border-color-primary: color-mix(in srgb, var(--primary) 50%, var(--border-color)); /* Primary border for hover states */
