@@ -313,12 +313,17 @@ export function MetricChart({
     const r = rangeNowRef.current;
     try {
       syncingRef.current = true;
-      if (r) {
-        // Room on the left for the first tick label, which is centred on its tick (else it is cut at the edge).
+      const ext = extentRef.current;
+      if (r && ext) {
+        // Whitespace room on the left (logical range: the time-range API clips to the data) so the first tick label,
+        // centred on its tick, is not cut at the edge.
+        const from = secToLogical(r.from / 1000, ext);
+        const to = secToLogical(r.to / 1000, ext);
         const w = Math.max(chart.timeScale().width(), 1);
-        const pad = ((r.to - r.from) * Math.min(0.08, 36 / w)) / 1000;
+        chart.timeScale().setVisibleLogicalRange({ from: from - (to - from) * Math.min(0.08, 36 / w), to });
+      } else if (r) {
         chart.timeScale().setVisibleRange({
-          from: (r.from / 1000 - pad) as UTCTimestamp,
+          from: (r.from / 1000) as UTCTimestamp,
           to: (r.to / 1000) as UTCTimestamp,
         });
       } else {
