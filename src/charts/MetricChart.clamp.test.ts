@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { bottomMargin, logicalToSec, nonNegative, secToLogical, timeGrid } from './metricChartMath';
+import { bottomMargin, logicalToSec, nonNegative, paddedRange, secToLogical, timeGrid } from './metricChartMath';
 
 describe('logical sync mapping', () => {
   // Irregular grid: a late partial bucket must not skew the map (the failure the index-only form had).
@@ -57,5 +57,24 @@ describe('bottomMargin', () => {
     expect(bottomMargin([spec(1)], 0, 'right')).toBe(0.02);
     expect(bottomMargin([spec(1), spec(-1)], 0, 'right')).toBe(0.08);
     expect(bottomMargin([spec(1)], 0, 'left')).toBe(0.08);
+  });
+});
+
+describe('paddedRange (area not anchored at zero)', () => {
+  test('pads the data span by 10% each side', () => {
+    expect(paddedRange(100, 200, false)).toEqual({ min: 90, max: 210 });
+  });
+  test('non-negative data never opens below zero', () => {
+    expect(paddedRange(5, 205, true).min).toBe(0);
+    expect(paddedRange(5, 205, false).min).toBe(-15);
+  });
+  test('a flat series gets a 1% band, not a degenerate range', () => {
+    const r = paddedRange(543_960, 543_960, true);
+    expect(r.max - r.min).toBeCloseTo(543_960 * 0.02, 6);
+    expect(r.min).toBeGreaterThan(500_000);
+  });
+  test('an all-zero series still yields a usable range', () => {
+    const r = paddedRange(0, 0, true);
+    expect(r.max).toBeGreaterThan(r.min);
   });
 });

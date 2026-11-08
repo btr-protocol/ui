@@ -31,7 +31,8 @@ export interface MetricSeriesSpec {
    *  other series - a count next to a dollar figure must not co-scale with it. */
   scale?: 'right' | 'left' | 'hidden';
   /** A filled series (area, bars) opens its axis at zero. `false` opts out where the reading is a
-   *  small gap between two large levels (TVL vs flow-implied TVL). */
+   *  small gap between two large levels (TVL vs flow-implied TVL); an area then autoscales to its own
+   *  padded min/max (`paddedRange`) and its fill still runs to the bottom of the plot. */
   zeroBase?: boolean;
   /** Pool aggregate drawn over per-asset series. */
   dashed?: boolean;
@@ -346,4 +347,17 @@ export function legendValueNodes(el: ParentNode): Map<string, HTMLElement> {
     if (id != null) nodes.set(id, n);
   }
   return nodes;
+}
+
+/**
+ * Visible y-range of a filled series that is NOT anchored at zero (`zeroBase: false`): the data's own
+ * min/max padded by 10% of the span each side, so a daily wobble fills the plot instead of hugging a
+ * line at the top. A flat series (span ~ 0) is padded by 1% of its level instead, never a degenerate
+ * range. `nonNeg` keeps the floor at 0 so no "-$500" tick appears under non-negative data.
+ */
+export function paddedRange(min: number, max: number, nonNeg: boolean): { min: number; max: number } {
+  const span = max - min;
+  const pad = span > Math.abs(max) * 1e-6 ? span * 0.1 : Math.abs(max) * 0.01 || 1;
+  const lo = min - pad;
+  return { min: nonNeg ? Math.max(0, lo) : lo, max: max + pad };
 }
