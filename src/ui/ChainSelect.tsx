@@ -26,8 +26,7 @@ export const CHAIN_PLANNED_CAPTION = 'Planned';
 export type GlyphRole = 'row' | 'trigger';
 export const glyphSize = (role: GlyphRole): number => (role === 'row' ? 32 : 16);
 
-/** Chain mark: rounded square (the token shape is a circle), initials tile when the kit has no
- *  mark for the chain. */
+/** Chain mark: always a circle (same as tokens), initials disc when the kit has no mark for the chain. */
 export function ChainGlyph({
   chainId,
   name,
@@ -41,7 +40,7 @@ export function ChainGlyph({
 }) {
   const src = chainIcon(chainId);
   const dim = `${glyphSize(role) / 16}rem`;
-  const cls = cn('shrink-0 align-middle ring-1 ring-bg-0 rounded-xs', className);
+  const cls = cn('shrink-0 align-middle ring-1 ring-bg-0 rounded-full object-cover', className);
   if (src) {
     return <img src={src} alt="" aria-hidden="true" style={{ width: dim, height: dim }} className={cls} />;
   }
