@@ -28,6 +28,7 @@ export * from './PageHeader';
 export * from './Panel';
 export * from './Portal';
 export * from './Primitives';
+export * from './ProtocolGlyph';
 export * from './ScrollPane';
 export * from './SearchInput';
 export * from './SegmentedControl';
