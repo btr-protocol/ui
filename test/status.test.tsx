@@ -6,7 +6,7 @@ test('ProgressSteps: segments, count, clamping, plain count beyond 8', () => {
   const html = render(<ProgressSteps done={2} total={3} />);
   expect(html).toContain('aria-label="2/3"');
   expect(html.match(/bg-green/g)).toHaveLength(2);
-  expect(html.match(/bg-fg-3/g)).toHaveLength(1);
+  expect(html.match(/bg-line/g)).toHaveLength(1);
   expect(render(<ProgressSteps done={9} total={3} />)).toContain('aria-label="3/3"');
   expect(render(<ProgressSteps done={2} total={9} />)).not.toContain('h-1.5');
 });

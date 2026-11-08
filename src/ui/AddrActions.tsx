@@ -83,6 +83,7 @@ export function ExplorerButton({
  */
 export function AddressDisplay({
   value,
+  name,
   explorerHref,
   kind = 'address',
   full = false,
@@ -94,6 +95,8 @@ export function AddressDisplay({
   title,
 }: {
   value: string;
+  /** Human name shown before the short address ("Treasury 0x4B1D…1521"). */
+  name?: string;
   explorerHref?: string;
   kind?: 'address' | 'token' | 'tx';
   /** Render the whole value instead of the shortened form. */
@@ -112,6 +115,7 @@ export function AddressDisplay({
   const label = text ?? (full ? value : shortAddr(value, lead));
   return (
     <span className={cn('inline-flex items-center gap-1 coarse:gap-3 align-middle', className)}>
+      {name && <span className="font-medium text-fg-0">{name}</span>}
       <span className={textClassName} title={title}>
         {label}
       </span>

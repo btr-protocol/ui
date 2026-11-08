@@ -32,6 +32,7 @@
   },
   "devDependencies": {
     "@btr-protocol/sdk": "github:btr-protocol/sdk#dc1d1f11d9d3aab7b38b5653e092c06bbd9efb3f",
+    "@happy-dom/global-registrator": "^21.0.4",
     "@types/bun": "latest",
     "preact-render-to-string": "^6.5.0",
     "tailwindcss": "^3.4.1",

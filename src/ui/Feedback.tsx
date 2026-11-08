@@ -75,6 +75,15 @@ export type NoticeSize = 'bar' | 'note';
 
 const NEUTRAL: ReadonlySet<NoticeTone> = new Set<NoticeTone>(['default', 'debug', 'info']);
 
+const NOTICE_RANK: Record<NoticeTone, number> = { default: 0, debug: 1, info: 2, success: 3, warning: 4, error: 5 };
+
+/** The one notice a page shows: the highest severity wins, the first of equals; falsy entries are skipped. */
+export function pickNotice<T extends { tone?: NoticeTone }>(list: readonly (T | null | false | undefined)[]): T | undefined {
+  let best: T | undefined;
+  for (const n of list) if (n && (!best || NOTICE_RANK[n.tone ?? 'default'] > NOTICE_RANK[best.tone ?? 'default'])) best = n;
+  return best;
+}
+
 export interface NoticeActionProps {
   label: string;
   onClick: () => void;
@@ -93,16 +102,7 @@ export function NoticeAction({ label, onClick, disabled }: NoticeActionProps) {
   );
 }
 
-export function Notice({
-  label,
-  tone = 'default',
-  size = 'bar',
-  icon,
-  role,
-  children,
-  action,
-  className,
-}: {
+export interface NoticeProps {
   label?: string;
   tone?: NoticeTone;
   size?: NoticeSize;
@@ -112,7 +112,9 @@ export function Notice({
   /** `{ label, onClick }` renders a tone-matched button; any node is placed as is. */
   action?: NoticeActionProps | ComponentChildren;
   className?: string;
-}) {
+}
+
+export function Notice({ label, tone = 'default', size = 'bar', icon, role, children, action, className }: NoticeProps) {
   const neutral = NEUTRAL.has(tone);
   const color = tone === 'default' ? undefined : SEVERITY_COLOR[tone];
   const note = size === 'note';
@@ -174,6 +176,12 @@ export function Notice({
       )}
     </div>
   );
+}
+
+/** At most one page-level Notice: `<NoticeSlot notices={[offline && {...}, stale && {...}]} />` renders the most severe given. */
+export function NoticeSlot({ notices }: { notices: readonly (NoticeProps | null | false | undefined)[] }) {
+  const n = pickNotice(notices);
+  return n ? <Notice {...n} /> : null;
 }
 
 export type ToastKind = Severity | 'loading';

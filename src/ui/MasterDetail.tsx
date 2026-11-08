@@ -4,7 +4,7 @@ import { cn } from '../lib/cn';
 import { Icon } from './Icon';
 
 export interface MasterDetailProps {
-  /** The list (usually a selectable `<Table bare>`). */
+  /** The list (usually a selectable `<Table noHeader>`). */
   master: ComponentChildren;
   /** The selected item's pane. */
   detail: ComponentChildren;

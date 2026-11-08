@@ -22,6 +22,108 @@ test('Buttons never carry inline sizing: height, padding, radius and text size c
   expect(bad).toEqual([]);
 });
 
+// Ad-hoc sizing tokens: height, padding, radius, type size, fixed width.
+const ADHOC = /(^|[\s"'`:])(h-|min-h-|px-|py-|p-|rounded|text-(xs|sm|base|lg|xl|2xs|3xs)\b|text-\[|w-\d)/;
+/** Opening tags `<Tag ...>` for one tag name; `=>` and `>` inside `{...}` expressions do not end the tag. */
+function tags(src: string, name: string): { attrs: string; line: number }[] {
+  const out: { attrs: string; line: number }[] = [];
+  for (const m of src.matchAll(new RegExp(`<${name}(?=[\\s/>])`, 'g'))) {
+    let i = m.index! + m[0].length, depth = 0, q = '';
+    for (; i < src.length; i++) {
+      const c = src[i]!;
+      if (q) { if (c === q && src[i - 1] !== '\\') q = ''; continue; }
+      if (c === '"' || c === "'" || c === '`') q = c;
+      else if (c === '{') depth++;
+      else if (c === '}') depth--;
+      else if (c === '>' && depth === 0 && src[i - 1] !== '=') break;
+    }
+    out.push({ attrs: src.slice(m.index! + m[0].length, i), line: src.slice(0, m.index).split('\n').length });
+  }
+  return out;
+}
+/** The text of every string literal inside the `className=` attribute (any expression form: "..", {`..${x}`}, {cn('..', x && '..')}). */
+function classLiterals(attrs: string): string {
+  const at = attrs.search(/\bclassName=/);
+  if (at < 0) return '';
+  const rest = attrs.slice(at + 10);
+  const end = rest[0] === '{' ? matchBrace(rest) : rest[0] === '"' ? rest.indexOf('"', 1) : 0;
+  return rest.slice(0, end + 1);
+}
+function matchBrace(s: string): number {
+  let d = 0, q = '';
+  for (let i = 0; i < s.length; i++) {
+    const c = s[i]!;
+    if (q) { if (c === q && s[i - 1] !== '\\') q = ''; continue; }
+    if (c === '"' || c === "'" || c === '`') q = c;
+    else if (c === '{') d++;
+    else if (c === '}' && --d === 0) return i;
+  }
+  return s.length;
+}
+
+test('Button wrappers (components that forward className / spread props into a Button) are not given ad-hoc sizing by callers', async () => {
+  // A wrapper = an exported component whose body renders <Button> with a spread or a forwarded className.
+  const wrappers = new Set<string>();
+  for (const f of files) {
+    const src = await read(f);
+    const parts = src.split(/^export (?:default )?function (\w+)/m); // [pre, name, body, name, body...]
+    for (let i = 1; i < parts.length; i += 2) {
+      if (tags(parts[i + 1]!, 'Button').some((t) => /\{\.\.\./.test(t.attrs) || /className=\{className\}/.test(t.attrs))) wrappers.add(parts[i]!);
+    }
+  }
+  wrappers.delete('Button');
+  const bad: string[] = [];
+  for (const f of files) {
+    const src = await read(f);
+    for (const w of wrappers)
+      for (const t of tags(src, w)) if (ADHOC.test(classLiterals(t.attrs))) bad.push(`${f}:${t.line}: <${w}> ${classLiterals(t.attrs)}`);
+    // `<Button {...props}>` with a className literal AND a spread: the spread may smuggle sizing in; the literal is checked above, the spread source here.
+    for (const t of tags(src, 'Button'))
+      if (/\{\.\.\./.test(t.attrs) && ADHOC.test(classLiterals(t.attrs))) bad.push(`${f}:${t.line}: <Button {...spread} className=…>`);
+  }
+  expect(bad).toEqual([]);
+});
+
+// Raw <button> in the kit that is NOT a Button must have a reason: its geometry is genuinely not a button's
+// (icon-only chrome, a tab/segment/row/menu item, a notice-tinted action...). file -> why. Anything else with ad-hoc sizing must be a <Button>.
+const RAW_BUTTON_OK: Record<string, string> = {
+  'src/ui/Button.tsx': 'the definition',
+  'src/ui/CloseButton.tsx': 'icon-only dismiss glyph with its own hit-area contract',
+  'src/ui/Feedback.tsx': 'notice-action is tinted by the notice tone (.notice-action); Toast dismiss is an icon',
+  'src/ui/AddrActions.tsx': 'icon-only copy / explorer glyph buttons inline with text',
+  'src/ui/Table.tsx': 'sortable header cell and row-expander: table chrome, not an action button',
+  'src/ui/SegmentedControl.tsx': 'segments are a radio-like group, not buttons',
+  'src/layout/TabBar.tsx': 'tab items',
+  'src/layout/Footer.tsx': 'footer text links rendered as buttons',
+  'src/layout/Header.tsx': 'nav items / icon chrome',
+  'src/ui/Select.tsx': 'listbox options and picker rows, not actions',
+  'src/ui/ClickMenu.tsx': 'menu items (role=menuitem rows)',
+  'src/ui/Expandable.tsx': 'disclosure header',
+  'src/ui/InfoBox.tsx': 'inline help trigger glyph',
+  'src/ui/MasterDetail.tsx': 'phone Back row',
+  'src/ui/SearchInput.tsx': 'inline clear (x) glyph inside the input',
+  'src/ui/AddressField.tsx': 'inline paste/clear glyphs inside the input',
+  'src/ui/WalletItemButton.tsx': 'wallet picker row',
+  'src/wallet/WalletButton.tsx': 'account chip with its own anatomy',
+};
+test('raw <button> with ad-hoc sizing must be a <Button>, unless the file is allowlisted with a reason', async () => {
+  const bad: string[] = [];
+  for (const f of files) {
+    if (f in RAW_BUTTON_OK) continue;
+    const src = await read(f);
+    for (const t of tags(src, 'button')) if (ADHOC.test(classLiterals(t.attrs))) bad.push(`${f}:${t.line}: <button> ${classLiterals(t.attrs).slice(0, 80)}`);
+  }
+  expect(bad).toEqual([]);
+});
+test('every RAW_BUTTON_OK entry still has a raw <button> (no stale exceptions)', async () => {
+  const stale: string[] = [];
+  for (const f of Object.keys(RAW_BUTTON_OK)) {
+    if (f === 'src/ui/Button.tsx') continue;
+    if (!tags(await read(f), 'button').length) stale.push(f);
+  }
+  expect(stale).toEqual([]);
+});
+
 test('Button sizes are the scale of lib/design.ts only', async () => {
   const bad: string[] = [];
   for (const f of files) {

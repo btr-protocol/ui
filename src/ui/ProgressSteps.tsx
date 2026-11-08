@@ -16,7 +16,7 @@ export function ProgressSteps({ done, total, className }: ProgressStepsProps) {
       {total > 0 && total <= 8 && (
         <span aria-hidden="true" className="inline-flex gap-0.5">
           {Array.from({ length: total }, (_, i) => (
-            <span key={i} className={cn('h-1.5 w-3 rounded-full', i < d ? 'bg-green' : 'bg-fg-3')} />
+            <span key={i} className={cn('h-1.5 w-3 rounded-full', i < d ? 'bg-green' : 'bg-line')} />
           ))}
         </span>
       )}
