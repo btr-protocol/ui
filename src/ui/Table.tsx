@@ -27,6 +27,21 @@ export const DATA_TABLE_ROW = 'transition-colors hover:bg-bg-2';
  */
 export const ROW_ACTIONS =
   'transition-opacity hoverable:opacity-0 group-hover:opacity-100 focus-within:opacity-100';
+/** Selected row of a `selectable` table: the same surface as the detail pane it opens (bg-1, so it
+ *  fuses into it when the list sits on bg-0), a primary bar on the left and bold text, so the
+ *  state is never colour alone. */
+export const SELECTED_ROW =
+  'bg-bg-1 hover:bg-bg-1 font-semibold shadow-[inset_3px_0_0_var(--primary)]';
+
+/** Roving-focus target for a row key: arrows step (clamped), Home/End jump. null = not ours. */
+export function rowNavTarget(key: string, index: number, count: number): number | null {
+  if (count < 1) return null;
+  if (key === 'ArrowDown') return Math.min(index + 1, count - 1);
+  if (key === 'ArrowUp') return Math.max(index - 1, 0);
+  if (key === 'Home') return 0;
+  if (key === 'End') return count - 1;
+  return null;
+}
 const VIRTUAL_ROW_H = 32;
 const COMPACT_ROW_H = 28;
 
@@ -207,6 +222,13 @@ export interface TableProps<Row> {
   searchPlaceholder?: string;
   searchable?: boolean;
   onRowClick?: (row: Row) => void;
+  /** Makes rows selectable (master list): click / Enter / Space call it; ArrowUp/Down/Home/End move
+   *  focus (roving tabindex); the row carries `aria-selected` and the `SELECTED_ROW` style. */
+  onSelect?: (row: Row, key: string) => void;
+  /** `rowKey` of the selected row, or null. */
+  selectedKey?: string | null;
+  /** No frame, radius or fill: the table sits flush in a pane (MasterDetail master). */
+  bare?: boolean;
   rowKey: (row: Row, idx: number) => string;
   /** Rows held above the body: never searched, sorted or counted as empty (aggregates that frame
    *  the rows beneath them). Plain desktop table only: the virtual body and the mobile stack
@@ -397,6 +419,9 @@ export function Table<Row>({
   searchPlaceholder = 'Search...',
   searchable = true,
   onRowClick,
+  onSelect,
+  selectedKey = null,
+  bare = false,
   rowKey,
   pinned,
   emptyMessage = 'No results',
@@ -464,6 +489,43 @@ export function Table<Row>({
     return compareSorted(filtered, (row) => defaultValue(col, row), sortDir);
   }, [filtered, sortKey, sortDir, columns]);
 
+  const selectable = !!onSelect;
+  // Roving tabindex: the selected row is the tab stop, else the first row.
+  const anchorKey =
+    selectedKey != null && sorted.some((r, i) => rowKey(r, i) === selectedKey)
+      ? selectedKey
+      : sorted.length
+        ? rowKey(sorted[0]!, 0)
+        : null;
+  const selProps = (row: Row, key: string) =>
+    selectable
+      ? ({
+          'data-row': '',
+          tabIndex: key === anchorKey ? 0 : -1,
+          'aria-selected': key === selectedKey,
+          onKeyDown: (e: KeyboardEvent) => {
+            const el = e.currentTarget as HTMLElement;
+            if (e.target !== el) return;
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              onSelect(row, key);
+              return;
+            }
+            const rows = Array.from(el.parentElement?.querySelectorAll<HTMLElement>(':scope > [data-row]') ?? []);
+            const to = rowNavTarget(e.key, rows.indexOf(el), rows.length);
+            if (to != null) {
+              e.preventDefault();
+              rows[to]?.focus();
+            }
+          },
+        } as const)
+      : {};
+  const pick = (row: Row, key: string) => {
+    onSelect?.(row, key);
+    onRowClick?.(row);
+  };
+  const tableRole = selectable ? ({ role: 'grid', 'aria-label': title } as const) : {};
+
   const sortable = columns.filter((c) => c.sortable);
   const head = (
     <HeadRow
@@ -489,7 +551,7 @@ export function Table<Row>({
       {!title && search}
 
       <Panel
-        variant={compact ? 'plain' : 'default'}
+        variant={compact || bare ? 'plain' : 'default'}
         className={cn('overflow-hidden', compact && 'flex flex-col flex-1 min-h-0')}
       >
         {title && (
@@ -544,6 +606,7 @@ export function Table<Row>({
                 >
                   <table
                     data-table={variant}
+                    {...tableRole}
                     className={cn(TABLE_BASE, 'table-fixed', compact && 'text-xs')}
                   >
                     {colW.length === columns.length && (
@@ -567,19 +630,22 @@ export function Table<Row>({
                           )}
                           {view.map((row, i) => {
                             const idx = win.start + i;
+                            const key = rowKey(row, idx);
                             return (
                               <tr
-                                key={rowKey(row, idx)}
+                                key={key}
                                 {...rowProps?.(row)}
+                                {...selProps(row, key)}
                                 style={{ height: rowH }}
                                 className={cn(
                                   TABLE_ROW_BORDER,
                                   DATA_TABLE_ROW,
-                                  rowProps && ROW_FOCUS,
-                                  onRowClick && 'cursor-pointer',
+                                  (rowProps || selectable) && ROW_FOCUS,
+                                  (onRowClick || selectable) && 'cursor-pointer',
+                                  key === selectedKey && SELECTED_ROW,
                                   rowClassName?.(row),
                                 )}
-                                onClick={() => onRowClick?.(row)}
+                                onClick={() => pick(row, key)}
                               >
                                 <BodyCells columns={columns} row={row} dense compact={compact} />
                               </tr>
@@ -622,7 +688,7 @@ export function Table<Row>({
               )}
               style={maxHeight ? { maxHeight } : undefined}
             >
-              <table data-table={variant} className={cn(TABLE_BASE, compact && 'text-xs')}>
+              <table data-table={variant} {...tableRole} className={cn(TABLE_BASE, compact && 'text-xs')}>
                 <thead>{head}</thead>
                 <tbody>
                   {pinned?.map((row, idx) => (
@@ -646,22 +712,27 @@ export function Table<Row>({
                       </td>
                     </tr>
                   ) : (
-                    sorted.map((row, idx) => (
-                      <tr
-                        key={rowKey(row, idx)}
-                        {...rowProps?.(row)}
-                        className={cn(
-                          TABLE_ROW_BORDER,
-                          DATA_TABLE_ROW,
-                          rowProps && ROW_FOCUS,
-                          onRowClick && 'cursor-pointer',
-                          rowClassName?.(row),
-                        )}
-                        onClick={() => onRowClick?.(row)}
-                      >
-                        <BodyCells columns={columns} row={row} compact={compact} />
-                      </tr>
-                    ))
+                    sorted.map((row, idx) => {
+                      const key = rowKey(row, idx);
+                      return (
+                        <tr
+                          key={key}
+                          {...rowProps?.(row)}
+                          {...selProps(row, key)}
+                          className={cn(
+                            TABLE_ROW_BORDER,
+                            DATA_TABLE_ROW,
+                            (rowProps || selectable) && ROW_FOCUS,
+                            (onRowClick || selectable) && 'cursor-pointer',
+                            key === selectedKey && SELECTED_ROW,
+                            rowClassName?.(row),
+                          )}
+                          onClick={() => pick(row, key)}
+                        >
+                          <BodyCells columns={columns} row={row} compact={compact} />
+                        </tr>
+                      );
+                    })
                   )}
                 </tbody>
               </table>
@@ -717,20 +788,30 @@ export function Table<Row>({
                 const offset = win?.start ?? 0;
                 return (
                   <>
-                    {shown.map((row, idx) => (
-                      <div
-                        key={rowKey(row, offset + idx)}
-                        {...rowProps?.(row)}
-                        className={cn(
-                          MOBILE_ROW,
-                          onRowClick && MOBILE_ROW_TAP,
-                          rowClassName?.(row),
-                        )}
-                        onClick={() => onRowClick?.(row)}
-                      >
-                        {renderCard?.(row) ?? <MobileCells columns={columns} row={row} />}
-                      </div>
-                    ))}
+                    {shown.map((row, idx) => {
+                      const key = rowKey(row, offset + idx);
+                      const { 'aria-selected': sel, ...mobileSel } = selProps(row, key) as {
+                        'aria-selected'?: boolean;
+                      };
+                      return (
+                        <div
+                          key={key}
+                          {...rowProps?.(row)}
+                          {...mobileSel}
+                          aria-current={sel ? 'true' : undefined}
+                          className={cn(
+                            MOBILE_ROW,
+                            (onRowClick || selectable) && MOBILE_ROW_TAP,
+                            selectable && ROW_FOCUS,
+                            key === selectedKey && SELECTED_ROW,
+                            rowClassName?.(row),
+                          )}
+                          onClick={() => pick(row, key)}
+                        >
+                          {renderCard?.(row) ?? <MobileCells columns={columns} row={row} />}
+                        </div>
+                      );
+                    })}
                     {win && view.length > mobileLimit && (
                       <button
                         type="button"

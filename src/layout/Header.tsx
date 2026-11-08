@@ -6,6 +6,7 @@ import { Tooltip } from '../ui/FloatingPanel';
 import { Icon } from '../ui/Icon';
 import { MaskIcon } from '../ui/MaskIcon';
 import { Dropdown } from '../ui/Select';
+import { NavBadge } from './NavBadge';
 import { type NavItem, isNavActive } from './nav';
 
 function NavButton({
@@ -21,6 +22,7 @@ function NavButton({
     <Tooltip content={item.description || item.title} side="bottom">
       <Button type="button" onClick={onClick} size="sm" variant="ghost" active={active}>
         {item.title}
+        <NavBadge count={item.badge} label={item.badgeLabel} inline />
       </Button>
     </Tooltip>
   );
