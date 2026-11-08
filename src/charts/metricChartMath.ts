@@ -3,7 +3,7 @@ import { formatCompact, formatCurrencyCompact } from '../lib/format';
 import type { MouseEventParams, UTCTimestamp } from 'lightweight-charts';
 
 export type MetricSeriesType = 'area' | 'line' | 'histogram';
-export type MetricValueFormat = 'usd' | 'pct' | 'yield' | 'count' | 'bps';
+export type MetricValueFormat = 'usd' | 'pct' | 'yield' | 'count' | 'bps' | 'compact';
 
 export interface MetricPoint {
   t: number;

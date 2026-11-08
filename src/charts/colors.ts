@@ -50,3 +50,6 @@ export function chartColors(): ThemeColors {
     chartText: s.getPropertyValue('--chart-text').trim(),
   };
 }
+
+/** One theme token (e.g. `--orange`) as #rrggbb. */
+export const themeColor = (name: string): string => parseColor(getComputedStyle(document.documentElement).getPropertyValue(name));
