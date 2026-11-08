@@ -5,6 +5,7 @@ import {
   Button,
   Footer,
   Header,
+  Notice,
   PageState,
   Shell,
   TabBar,
@@ -116,4 +117,15 @@ test('form components render', () => {
   expect(f).toContain('text-red');
   expect(f).toContain('max-w-md');
   expect(f).not.toContain('>h<');
+});
+
+test('Notice action spec renders a tone-matched button, nodes pass through', () => {
+  const spec = render(<Notice tone="error" label="Down" action={{ label: 'Retry', onClick: () => {} }}>detail</Notice>);
+  expect(spec).toContain('class="notice-action"');
+  expect(spec).toContain('Retry');
+  expect(spec).toContain('--nt:var(--fg-error)');
+  const node = render(<Notice tone="warning" action={<a href="/x">Open</a>}>x</Notice>);
+  expect(node).toContain('<a href="/x">Open</a>');
+  expect(node).not.toContain('notice-action');
+  expect(render(<Notice tone="info">plain</Notice>)).not.toContain('<button');
 });
