@@ -202,3 +202,23 @@ test('another routed modal listening to popstate never swallows the pick (its li
   history.replaceState({}, '', before);
   unmount(); other.unmount();
 });
+
+test('the close fallback never flushes onto the modal entry: a back that has not popped yet keeps the pick pending', async () => {
+  const back = history.back.bind(history);
+  history.replaceState({}, '', '/');
+  const before = location.href;
+  let pop: (() => void) | null = null;
+  history.back = () => { pop = () => { history.replaceState({}, '', before); dispatchEvent(new PopStateEvent('popstate')); }; }; // a slow back: pops only when we say
+  const seen: string[] = [];
+  const { host, unmount } = mount(<SelectModal routeKey="t-slow" label="Group" items={items} value="a" onChange={(v) => seen.push(`${v}@${location.search}`)} />);
+  click(trigger(host));
+  click(row('Beta'));
+  await new Promise((r) => setTimeout(r, 450)); // past the fallback
+  expect(seen).toEqual([]); // still on the modal's entry: nothing written there
+  pop!();
+  await until(() => seen.length > 0);
+  expect(seen).toEqual(['b@']); // delivered on the entry the modal returned to
+  history.back = back;
+  history.replaceState({}, '', before);
+  unmount();
+});
