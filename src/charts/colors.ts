@@ -80,10 +80,13 @@ export const DISTINCT_MAX = HUE_ORDER.length;
  *  saturation, theme-tuned lightness, yellows/greens darker on light (the bright yellow is unreadable on white). Past 12 a chart should fold
  *  its tail into one "Other" series, never reuse a hue. */
 export function distinctShade(i: number, theme: 'light' | 'dark'): string {
-  const h = (25 + 30 * HUE_ORDER[((i % DISTINCT_MAX) + DISTINCT_MAX) % DISTINCT_MAX]) % 360;
+  const k = ((i % DISTINCT_MAX) + DISTINCT_MAX) % DISTINCT_MAX;
+  const h = (25 + 30 * HUE_ORDER[k]) % 360;
   const bright = h >= 45 && h <= 165; // yellow -> green: high luminance at equal lightness
-  const l = theme === 'light' ? (bright ? 0.36 : 0.47) : bright ? 0.55 : 0.62;
-  return fromHsl(h, 0.7, l);
+  // the second six sit 30 deg from one of the first six: they also differ in lightness (deeper on dark, paler on light), never a near-twin
+  const second = k >= DISTINCT_MAX / 2;
+  const l = theme === 'light' ? (bright ? 0.36 : 0.47) + (second ? 0.16 : 0) : (bright ? 0.55 : 0.63) - (second ? 0.2 : 0);
+  return fromHsl(h, second ? 0.6 : 0.72, l);
 }
 
 /** The n-th DISTINCT series colour as #rrggbb: the palette for the first SERIES_COUNT, then, lap by lap, the same palette with the HUE rotated (+28 deg per
