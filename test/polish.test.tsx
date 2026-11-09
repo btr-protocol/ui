@@ -36,6 +36,7 @@ test('ChartPanel: header readout, table left of chart on lg, order-last below xl
   expect(h).toContain('Holdings');
   expect(h).toContain('xl:grid-cols-');
   expect(h).toContain('max-xl:order-last');
+  expect(h).toContain('[&amp;>*]:shrink-0'); // phone: the controls wrap (none hidden behind a scroll), none squashes
   expect(h.indexOf('tbl')).toBeLessThan(h.indexOf('<canvas'));
 });
 
