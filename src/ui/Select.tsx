@@ -546,6 +546,10 @@ export interface SelectionLabels {
   unselectAll: string;
   unselectAllBut: (n: number) => string;
   reset: string;
+  /** Name of the presets bar. */
+  quickPicks: string;
+  /** Between a section's label and its note ("Ethereum · DEX not deployed"). */
+  noteSep: string;
 }
 const SELECTION_LABELS: SelectionLabels = {
   navigate: 'Navigate',
@@ -557,6 +561,8 @@ const SELECTION_LABELS: SelectionLabels = {
   unselectAll: 'Unselect All',
   unselectAllBut: (n) => `Unselect all but ${n}`,
   reset: 'Reset',
+  quickPicks: 'Quick picks',
+  noteSep: '· ',
 };
 
 interface SelectionModalProps {
@@ -823,7 +829,7 @@ export function SelectionModal({
   // scrollbar runs beside the rows alone instead of the whole panel. See `ScrollPane`.
   const presetBar =
     isMulti && presets?.length ? (
-      <div className={cn(MODAL_PADDING, 'flex flex-wrap items-center gap-1.5 py-2')} role="group" aria-label="Quick picks">
+      <div className={cn(MODAL_PADDING, 'flex flex-wrap items-center gap-1.5 py-2')} role="group" aria-label={L.quickPicks}>
         {presets.map((p) => {
           const on = allOn(p.ids);
           return (
@@ -901,20 +907,22 @@ export function SelectionModal({
       <>
         {g.icon && <span className="flex h-5 w-5 shrink-0 items-center justify-center">{g.icon}</span>}
         <span className="min-w-0 truncate font-medium text-fg-1">{g.label}</span>
-        {g.note ? <span className="min-w-0 truncate text-fg-3">· {g.note}</span> : live.length > 0 && <span className="ml-auto shrink-0 tabular-nums text-fg-3">{n}/{live.length}</span>}
+        {g.note ? <span className="min-w-0 truncate text-fg-3">{L.noteSep}{g.note}</span> : live.length > 0 && <span className="ml-auto shrink-0 tabular-nums text-fg-3">{n}/{live.length}</span>}
       </>
     );
     const cls = cn(MODAL_PADDING, 'flex w-full items-center gap-2 bg-bg-2 py-1.5 text-left text-xs');
     return isMulti && live.length > 0 ? (
-      <button type="button" key={`g-${g.id}`} data-group={g.id} aria-label={g.label} aria-pressed={allOn(ids)} onClick={() => toggleMany(ids)} className={cn(cls, 'hover:bg-bg-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring')}>
+      <button type="button" id={headId(g.id)} data-group={g.id} aria-label={g.label} aria-pressed={allOn(ids)} onClick={() => toggleMany(ids)} className={cn(cls, 'hover:bg-bg-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring')}>
         {inner}
       </button>
     ) : (
-      <div key={`g-${g.id}`} data-group={g.id} role="presentation" className={cn(cls, !live.length && 'opacity-60')}>
+      <div id={headId(g.id)} data-group={g.id} className={cn(cls, !live.length && 'opacity-60')}>
         {inner}
       </div>
     );
   };
+  const uid = useId();
+  const headId = (g: string) => `${uid}-sec-${g.replace(/[^\w-]/g, '_')}`;
   const searching = !!debouncedSearch.trim();
   const body = groups?.length
     ? (() => {
@@ -924,8 +932,13 @@ export function SelectionModal({
         for (const g of groups) {
           const rows = ordered.filter((i) => i.group === g.id);
           if (!rows.length && searching) continue;
-          out.push(renderGroup(g, rows));
-          for (const r of rows) out.push(renderRow(r, idx++));
+          // a section is a labelled group: screen readers announce "Monad, group" before its rows
+          out.push(
+            <div key={`g-${g.id}`} role="group" aria-labelledby={headId(g.id)} className="divide-y divide-border">
+              {renderGroup(g, rows)}
+              {rows.map((r) => renderRow(r, idx++))}
+            </div>,
+          );
         }
         for (const r of ordered.filter((i) => !i.group || !known.has(i.group))) out.push(renderRow(r, idx++));
         return out;
