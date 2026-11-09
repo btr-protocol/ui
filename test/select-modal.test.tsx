@@ -41,3 +41,15 @@ test('MultiSelectModal: rows toggle, Apply reports the set', async () => {
   expect(got).toEqual([['b', 'c']]);
   unmount();
 });
+
+test('closing after a pick pops exactly one history entry (select close + modal close in one tick)', () => {
+  const back = history.back.bind(history);
+  let n = 0;
+  history.back = () => { n++; }; // the real back is async: while it is in flight the state still says "open"
+  const { host, unmount } = mount(<SelectModal routeKey="t-once" label="Safe" items={items} value="" onChange={() => {}} />);
+  click(trigger(host));
+  click(row('Beta'));
+  history.back = back;
+  expect(n).toBe(1);
+  unmount();
+});
