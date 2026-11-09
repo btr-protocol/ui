@@ -87,7 +87,7 @@ export function ChartPanel({ title, value, date, valueRef, dateRef, controls, ta
         </div>
         {/* The full-size button stays on the title row at every width; the toolbar drops under it on phones. */}
         {fsButton && <div className="order-2 sm:order-3">{fsButton}</div>}
-        {controls && <div className="order-last [scrollbar-width:none] flex w-full flex-nowrap items-center gap-2 overflow-x-auto sm:order-2 sm:w-auto sm:flex-wrap sm:overflow-visible">{controls}</div>}
+        {controls && <div className="order-last flex w-full flex-wrap items-center gap-2 [&>*]:shrink-0 sm:order-2 sm:w-auto">{controls}</div>}
       </header>
       <div
         className={cn('grid min-w-0', table && 'xl:grid-cols-[var(--cp-w)_minmax(0,1fr)]', open && 'min-h-0 flex-1 overflow-y-auto xl:grid-rows-[minmax(0,1fr)] xl:overflow-hidden')}
