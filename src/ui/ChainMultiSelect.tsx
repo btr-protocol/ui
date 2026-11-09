@@ -62,8 +62,7 @@ export function ChainMultiSelect({
         items={items}
         selectedIds={value.map(String)}
         onSelect={(ids) => {
-          setOpen(false);
-          onChange((Array.isArray(ids) ? ids : [ids]).map(Number).filter(Number.isFinite));
+          setOpen(false, () => onChange((Array.isArray(ids) ? ids : [ids]).map(Number).filter(Number.isFinite)));
         }}
         multiSelect
         sortColumns={CHAIN_SORT_COLUMNS}
