@@ -472,7 +472,7 @@ export function MetricChart({
         // honest per-series readout and it stays live at rest and under the crosshair.
         const stacked = spec.stack === true;
         const common = {
-          ...seriesPaint(spec),
+          ...seriesPaint(spec, 1, spec.fade ? chartColors().bg1 : undefined),
           priceScaleId: scaleId === 'hidden' ? `hidden:${spec.id}` : scaleId,
           lastValueVisible: priceTags && !stacked && !spec.extent && spec.scale !== 'hidden',
           priceLineVisible: !stacked && !spec.extent && spec.scale !== 'hidden',

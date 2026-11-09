@@ -26,6 +26,9 @@ export interface MetricSeriesSpec {
   stack?: boolean;
   /** Fill/stroke alpha. Drops a series to a supporting role without giving it a second colour. */
   opacity?: number;
+  /** A STACKED area's fill, faded toward the chart background by this much (0..1) yet still opaque: a pale band per series under its
+   *  full-colour line (composition readable, no band bleeding through another). Needs the chart background (seriesPaint `bg`). */
+  fade?: number;
   /** Vertical scale. 'right'/'left' are the pane's visible axes; 'hidden' puts the
    *  series on its own overlay scale that is never drawn and never shared with any
    *  other series - a count next to a dollar figure must not co-scale with it. */
@@ -127,11 +130,12 @@ export function seriesPaint(spec: MetricSeriesSpec, factor = 1, bg?: string) {
   const solid = spec.stack === true && bg != null;
   const base = solid && factor < 1 ? mix(spec.color, bg, 1 - factor) : spec.color;
   const f = solid ? 1 : factor;
+  const fill = solid && spec.fade ? mix(base, bg, spec.fade) : base; // opaque but pale: the faded stacked band
   return {
     color: alpha(base, (spec.opacity ?? (spec.type === 'histogram' && !spec.stack ? 0.45 : 1)) * f),
     lineColor: alpha(base, (spec.opacity ?? 1) * f),
-    topColor: alpha(base, (spec.stack ? 1 : 0.28) * f),
-    bottomColor: alpha(base, (spec.stack ? 1 : 0.02) * f),
+    topColor: alpha(fill, (spec.stack ? 1 : 0.28) * f),
+    bottomColor: alpha(fill, (spec.stack ? 1 : 0.02) * f),
     priceLineColor: alpha(base, f),
   };
 }

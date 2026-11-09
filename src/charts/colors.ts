@@ -73,6 +73,19 @@ function fromHsl(h: number, s: number, l: number): string {
   const [r, g, b] = h < 60 ? [c, x, 0] : h < 120 ? [x, c, 0] : h < 180 ? [0, c, x] : h < 240 ? [0, x, c] : h < 300 ? [x, 0, c] : [c, 0, x];
   return hex((r + m) * 255, (g + m) * 255, (b + m) * 255);
 }
+/** Hue order for `distinctShade`: 12 hues 30 deg apart, neighbours in the list as far apart as possible. */
+const HUE_ORDER = [0, 6, 3, 9, 1, 7, 4, 10, 2, 8, 5, 11];
+export const DISTINCT_MAX = HUE_ORDER.length;
+/** The i-th of at most DISTINCT_MAX clearly distinct series colours (#rrggbb): 12 hues 30 deg apart starting at the brand orange, same
+ *  saturation, theme-tuned lightness, yellows/greens darker on light (the bright yellow is unreadable on white). Past 12 a chart should fold
+ *  its tail into one "Other" series, never reuse a hue. */
+export function distinctShade(i: number, theme: 'light' | 'dark'): string {
+  const h = (25 + 30 * HUE_ORDER[((i % DISTINCT_MAX) + DISTINCT_MAX) % DISTINCT_MAX]) % 360;
+  const bright = h >= 45 && h <= 165; // yellow -> green: high luminance at equal lightness
+  const l = theme === 'light' ? (bright ? 0.36 : 0.47) : bright ? 0.55 : 0.62;
+  return fromHsl(h, 0.7, l);
+}
+
 /** The n-th DISTINCT series colour as #rrggbb: the palette for the first SERIES_COUNT, then, lap by lap, the same palette with the HUE rotated (+28 deg per
  *  lap, so orange does not come back as a lighter orange) and the lightness alternated, so a view with many series (every asset of a Safe) never repeats
  *  a colour among the visible ones. Re-read after a theme switch. */
