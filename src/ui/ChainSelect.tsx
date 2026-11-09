@@ -136,6 +136,7 @@ export function ChainSelectModal({
   onAll,
 }: ChainSelectModalProps) {
   const [showPlanned, setShowPlanned] = useState(false);
+  const hasPlanned = chains.some((c) => c.planned);
   const items: SelectionItem[] = useMemo(() => {
     const shown = chainSelectItems(chains, { includePlanned: showPlanned });
     // "All chains" is a real, pinned row: same icon slot, in the arrow-key order, selected like any other.
@@ -170,7 +171,7 @@ export function ChainSelectModal({
       hasActiveFilters={showPlanned}
       onResetFilters={() => setShowPlanned(false)}
       headerRight={
-        (
+        hasPlanned ? (
           <label className="flex items-center gap-1.5 cursor-pointer">
             <span className="text-xs uppercase tracking-wide text-fg-2 max-sm:hidden">Planned</span>
             <Switch
@@ -179,7 +180,7 @@ export function ChainSelectModal({
               aria-label="Show planned networks"
             />
           </label>
-        )
+        ) : undefined
       }
       size={size}
     />
