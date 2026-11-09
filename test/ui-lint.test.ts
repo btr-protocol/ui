@@ -184,3 +184,37 @@ test('chain marks are never circles: ChainGlyph has no round path, chain sets go
   for (const f of ['src/ui/TokenGlyph.tsx', 'src/ui/ProtocolGlyph.tsx']) if (!/rounded-full/.test(await read(f))) bad.push(`${f}: not a circle`);
   expect(bad).toEqual([]);
 });
+
+// ── review follow-ups: chain marks fed through helpers, inline font sizes, disclosure chevrons ──────────────────────────
+test('chain marks are not fed to a round stack through an items helper (.map(... icon: <ChainGlyph ...) next to a StackedIcons)', async () => {
+  const bad: string[] = [];
+  for (const f of files) {
+    if (f === 'src/ui/ChainSelect.tsx') continue;
+    const src = await read(f);
+    if (/<StackedIcons\b/.test(src) && /icon:\s*(?:\w+\.icon\s*\?\?\s*)?<ChainGlyph\b/.test(src)) bad.push(`${f}: chain marks built as stack items (use <ChainStack>)`);
+  }
+  expect(bad).toEqual([]);
+});
+// Inline font sizes: only computed glyph monograms (a fraction of the glyph's own size) and chart canvases (not DOM text).
+const INLINE_FONT_OK: Record<string, string> = {
+  'src/ui/TokenGlyph.tsx': 'monogram scales with the glyph diameter',
+  'src/ui/ProtocolGlyph.tsx': 'monogram scales with the glyph diameter',
+  'src/ui/ChainSelect.tsx': 'monogram scales with the glyph size',
+  'src/charts/ChartShell.tsx': 'watermark fitted to the chart width',
+  'src/charts/MetricChart.tsx': 'canvas axis labels (lightweight-charts option)',
+  'src/lib/chart.ts': 'canvas axis labels (lightweight-charts option)',
+};
+test('no inline style font sizes outside the allowlisted glyph / canvas cases', async () => {
+  const bad: string[] = [];
+  for (const f of [...new Glob('src/**/*.{ts,tsx}').scanSync('.')]) if (!(f in INLINE_FONT_OK) && !f.endsWith('.test.ts') && /\bfontSize\s*:/.test(await read(f)) && !f.endsWith('tailwind.preset.js')) bad.push(f);
+  expect(bad).toEqual([]);
+});
+/** A left disclosure: a caret / chevron swapped or rotated on open (caret-right <-> caret-down, ChevronRight, rotate-90). The kit rule: one caret-down at the far right that turns 180. */
+export const leftChevron = (src: string): boolean =>
+  /'caret-(?:down|right)'\s*:\s*'caret-(?:right|down)'/.test(src) || /ChevronRight\b[^\n]*(?:open|expanded)|(?:open|expanded)[^\n]*ChevronRight\b/.test(src) || /caret-right[^\n]*rotate-90|rotate-90[^\n]*caret-right/.test(src);
+test('no left disclosure chevron in the kit', async () => {
+  const bad: string[] = [];
+  for (const f of files) if (leftChevron(await read(f))) bad.push(f);
+  expect(bad).toEqual([]);
+  expect([leftChevron("name={open ? 'caret-down' : 'caret-right'}"), leftChevron('{expanded ? <ChevronDown/> : <ChevronRight/>}'), leftChevron('<Icon name="caret-right" className={open ? "rotate-90" : ""} />'), leftChevron("name=\"caret-down\" className={open ? 'rotate-180' : ''}")]).toEqual([true, true, true, false]);
+});

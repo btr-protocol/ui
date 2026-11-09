@@ -44,7 +44,8 @@ export function StackedIcons({ items, max = 3, size = 'md', list = false, shape 
         typeof i.icon === 'string' ? (
           <img key={i.id} src={i.icon} alt="" aria-hidden="true" className={cell} />
         ) : (
-          <span key={i.id} aria-hidden="true" className={cn(cell, 'inline-flex items-center justify-center [&>*]:h-full [&>*]:w-full [&>*]:ring-0', child)}>
+          // a rendered glyph keeps its OWN shape (a ChainGlyph stays a rounded square even in a default stack); the ring moves onto it
+          <span key={i.id} aria-hidden="true" className={cn('-ml-1.5 inline-flex shrink-0 items-center justify-center first:ml-0 [&>*]:h-full [&>*]:w-full [&>*]:ring-2 [&>*]:ring-bg-1', DIM[size], shape === 'square' && child)}>
             {i.icon}
           </span>
         ),
