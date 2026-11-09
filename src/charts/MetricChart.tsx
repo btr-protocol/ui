@@ -117,6 +117,7 @@ export function MetricChart({
   onHoverTime,
   onViewportChange,
   className,
+  priceTags = true,
 }: {
   title?: string;
   series: MetricSeriesSpec[];
@@ -126,6 +127,9 @@ export function MetricChart({
   loading?: boolean;
   emptyMessage?: string;
   actions?: preact.ComponentChildren;
+  /** Value tags on the price axis (last value + crosshair). `false` where a header already reads the value and the tag would
+   *  overprint the axis tick labels (dense value-table panels). Read at mount: change it with the chart's key. */
+  priceTags?: boolean;
   /** Floating legend chips over the plot. `false` when the legend lives in a value table (ChartPanel). */
   legend?: boolean;
   /** Queried window, in ms. Pins the x axis so stacked charts align. */
@@ -405,7 +409,7 @@ export function MetricChart({
           crosshair: {
             mode: 0,
             vertLine: { labelBackgroundColor: colors.bg2, color: colors.fg2 },
-            horzLine: { labelBackgroundColor: colors.bg2, color: colors.fg2 },
+            horzLine: { labelBackgroundColor: colors.bg2, color: colors.fg2, labelVisible: priceTags },
           },
           handleScroll: scrollOn(),
           handleScale: { ...SCALE_ON },
@@ -470,7 +474,7 @@ export function MetricChart({
         const common = {
           ...seriesPaint(spec),
           priceScaleId: scaleId === 'hidden' ? `hidden:${spec.id}` : scaleId,
-          lastValueVisible: !stacked && !spec.extent && spec.scale !== 'hidden',
+          lastValueVisible: priceTags && !stacked && !spec.extent && spec.scale !== 'hidden',
           priceLineVisible: !stacked && !spec.extent && spec.scale !== 'hidden',
           priceLineWidth: 1 as const,
           priceLineStyle: 2,

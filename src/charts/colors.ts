@@ -1,3 +1,5 @@
+import { mix } from './metricChartMath';
+
 /** Resolved (canvas-parseable) theme colours for lightweight-charts, which takes no CSS variables.
  *  Read fresh from the live tokens on every call, so a theme switch is picked up at once. */
 export interface ThemeColors {
@@ -59,3 +61,13 @@ export const SERIES_COUNT = 6;
 export const seriesVar = (i: number): string => `--series-${(((i % SERIES_COUNT) + SERIES_COUNT) % SERIES_COUNT) + 1}`;
 /** The first `n` series colours as #rrggbb for the live theme (re-read after a theme switch). */
 export const seriesColors = (n: number): string[] => Array.from({ length: n }, (_, i) => themeColor(seriesVar(i)));
+
+/** The n-th DISTINCT series colour as #rrggbb: the palette for the first SERIES_COUNT, then lighter / darker variants of it lap by lap, so a view with
+ *  many series (every asset of a Safe) never repeats a colour among the visible ones. Re-read after a theme switch. */
+export function seriesShade(i: number): string {
+  const base = themeColor(seriesVar(i));
+  const lap = Math.floor(Math.max(0, i) / SERIES_COUNT);
+  if (lap === 0) return base;
+  const toward = lap % 2 === 1 ? '#ffffff' : '#000000';
+  return mix(base, toward, Math.min(0.7, 0.3 + 0.12 * Math.floor((lap - 1) / 2)));
+}
