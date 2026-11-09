@@ -68,7 +68,7 @@ export function SelectModal<T extends string>({ value, onChange, items, label, t
   return (
     <>
       <Button type="button" size="sm" onClick={() => setOpen(true)} aria-haspopup="dialog" aria-expanded={open} rightIcon={<Icon name="caret-down" className="h-3.5 w-3.5 shrink-0 text-fg-3" />}>
-        {triggerIcon && cur?.icon && typeof cur.icon !== 'string' ? cur.icon : null}
+        {triggerIcon && cur?.icon && typeof cur.icon !== 'string' ? <span className="flex h-5 w-5 shrink-0 items-center justify-center [&>*]:h-5 [&>*]:w-5 [&>*]:text-3xs">{cur.icon}</span> : null}
         <span className="min-w-0 max-w-[10rem] truncate">{cur?.label ?? label}</span>
       </Button>
       <SelectionModal
