@@ -2,13 +2,25 @@ import { expect, test } from 'bun:test';
 import { render } from 'preact-render-to-string';
 import { BatchBar, ClickMenu, ProgressSteps, StatusChip, StatusList } from '../src';
 
-test('ProgressSteps: segments, count, clamping, plain count beyond 8', () => {
+test('ProgressSteps: a readable bar, filled segments, a shimmer per missing signature, clamping, one track beyond 12', () => {
   const html = render(<ProgressSteps done={2} total={3} />);
   expect(html).toContain('aria-label="2/3"');
+  expect(html).toContain('h-2 w-24'); // one readable size, rows and cards alike
   expect(html.match(/bg-green/g)).toHaveLength(2);
-  expect(html.match(/bg-line/g)).toHaveLength(1);
+  expect(html.match(/progress-pending/g)).toHaveLength(1);
+  expect(html).toContain('text-sm');
   expect(render(<ProgressSteps done={9} total={3} />)).toContain('aria-label="3/3"');
-  expect(render(<ProgressSteps done={2} total={9} />)).not.toContain('h-1.5');
+  expect(render(<ProgressSteps done={3} total={3} />)).not.toContain('progress-pending');
+  const many = render(<ProgressSteps done={2} total={20} />);
+  expect(many.match(/progress-pending/g)).toHaveLength(1);
+  expect(many).toContain('width:10%');
+});
+
+test('the missing-step shimmer is an infinite sweep over the 3:1 control line', async () => {
+  const css = await Bun.file('src/styles/index.css').text();
+  const rule = css.slice(css.indexOf('.progress-pending {'), css.indexOf('@keyframes progress-sweep'));
+  expect(rule).toContain('var(--line-ui)');
+  expect(rule).toContain('infinite');
 });
 
 test('StatusChip tones and StatusList rows', () => {

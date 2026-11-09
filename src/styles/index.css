@@ -393,6 +393,17 @@ textarea {
   }
 }
 
+/* ── ProgressSteps: a missing step is a loader, a sweep over the 3:1 control line (reduced motion freezes it) ── */
+.progress-pending {
+  background: linear-gradient(90deg, var(--line-ui) 0%, var(--line-ui) 30%, var(--fg-1) 50%, var(--line-ui) 70%, var(--line-ui) 100%);
+  background-size: 300% 100%;
+  animation: progress-sweep 1.6s linear infinite;
+}
+@keyframes progress-sweep {
+  from { background-position: 100% 0; }
+  to { background-position: 0% 0; }
+}
+
 /* ── Reduced motion: one global switch; spinners slow down instead of stopping ──────────────── */
 @media (prefers-reduced-motion: reduce) {
   *,
