@@ -8,6 +8,8 @@ export interface SelectionItem {
   id: string;
   label: string;
   caption?: string;
+  /** Own wrapped line under the caption (a reason, a warning): never truncated. */
+  note?: string;
   icon?: IconType;
   miniIcon?: IconType; // compact FilterButton display
   badge?: ComponentChildren;

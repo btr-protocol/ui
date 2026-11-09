@@ -11,6 +11,8 @@ export interface SelectModalItem<T extends string = string> {
   label: string;
   /** Muted caption under the label. */
   caption?: string;
+  /** Own wrapped line under the caption (why a row is disabled, a warning). */
+  note?: string;
   /** Right-aligned detail on the row (an amount, a count). */
   detail?: ComponentChildren;
   icon?: IconType;
@@ -29,18 +31,23 @@ interface Common<T extends string> {
   className?: string;
   /** Apply button label (multi). */
   applyLabel?: string;
+  /** Trigger text instead of the default (multi: the label + count), e.g. "5 of 6 tokens selected". */
+  triggerLabel?: string;
+  /** Show the selected row's icon before its label in the trigger (a Safe's colour dot). Single only. */
+  triggerIcon?: boolean;
 }
 
-const toItem = <T extends string>(i: SelectModalItem<T>): SelectionItem => ({ id: i.value, label: i.label, caption: i.caption, badge: i.detail, icon: i.icon, disabled: i.disabled });
+const toItem = <T extends string>(i: SelectModalItem<T>): SelectionItem => ({ id: i.value, label: i.label, caption: i.caption, note: i.note, badge: i.detail, icon: i.icon, disabled: i.disabled });
 
 /** Single choice: a trigger Button (label + current value) that opens the modal picker. THE selector of the design system: no dropdown popups. */
-export function SelectModal<T extends string>({ value, onChange, items, label, title, searchPlaceholder = 'Search…', routeKey, applyLabel }: Common<T> & { value: T | ''; onChange: (v: T) => void }) {
+export function SelectModal<T extends string>({ value, onChange, items, label, title, searchPlaceholder = 'Search…', routeKey, applyLabel, triggerIcon = false }: Common<T> & { value: T | ''; onChange: (v: T) => void }) {
   const [open, setOpen] = useOpen(routeKey);
   const sel = useMemo(() => items.map(toItem), [items]);
   const cur = items.find((i) => i.value === value);
   return (
     <>
       <Button type="button" size="sm" onClick={() => setOpen(true)} aria-haspopup="dialog" aria-expanded={open} rightIcon={<Icon name="caret-down" className="h-3.5 w-3.5 shrink-0 text-fg-3" />}>
+        {triggerIcon && cur?.icon && typeof cur.icon !== 'string' ? cur.icon : null}
         <span className="min-w-0 max-w-[10rem] truncate">{cur?.label ?? label}</span>
       </Button>
       <SelectionModal
@@ -59,15 +66,14 @@ export function SelectModal<T extends string>({ value, onChange, items, label, t
 }
 
 /** Several choices: the same trigger, the modal in multi mode (Select all / none, Apply). */
-export function MultiSelectModal<T extends string>({ value, onChange, items, label, title, searchPlaceholder = 'Search…', routeKey, applyLabel = 'Apply', allLabel = 'All' }: Common<T> & { value: readonly T[]; onChange: (v: T[]) => void; allLabel?: string }) {
+export function MultiSelectModal<T extends string>({ value, onChange, items, label, title, searchPlaceholder = 'Search…', routeKey, applyLabel = 'Apply', allLabel = 'All', triggerLabel }: Common<T> & { value: readonly T[]; onChange: (v: T[]) => void; allLabel?: string }) {
   const [open, setOpen] = useOpen(routeKey);
   const sel = useMemo(() => items.map(toItem), [items]);
   const all = items.length > 0 && value.length >= items.length;
   return (
     <>
       <Button type="button" size="sm" onClick={() => setOpen(true)} aria-haspopup="dialog" aria-expanded={open} rightIcon={<Icon name="caret-down" className="h-3.5 w-3.5 shrink-0 text-fg-3" />}>
-        <span>{label}</span>
-        <span className="text-fg-2">{all ? allLabel : value.length}</span>
+        {triggerLabel ? <span>{triggerLabel}</span> : <><span>{label}</span><span className="text-fg-2">{all ? allLabel : value.length}</span></>}
       </Button>
       <SelectionModal
         isOpen={open}

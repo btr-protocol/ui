@@ -68,3 +68,15 @@ test('MultiSelectModal: Select All picks only the filtered, enabled rows', async
   expect([...got[0]].sort()).toEqual(['b', 'c', 'e']); // e was already chosen outside the filter; a and d never
   unmount();
 });
+
+test('SelectModal/MultiSelectModal: triggerIcon, triggerLabel and a wrapped note on a disabled row', () => {
+  const list = [{ value: 'a', label: 'Alpha', icon: <i data-testid="ic" />, note: 'no role on this chain', disabled: true }, { value: 'b', label: 'Beta' }];
+  const one = mount(<SelectModal routeKey="t-ti" label="Safe" items={list} value="a" onChange={() => {}} triggerIcon />);
+  expect(one.host.querySelector('[data-testid=ic]')).not.toBeNull();
+  one.unmount();
+  const many = mount(<MultiSelectModal routeKey="t-tl" label="Tokens" items={list} value={['b']} onChange={() => {}} triggerLabel="1 of 2 tokens selected" />);
+  expect(trigger(many.host).textContent).toContain('1 of 2 tokens selected');
+  click(trigger(many.host));
+  expect(dialog()!.textContent).toContain('no role on this chain');
+  many.unmount();
+});

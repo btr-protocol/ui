@@ -92,13 +92,12 @@
   --series-4: #f06af5;
   --series-5: #a090ff;
   --series-6: #2dd4bf;
-  /* 7-12: extra swatches (per-Safe colours etc.), same rule: legible on dark and light. */
+  /* 7-11: extra swatches (per-Safe colours etc.), same rule: legible on dark and light. */
   --series-7: #ef6b6b;
   --series-8: #4fb3f6;
   --series-9: #9bd64b;
   --series-10: #c98f5a;
   --series-11: #94a3b8;
-  --series-12: #f472b6;
   --black: #1b1b1b; /* Carbon Black - dark font on light theme, bg on dark theme */
   --white: #fafafa; /* Parchment - light font on dark theme, bg on light theme */
 
@@ -275,7 +274,6 @@
   --series-9: #4f8a10;
   --series-10: #8c5a2b;
   --series-11: #5b6b82;
-  --series-12: #be185d;
 
   /* Tinted banner/chip backgrounds over raised; tone text above clears 4.5:1 on each. */
   --bg-green: color-mix(in srgb, var(--green) 10%, var(--bg-1));

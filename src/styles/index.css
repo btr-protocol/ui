@@ -411,3 +411,9 @@ textarea {
 .icon-tint-primary {
   filter: var(--icon-tint-primary);
 }
+
+/* A selected master row paints the primary text colour; cells that pin their own text-fg-* follow it (no per-cell patch in apps). */
+[data-row][aria-selected='true'] :is(.text-fg-0, .text-fg-1, .text-fg-2, .text-fg-3),
+[data-row][aria-current='true'] :is(.text-fg-0, .text-fg-1, .text-fg-2, .text-fg-3) {
+  color: inherit;
+}

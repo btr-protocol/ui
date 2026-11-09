@@ -31,15 +31,21 @@ test('TokenAmount: icon + formatted qty + symbol', () => {
 });
 
 test('swatchColor wraps over the 12 series tokens', () => {
-  expect(swatchColor(0)).toBe('var(--series-1)');
-  expect(swatchColor(SWATCH_COUNT - 1)).toBe(`var(--series-${SWATCH_COUNT})`);
-  expect(swatchColor(SWATCH_COUNT)).toBe('var(--series-1)');
-  expect(swatchColor(-1)).toBe(`var(--series-${SWATCH_COUNT})`);
+  expect(swatchColor(0)).toBe('var(--series-2)'); // blue first
+  expect(swatchColor(SWATCH_COUNT - 1)).toBe('var(--series-11)');
+  expect(swatchColor(SWATCH_COUNT)).toBe('var(--series-2)');
+  expect(swatchColor(-1)).toBe('var(--series-11)');
+  for (let i = 0; i < SWATCH_COUNT; i++) expect(swatchColor(i)).not.toBe('var(--series-1)'); // never the primary orange
 });
 
 test('SegmentedControl md rides the control height token (same as Input/Button sm)', () => {
   const o = [{ value: 'a', label: 'A' }];
   expect(render(<SegmentedControl options={o} value="a" onChange={() => {}} />)).toContain('h-[var(--ctl-m)]');
+});
+
+test('selected master row cells that pin a text colour follow it (css rule)', async () => {
+  const css = await Bun.file(new URL('../src/styles/index.css', import.meta.url)).text();
+  expect(css).toContain("[data-row][aria-selected='true'] :is(.text-fg-0");
 });
 
 test('selected master row = the SelectionModal highlight, no bar; frame=false drops the border', () => {
@@ -53,13 +59,15 @@ test('selected master row = the SelectionModal highlight, no bar; frame=false dr
 
 test('SwatchSelect: picking a swatch reports its index, Default reports null', async () => {
   const got: (number | null)[] = [];
-  const { host, unmount } = mount(<SwatchSelect routeKey="t-sw" label="Colour" value={0} isDefault onChange={(v) => got.push(v)} />);
+  const { host, unmount } = mount(<SwatchSelect routeKey="t-sw" label="Colour" value={0} defaultIndex={0} isDefault onChange={(v) => got.push(v)} />);
   const row = (l: string) => [...document.querySelectorAll<HTMLElement>('[role=dialog] button')].find((b) => b.textContent?.trim() === l)!;
   click(host.querySelector('button')!);
+  expect(document.querySelector('[role=dialog] input')).toBeNull(); // not searchable
+  expect(row('Default (Blue)')).toBeTruthy();
   click(row('Teal'));
   await until(() => !document.querySelector('[role=dialog]'));
   click(host.querySelector('button')!);
-  click(row('Default'));
-  expect(got).toEqual([5, null]);
+  click(row('Default (Blue)'));
+  expect(got).toEqual([4, null]);
   unmount();
 });
