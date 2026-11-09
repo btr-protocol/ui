@@ -727,12 +727,23 @@ export function SelectionModal({
   };
 
   /** Toggle a set (a section heading, a preset): all of its enabled ids picked -> drop them, else add the missing ones. */
+  // Only ids of real, enabled rows count: a preset naming a row that is not in the list (or is off) never smuggles it into the selection.
+  const live = (ids: readonly string[]) => ids.filter((id) => { const i = items.find((x) => x.id === id); return !!i && !i.disabled; });
   const toggleMany = (ids: readonly string[]) => {
-    const on = ids.filter((id) => !items.find((i) => i.id === id)?.disabled);
+    const on = live(ids);
     if (!on.length) return;
-    setTempSelected((prev) => (on.every((id) => prev.includes(id)) ? prev.filter((id) => !on.includes(id)) : [...new Set([...prev, ...on])]));
+    setTempSelected((prev) => {
+      if (on.every((id) => prev.includes(id))) {
+        const next = prev.filter((id) => !on.includes(id));
+        if (next.length < minSelections) { addNotification('warning', `At least ${minSelections} must remain selected`); return prev; }
+        return next;
+      }
+      const next = [...new Set([...prev, ...on])];
+      if (next.length > maxSelections) { addNotification('warning', `Maximum ${maxSelections} selections allowed`); return prev; }
+      return next;
+    });
   };
-  const allOn = (ids: readonly string[]) => { const on = ids.filter((id) => !items.find((i) => i.id === id)?.disabled); return on.length > 0 && on.every((id) => tempSelected.includes(id)); };
+  const allOn = (ids: readonly string[]) => { const on = live(ids); return on.length > 0 && on.every((id) => tempSelected.includes(id)); };
 
   const handleSelectAll = () => {
     // only what the search leaves visible (and enabled); rows already chosen outside the filter stay chosen
@@ -812,11 +823,11 @@ export function SelectionModal({
   // scrollbar runs beside the rows alone instead of the whole panel. See `ScrollPane`.
   const presetBar =
     isMulti && presets?.length ? (
-      <div className={cn(MODAL_PADDING, 'flex flex-wrap items-center gap-1.5 py-2')} role="group">
+      <div className={cn(MODAL_PADDING, 'flex flex-wrap items-center gap-1.5 py-2')} role="group" aria-label="Quick picks">
         {presets.map((p) => {
           const on = allOn(p.ids);
           return (
-            <Button key={p.id} size="sm" active={on} aria-pressed={on} disabled={!p.ids.some((id) => !items.find((i) => i.id === id)?.disabled)} onClick={() => toggleMany(p.ids)}>
+            <Button key={p.id} size="sm" active={on} aria-pressed={on} disabled={!live(p.ids).length} onClick={() => toggleMany(p.ids)}>
               {p.label}
             </Button>
           );
@@ -884,7 +895,7 @@ export function SelectionModal({
   /** Section heading: icon + label + picked/total (+ the note of an empty section). Multi: a button toggling the section. */
   const renderGroup = (g: SelectionGroup, rows: SelectionItem[]) => {
     const ids = rows.map((r) => r.id);
-    const live = rows.filter((r) => !r.disabled);
+    const live = g.note ? [] : rows.filter((r) => !r.disabled); // a noted section ("DEX not deployed") takes no picks
     const n = live.filter((r) => tempSelected.includes(r.id)).length;
     const inner = (
       <>
@@ -895,7 +906,7 @@ export function SelectionModal({
     );
     const cls = cn(MODAL_PADDING, 'flex w-full items-center gap-2 bg-bg-2 py-1.5 text-left text-xs');
     return isMulti && live.length > 0 ? (
-      <button type="button" key={`g-${g.id}`} data-group={g.id} aria-pressed={allOn(ids)} onClick={() => toggleMany(ids)} className={cn(cls, 'hover:bg-bg-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring')}>
+      <button type="button" key={`g-${g.id}`} data-group={g.id} aria-label={g.label} aria-pressed={allOn(ids)} onClick={() => toggleMany(ids)} className={cn(cls, 'hover:bg-bg-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring')}>
         {inner}
       </button>
     ) : (

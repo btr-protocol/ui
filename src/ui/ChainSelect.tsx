@@ -58,8 +58,8 @@ export function ChainGlyph({
 }
 
 /** Several chains as one overlapping row of square marks (+N, tooltip list): the one way to show a chain set. */
-export function ChainStack({ chains, max = 3, size = 'sm', list = false, className }: { chains: readonly Pick<ChainItem, 'id' | 'name'>[]; max?: number; size?: 'sm' | 'md'; list?: boolean; className?: string }) {
-  return <StackedIcons shape="square" size={size} max={max} list={list} className={className} items={chains.map((c) => ({ id: c.id, label: c.name, icon: <ChainGlyph chainId={c.id} name={c.name} role="trigger" /> }))} />;
+export function ChainStack({ chains, max = 3, size = 'sm', list = false, className }: { chains: readonly Pick<ChainItem, 'id' | 'name' | 'icon'>[]; max?: number; size?: 'sm' | 'md'; list?: boolean; className?: string }) {
+  return <StackedIcons shape="square" size={size} max={max} list={list} className={className} items={chains.map((c) => ({ id: c.id, label: c.name, icon: c.icon ?? <ChainGlyph chainId={c.id} name={c.name} role="trigger" /> }))} />;
 }
 
 /** Chain mark + name, inline: the one way to print a chain in a label, badge or table cell. */
