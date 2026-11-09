@@ -106,8 +106,20 @@ export function NoticeAction({ label, onClick, disabled, pressed, ariaLabel }: N
   );
 }
 
-export interface NoticeProps {
+/** One line of a merged notice: its own text and its own (tone-matched) action. */
+export interface NoticeRow {
+  id?: string | number;
   label?: string;
+  children?: ComponentChildren;
+  action?: NoticeActionProps | ComponentChildren;
+}
+
+export interface NoticeProps {
+  /** Stable key of this notice when it becomes a row of a merged notice (groupNotices). */
+  id?: string | number;
+  label?: string;
+  /** Several messages of the SAME tone in one notice: one icon, one tint, one row each (text + own action). */
+  rows?: readonly NoticeRow[];
   tone?: NoticeTone;
   size?: NoticeSize;
   icon?: IconName | false;
@@ -118,7 +130,7 @@ export interface NoticeProps {
   className?: string;
 }
 
-export function Notice({ label, tone = 'default', size = 'bar', icon, role, children, action, className }: NoticeProps) {
+export function Notice({ label, tone = 'default', size = 'bar', icon, role, children, action, className, rows }: NoticeProps) {
   const neutral = NEUTRAL.has(tone);
   const color = tone === 'default' ? undefined : SEVERITY_COLOR[tone];
   const note = size === 'note';
@@ -161,6 +173,21 @@ export function Notice({ label, tone = 'default', size = 'bar', icon, role, chil
             <Icon name={glyph} className={cn('h-5 w-5', neutral && 'text-fg-3')} style={tint ? { color: tint } : undefined} />
           </span>
         ))}
+      {rows?.length ? (
+        // Each row is one control tall at least: the glyph (also one control tall) centres on the first row, every action lines up right.
+        <ul className="notice-rows min-w-0 flex-1">
+          {rows.map((r, i) => (
+            <li key={r.id ?? i} className="flex min-h-[var(--ctl-m)] flex-wrap items-center gap-x-3 gap-y-1">
+              <span className="min-w-0 flex-1 basis-48">
+                {r.label && <span className={cn('font-medium', neutral && 'text-fg-1')} style={tint && { color: tint }}>{r.label}</span>}
+                {r.label && r.children != null && r.children !== false && r.children !== '' && <span className="mx-2 text-fg-3">·</span>}
+                {r.children}
+              </span>
+              {r.action && <span className="notice-slot ml-auto shrink-0">{isActionSpec(r.action) ? <NoticeAction {...r.action} /> : (r.action as ComponentChildren)}</span>}
+            </li>
+          ))}
+        </ul>
+      ) : (
       <div className={cn('min-w-0 flex-1 basis-64', !note && 'py-[calc((var(--ctl-m)-1.5rem)/2)]')}>
         {label && (
           <span
@@ -173,7 +200,8 @@ export function Notice({ label, tone = 'default', size = 'bar', icon, role, chil
         {label && body && <span className="mx-2 text-fg-3">·</span>}
         {body && children}
       </div>
-      {action && (
+      )}
+      {action && !rows?.length && (
         <span className={cn('notice-slot ml-auto shrink-0 self-center', !note && 'max-sm:pl-8')}>
           {isActionSpec(action) ? <NoticeAction {...action} /> : (action as ComponentChildren)}
         </span>
@@ -182,10 +210,32 @@ export function Notice({ label, tone = 'default', size = 'bar', icon, role, chil
   );
 }
 
-/** At most one page-level Notice: `<NoticeSlot notices={[offline && {...}, stale && {...}]} />` renders the most severe given. */
-export function NoticeSlot({ notices }: { notices: readonly (NoticeProps | null | false | undefined)[] }) {
-  const n = pickNotice(notices);
-  return n ? <Notice {...n} /> : null;
+const toRows = (n: NoticeProps): NoticeRow[] =>
+  n.rows?.length ? [...n.rows] : [{ id: n.id, label: n.label, children: n.children, action: n.action }];
+
+/** One notice per tone, most severe first (error, warning, success, info...): same-tone notices merge into ONE notice whose rows keep
+ *  their own text and action (no stack of identical banners); a tone never borrows another's colour or icon. Falsy entries are skipped,
+ *  a lone notice passes through untouched. The merged notice is an `alert` if any of its notices was. */
+export function groupNotices(list: readonly (NoticeProps | null | false | undefined)[]): NoticeProps[] {
+  const by = new Map<NoticeTone, NoticeProps[]>();
+  for (const n of list) if (n) { const t = n.tone ?? 'default'; (by.get(t) ?? by.set(t, []).get(t)!).push(n); }
+  return [...by]
+    .sort(([a], [b]) => NOTICE_RANK[b] - NOTICE_RANK[a])
+    .map(([tone, ns]) => {
+      if (ns.length === 1) return ns[0];
+      const icons = new Set(ns.map((n) => n.icon));
+      const role = ns.some((n) => (n.role ?? (tone === 'error' ? 'alert' : undefined)) === 'alert') ? 'alert' : ns.some((n) => n.role === 'status') ? 'status' : undefined;
+      return { tone, role, icon: icons.size === 1 ? ns[0].icon : undefined, rows: ns.flatMap(toRows) };
+    });
+}
+
+/** The page's notices: `<NoticeSlot notices={[offline && {...}, stale && {...}]} />` renders one notice per tone, most severe first, same-tone
+ *  messages merged as rows (groupNotices). */
+export function NoticeSlot({ notices, className }: { notices: readonly (NoticeProps | null | false | undefined)[]; className?: string }) {
+  const gs = groupNotices(notices);
+  if (!gs.length) return null;
+  if (gs.length === 1 && !className) return <Notice {...gs[0]} />;
+  return <div className={cn('space-y-2', className)}>{gs.map((n, i) => <Notice key={n.id ?? n.tone ?? i} {...n} />)}</div>;
 }
 
 export type ToastKind = Severity | 'loading';

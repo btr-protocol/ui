@@ -1,6 +1,6 @@
 import { expect, test } from 'bun:test';
 import { render } from 'preact-render-to-string';
-import { AddressDisplay, ClickMenu, KeyValueTable, Notice, NoticeSlot, Table, pickNotice, shortAddr } from '../src';
+import { AddressDisplay, ClickMenu, KeyValueTable, Notice, NoticeSlot, Table, groupNotices, pickNotice, shortAddr } from '../src';
 import { click, key, mount, until, useDom } from './dom';
 
 const ADDR = '0x4B1D26DD52Ec0e5285BFC9f2C1DE314074801521';
@@ -29,12 +29,38 @@ test('pickNotice: highest severity wins, first of equals, falsy skipped', () => 
   expect(pickNotice([null, false])).toBeUndefined();
 });
 
-test('NoticeSlot renders at most one notice', () => {
+test('NoticeSlot: one notice per tone, most severe first; a lone notice passes through', () => {
   const html = render(<NoticeSlot notices={[{ tone: 'info', label: 'FYI' }, { tone: 'error', label: 'Down' }, false]} />);
   expect(html).toContain('Down');
-  expect(html).not.toContain('FYI');
+  expect(html).toContain('FYI');
+  expect(html.indexOf('Down')).toBeLessThan(html.indexOf('FYI'));
+  expect(html).not.toContain('notice-rows');
   expect(render(<NoticeSlot notices={[false]} />)).toBe('');
+  expect(render(<NoticeSlot notices={[{ tone: 'warning', label: 'only' }]} />)).toBe(render(<Notice tone="warning" label="only" />));
   expect(render(<Notice label="x" />)).toContain('x'); // Notice itself unchanged
+});
+
+test('groupNotices: same tone merges into ONE notice of rows (own text, own action), tones stay apart', () => {
+  const ack = { label: 'Acknowledge', onClick: () => {} };
+  const gs = groupNotices([
+    { tone: 'warning', children: 'Partial balances', role: 'status' },
+    { tone: 'error', children: 'Sim failed' },
+    { tone: 'warning', children: 'Out of date', action: ack },
+    null,
+    { tone: 'warning', rows: [{ id: 'r', children: 'nested' }] },
+  ]);
+  expect(gs.map((g) => g.tone)).toEqual(['error', 'warning']);
+  expect(gs[0].children).toBe('Sim failed'); // lone: untouched
+  expect(gs[1].rows?.map((r) => r.children)).toEqual(['Partial balances', 'Out of date', 'nested']);
+  expect(gs[1].rows?.[1].action).toBe(ack);
+  expect(gs[1].role).toBe('status');
+  expect(groupNotices([{ tone: 'error', children: 'a', role: 'status' }, { tone: 'error', children: 'b' }])[0].role).toBe('alert'); // an implicit alert keeps the group an alert
+  const html = render(<NoticeSlot notices={gs} />);
+  expect((html.match(/role="alert"/g) ?? []).length).toBe(1);
+  expect((html.match(/notice-rows/g) ?? []).length).toBe(1);
+  expect((html.match(/<li[ >]/g) ?? []).length).toBe(3);
+  expect((html.match(/notice-action/g) ?? []).length).toBe(1);
+  expect((html.match(/<svg/g) ?? []).length).toBe(2); // one icon per tone, not per row
 });
 
 test('Table always wears the frame; noHeader only hides the header', () => {
