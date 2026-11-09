@@ -76,8 +76,9 @@ export function ChartPanel({ title, value, date, valueRef, dateRef, controls, ta
       className={cn('surface overflow-hidden border border-border bg-bg-1', open ? 'fixed inset-0 z-[1000] flex flex-col rounded-none' : 'rounded-lg', className)}
       {...(open ? { role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': titleId } : {})}
     >
-      <header className="flex shrink-0 flex-wrap items-center gap-x-4 gap-y-2 border-b border-border px-3 py-2.5">
-        <div className="mr-auto min-w-0">
+      <header className="flex shrink-0 flex-wrap items-center gap-x-4 gap-y-1.5 border-b border-border px-3 py-2 sm:gap-y-2 sm:py-2.5">
+        {/* Phones: title and value share one line (the header is ~2 rows, not 4, so the chart stays in the first viewport). */}
+        <div className="mr-auto min-w-0 max-sm:flex max-sm:items-baseline max-sm:gap-2">
           <h3 id={titleId} className="truncate font-title text-sm font-semibold text-fg-0">{title}</h3>
           <div className="flex flex-wrap items-baseline gap-x-2" aria-live="off">
             <span ref={valueRef} className="font-title text-xl font-bold tabular-nums text-fg-0">{value}</span>
@@ -86,7 +87,7 @@ export function ChartPanel({ title, value, date, valueRef, dateRef, controls, ta
         </div>
         {/* The full-size button stays on the title row at every width; the toolbar drops under it on phones. */}
         {fsButton && <div className="order-2 sm:order-3">{fsButton}</div>}
-        {controls && <div className="order-last flex w-full flex-wrap items-center gap-2 sm:order-2 sm:w-auto">{controls}</div>}
+        {controls && <div className="order-last [scrollbar-width:none] flex w-full flex-nowrap items-center gap-2 overflow-x-auto sm:order-2 sm:w-auto sm:flex-wrap sm:overflow-visible">{controls}</div>}
       </header>
       <div
         className={cn('grid min-w-0', table && 'xl:grid-cols-[var(--cp-w)_minmax(0,1fr)]', open && 'min-h-0 flex-1 overflow-y-auto xl:grid-rows-[minmax(0,1fr)] xl:overflow-hidden')}

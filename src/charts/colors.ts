@@ -1,5 +1,3 @@
-import { mix } from './metricChartMath';
-
 /** Resolved (canvas-parseable) theme colours for lightweight-charts, which takes no CSS variables.
  *  Read fresh from the live tokens on every call, so a theme switch is picked up at once. */
 export interface ThemeColors {
@@ -62,12 +60,27 @@ export const seriesVar = (i: number): string => `--series-${(((i % SERIES_COUNT)
 /** The first `n` series colours as #rrggbb for the live theme (re-read after a theme switch). */
 export const seriesColors = (n: number): string[] => Array.from({ length: n }, (_, i) => themeColor(seriesVar(i)));
 
-/** The n-th DISTINCT series colour as #rrggbb: the palette for the first SERIES_COUNT, then lighter / darker variants of it lap by lap, so a view with
- *  many series (every asset of a Safe) never repeats a colour among the visible ones. Re-read after a theme switch. */
+const rgb = (h: string): [number, number, number] => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16) / 255) as [number, number, number];
+function toHsl([r, g, b]: [number, number, number]): [number, number, number] {
+  const mx = Math.max(r, g, b), mn = Math.min(r, g, b), l = (mx + mn) / 2, d = mx - mn;
+  if (d === 0) return [0, 0, l];
+  const sat = d / (1 - Math.abs(2 * l - 1));
+  const h = mx === r ? ((g - b) / d) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4;
+  return [(h * 60 + 360) % 360, sat, l];
+}
+function fromHsl(h: number, s: number, l: number): string {
+  const c = (1 - Math.abs(2 * l - 1)) * s, x = c * (1 - Math.abs(((h / 60) % 2) - 1)), m = l - c / 2;
+  const [r, g, b] = h < 60 ? [c, x, 0] : h < 120 ? [x, c, 0] : h < 180 ? [0, c, x] : h < 240 ? [0, x, c] : h < 300 ? [x, 0, c] : [c, 0, x];
+  return hex((r + m) * 255, (g + m) * 255, (b + m) * 255);
+}
+/** The n-th DISTINCT series colour as #rrggbb: the palette for the first SERIES_COUNT, then, lap by lap, the same palette with the HUE rotated (+28 deg per
+ *  lap, so orange does not come back as a lighter orange) and the lightness alternated, so a view with many series (every asset of a Safe) never repeats
+ *  a colour among the visible ones. Re-read after a theme switch. */
 export function seriesShade(i: number): string {
   const base = themeColor(seriesVar(i));
   const lap = Math.floor(Math.max(0, i) / SERIES_COUNT);
   if (lap === 0) return base;
-  const toward = lap % 2 === 1 ? '#ffffff' : '#000000';
-  return mix(base, toward, Math.min(0.7, 0.3 + 0.12 * Math.floor((lap - 1) / 2)));
+  const [h, s, l] = toHsl(rgb(base));
+  const dl = (lap % 2 === 1 ? 0.12 : -0.1) * Math.ceil(lap / 2);
+  return fromHsl((h + 28 * lap) % 360, Math.min(1, s), Math.min(0.85, Math.max(0.25, l + dl)));
 }
