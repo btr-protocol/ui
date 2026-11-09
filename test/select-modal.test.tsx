@@ -127,3 +127,28 @@ test('InitialsGlyph: graphemes, no 0x, tint', () => {
   expect(b.host.innerHTML).toContain('color: #ff0000');
   b.unmount();
 });
+
+test('MultiSelectModal groups + presets: sections in order, empty section shows its note, heading and preset toggle their rows', async () => {
+  const got: string[][] = [];
+  const legs = [
+    { value: 'm:a', label: 'USDC', caption: 'Core', group: '143' },
+    { value: 'm:b', label: 'WMON', caption: 'Core', group: '143' },
+    { value: 'b:a', label: 'USDT', caption: 'Main', group: '56' },
+    { value: 'b:x', label: 'Halted', caption: 'Main', group: '56', disabled: true },
+  ];
+  const groups = [{ id: '56', label: 'BNB Chain' }, { id: '1', label: 'Ethereum', note: 'DEX not deployed' }, { id: '143', label: 'Monad' }];
+  const presets = [{ id: 'all', label: 'Whole DEX', ids: legs.map((l) => l.value) }, { id: 'usdc', label: 'USDC', ids: ['m:a'] }];
+  const { host, unmount } = mount(<MultiSelectModal routeKey="t-groups" label="Scope" items={legs} value={[]} groups={groups} presets={presets} onChange={(v) => got.push(v)} />);
+  click(trigger(host));
+  const heads = [...document.querySelectorAll<HTMLElement>('[role=dialog] [data-group]')];
+  expect(heads.map((h) => h.dataset.group)).toEqual(['56', '1', '143']);
+  expect(heads[1]!.textContent).toContain('DEX not deployed');
+  expect(heads[1]!.tagName).toBe('DIV'); // nothing to pick there
+  const btn = (label: string) => [...document.querySelectorAll<HTMLElement>('[role=dialog] button')].find((b) => b.textContent?.trim() === label)!;
+  click(btn('Whole DEX')); // every enabled leg, the halted one stays out
+  click(heads[2]!); // Monad heading: all on -> off
+  click(btn('USDC')); // back on
+  click(btn('Apply'));
+  expect(got).toEqual([['b:a', 'm:a']]);
+  unmount();
+});

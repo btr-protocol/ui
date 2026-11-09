@@ -4,7 +4,7 @@ import { useOpen } from '../lib/modalRoute';
 import type { IconType } from '../lib/uiTypes';
 import { Button } from './Button';
 import { Icon } from './Icon';
-import { type SelectionItem, type SelectionSortColumn, SelectionModal } from './Select';
+import { type SelectionGroup, type SelectionItem, type SelectionPreset, type SelectionSortColumn, SelectionModal } from './Select';
 import { cn } from '../lib/cn';
 
 export interface SelectModalItem<T extends string = string> {
@@ -20,6 +20,8 @@ export interface SelectModalItem<T extends string = string> {
   disabled?: boolean;
   /** Sort values by column key (`sortColumns`), e.g. `{ value: 1200 }`. */
   data?: Record<string, string | number | null>;
+  /** Section (`groups` id): the chain of a pool leg, say. */
+  group?: string;
 }
 
 /** Up to two initials by grapheme (an emoji or accented letter is one), skipping a leading "0x" of an address. */
@@ -56,19 +58,21 @@ interface Common<T extends string> {
   primaryColumnLabel?: string;
   /** Row pinned above the list. */
   listHeader?: ComponentChildren;
+  /** Sections of the list (rows carry `group`): a chain heading its pools; empty sections show their `note`. */
+  groups?: readonly SelectionGroup[];
 }
 
-const toItem = <T extends string>(i: SelectModalItem<T>): SelectionItem => ({ id: i.value, label: i.label, caption: i.caption, note: i.note, badge: i.detail, icon: i.icon, disabled: i.disabled, data: i.data });
+const toItem = <T extends string>(i: SelectModalItem<T>): SelectionItem => ({ id: i.value, label: i.label, caption: i.caption, note: i.note, badge: i.detail, icon: i.icon, disabled: i.disabled, data: i.data, group: i.group });
 
 /** Single choice: a trigger Button (label + current value) that opens the modal picker. THE selector of the design system: no dropdown popups. */
-export function SelectModal<T extends string>({ value, onChange, items, label, title, searchPlaceholder = 'Search…', routeKey, applyLabel, triggerIcon = false, sortColumns, primaryColumnLabel, listHeader }: Common<T> & { value: T | ''; onChange: (v: T) => void }) {
+export function SelectModal<T extends string>({ value, onChange, items, label, title, searchPlaceholder = 'Search…', routeKey, applyLabel, triggerIcon = false, sortColumns, primaryColumnLabel, listHeader, groups }: Common<T> & { value: T | ''; onChange: (v: T) => void }) {
   const [open, setOpen] = useOpen(routeKey);
   const sel = useMemo(() => items.map(toItem), [items]);
   const cur = items.find((i) => i.value === value);
   return (
     <>
       <Button type="button" size="sm" onClick={() => setOpen(true)} aria-haspopup="dialog" aria-expanded={open} rightIcon={<Icon name="caret-down" className="h-3.5 w-3.5 shrink-0 text-fg-3" />}>
-        {triggerIcon && cur?.icon && typeof cur.icon !== 'string' ? <span className="flex h-5 w-5 shrink-0 items-center justify-center [&>*]:h-5 [&>*]:w-5 [&>*]:text-3xs">{cur.icon}</span> : null}
+        {triggerIcon && cur?.icon && typeof cur.icon !== 'string' ? <span className="flex h-5 w-5 shrink-0 items-center justify-center [&>*]:h-5 [&>*]:w-5 [&>*]:text-2xs">{cur.icon}</span> : null}
         <span className="min-w-0 max-w-[10rem] truncate">{cur?.label ?? label}</span>
       </Button>
       <SelectionModal
@@ -83,21 +87,32 @@ export function SelectModal<T extends string>({ value, onChange, items, label, t
         sortColumns={sortColumns}
         primaryColumnLabel={primaryColumnLabel}
         listHeader={listHeader}
+        groups={groups}
         size="sm"
       />
     </>
   );
 }
 
-/** Several choices: the same trigger, the modal in multi mode (Select all / none, Apply). */
-export function MultiSelectModal<T extends string>({ value, onChange, items, label, title, searchPlaceholder = 'Search…', routeKey, applyLabel = 'Apply', allLabel = 'All', triggerLabel, sortColumns, primaryColumnLabel, listHeader }: Common<T> & { value: readonly T[]; onChange: (v: T[]) => void; allLabel?: string }) {
+/** Several choices: the same trigger, the modal in multi mode (Select all / none, Apply). THE multi picker of chains, pools, legs and
+ *  assets: `groups` sections the list (pools by chain), `presets` are the quick picks (Whole DEX, a pool, an asset). */
+export function MultiSelectModal<T extends string>({ value, onChange, items, label, title, searchPlaceholder = 'Search…', routeKey, applyLabel = 'Apply', allLabel = 'All', triggerLabel, triggerContent, sortColumns, primaryColumnLabel, listHeader, groups, presets, disabled, labels }: Common<T> & {
+  value: readonly T[];
+  onChange: (v: T[]) => void;
+  allLabel?: string;
+  /** Trigger body instead of the label + count (stacked chain marks, a scope summary). */
+  triggerContent?: ComponentChildren;
+  presets?: readonly SelectionPreset[];
+  disabled?: boolean;
+  labels?: Parameters<typeof SelectionModal>[0]['labels'];
+}) {
   const [open, setOpen] = useOpen(routeKey);
   const sel = useMemo(() => items.map(toItem), [items]);
   const all = items.length > 0 && value.length >= items.length;
   return (
     <>
-      <Button type="button" size="sm" onClick={() => setOpen(true)} aria-haspopup="dialog" aria-expanded={open} rightIcon={<Icon name="caret-down" className="h-3.5 w-3.5 shrink-0 text-fg-3" />}>
-        {triggerLabel ? <span>{triggerLabel}</span> : <><span>{label}</span><span className="text-fg-2">{all ? allLabel : value.length}</span></>}
+      <Button type="button" size="sm" disabled={disabled} onClick={() => setOpen(true)} aria-haspopup="dialog" aria-expanded={open} rightIcon={<Icon name="caret-down" className="h-3.5 w-3.5 shrink-0 text-fg-3" />}>
+        {(triggerContent ?? triggerLabel) ? (triggerContent ?? <span>{triggerLabel}</span>) : <><span>{label}</span><span className="text-fg-2">{all ? allLabel : value.length}</span></>}
       </Button>
       <SelectionModal
         isOpen={open}
@@ -113,6 +128,9 @@ export function MultiSelectModal<T extends string>({ value, onChange, items, lab
         sortColumns={sortColumns}
         primaryColumnLabel={primaryColumnLabel}
         listHeader={listHeader}
+        groups={groups}
+        presets={presets}
+        labels={labels}
         size="sm"
       />
     </>

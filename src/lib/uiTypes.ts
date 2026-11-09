@@ -17,6 +17,8 @@ export interface SelectionItem {
   disabled?: boolean;
   /** Stays first, whatever the sort (an "All" scope row); still a normal row for search, keyboard and selection. */
   pinned?: boolean;
+  /** Section of the row (`SelectionModal` `groups`: e.g. the chain of a pool leg). */
+  group?: string;
 }
 
 /** Dropdown menu item. */

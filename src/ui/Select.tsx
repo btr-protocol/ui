@@ -520,6 +520,21 @@ export interface SelectionSortColumn {
   className?: string;
 }
 
+/** A section of the list (`SelectionItem.group`): e.g. a chain heading its pools. */
+export interface SelectionGroup {
+  id: string;
+  label: string;
+  icon?: ComponentChildren;
+  /** Why the section is empty or off ("DEX not deployed"): shown on the heading, the section takes no picks. */
+  note?: string;
+}
+/** A quick pick above the list (multi): toggles its ids in the pending selection. */
+export interface SelectionPreset {
+  id: string;
+  label: string;
+  ids: readonly string[];
+}
+
 /** Every fixed string of the modal, so a host can translate it. */
 export interface SelectionLabels {
   navigate: string;
@@ -578,6 +593,11 @@ interface SelectionModalProps {
   multiSelect?: boolean;
   applyLabel?: string;
   labels?: Partial<SelectionLabels>;
+  /** Sections, in order: rows list under their `group`; a section without rows still shows its heading + `note`
+   *  (a chain the protocol is not deployed on). Multi: the heading toggles its enabled rows. */
+  groups?: readonly SelectionGroup[];
+  /** Multi: quick picks above the list ("Whole DEX", a pool, an asset); pressed = every id of it picked. */
+  presets?: readonly SelectionPreset[];
 }
 
 /** Same cycle as `useTableSort`: new key → asc → desc → off. */
@@ -615,6 +635,8 @@ export function SelectionModal({
   multiSelect = false,
   applyLabel = 'Ok',
   labels,
+  groups,
+  presets,
 }: SelectionModalProps) {
   const L = { ...SELECTION_LABELS, ...labels };
   const [search, setSearch] = useState('');
@@ -668,9 +690,15 @@ export function SelectionModal({
       sort.dir,
     )];
   }, [filteredItems, sortColumns, sort.key, sort.dir]);
+  // Sections keep their order; the sort applies inside each. Rows of no known section go last.
+  const ordered = useMemo(() => {
+    if (!groups?.length) return displayedItems;
+    const known = new Set(groups.map((g) => g.id));
+    return [...groups.flatMap((g) => displayedItems.filter((i) => i.group === g.id)), ...displayedItems.filter((i) => !i.group || !known.has(i.group))];
+  }, [displayedItems, groups]);
 
   const { selectedIndex, handleKeyDown } = useKeyboardNav({
-    items: displayedItems,
+    items: ordered,
     onSelect: (item) => handleToggle(item.id),
     isEnabled: isOpen,
   });
@@ -697,6 +725,14 @@ export function SelectionModal({
       onClose();
     }
   };
+
+  /** Toggle a set (a section heading, a preset): all of its enabled ids picked -> drop them, else add the missing ones. */
+  const toggleMany = (ids: readonly string[]) => {
+    const on = ids.filter((id) => !items.find((i) => i.id === id)?.disabled);
+    if (!on.length) return;
+    setTempSelected((prev) => (on.every((id) => prev.includes(id)) ? prev.filter((id) => !on.includes(id)) : [...new Set([...prev, ...on])]));
+  };
+  const allOn = (ids: readonly string[]) => { const on = ids.filter((id) => !items.find((i) => i.id === id)?.disabled); return on.length > 0 && on.every((id) => tempSelected.includes(id)); };
 
   const handleSelectAll = () => {
     // only what the search leaves visible (and enabled); rows already chosen outside the filter stay chosen
@@ -774,13 +810,116 @@ export function SelectionModal({
   // One block ABOVE the scroller, not a sticky pinned inside it: whatever the surface put above
   // the list - identity row, sort header, or both stacked - is a sibling of the rows, so the
   // scrollbar runs beside the rows alone instead of the whole panel. See `ScrollPane`.
+  const presetBar =
+    isMulti && presets?.length ? (
+      <div className={cn(MODAL_PADDING, 'flex flex-wrap items-center gap-1.5 py-2')} role="group">
+        {presets.map((p) => {
+          const on = allOn(p.ids);
+          return (
+            <Button key={p.id} size="sm" variant={on ? 'primary' : 'secondary'} aria-pressed={on} disabled={!p.ids.some((id) => !items.find((i) => i.id === id)?.disabled)} onClick={() => toggleMany(p.ids)}>
+              {p.label}
+            </Button>
+          );
+        })}
+      </div>
+    ) : null;
   const pinnedHeader =
-    listHeader || sortHeader ? (
+    listHeader || sortHeader || presetBar ? (
       <>
         {listHeader}
+        {presetBar}
         {sortHeader}
       </>
     ) : null;
+
+  const renderRow = (item: SelectionItem, idx: number) => {
+    const isSelected = tempSelected.includes(item.id);
+    const isHighlighted = idx === selectedIndex;
+    const isDisabled = !!item.disabled;
+    return (
+      <button
+        key={item.id}
+        type="button"
+        disabled={isDisabled}
+        onClick={() => handleToggle(item.id)}
+        className={cn(
+          `w-full flex items-center gap-3 ${MODAL_PADDING} py-2 coarse:min-h-14 transition-colors`,
+          isDisabled
+            ? 'opacity-60 cursor-not-allowed'
+            : isHighlighted
+              ? 'bg-bg-2'
+              : 'hover:bg-bg-2',
+          isSelected && !isDisabled ? 'bg-bg-primary' : '',
+        )}
+      >
+        {item.icon &&
+          (isStringIcon(item.icon) && isSvgPath(item.icon) ? (
+            <img src={item.icon} alt={item.label} className="w-8 h-8 rounded-xs" />
+          ) : (
+            <div
+              className={`w-8 h-8 flex items-center justify-center ${isSelected ? 'text-primary' : 'text-fg-2'}`}
+            >
+              {renderIcon(item.icon, 'w-5 h-5')}
+            </div>
+          ))}
+        <div className="flex-1 text-left min-w-0">
+          <div
+            className={`font-title text-sm truncate mt-0.5 ${isSelected ? 'text-primary font-medium' : ''}`}
+          >
+            {item.label}
+          </div>
+          {item.caption && (
+            <div className="text-xs text-fg-3 truncate -mt-1">{item.caption}</div>
+          )}
+          {item.note && <div className="text-xs text-red whitespace-normal break-words">{item.note}</div>}
+        </div>
+        {item.badge}
+        {/* No trailing check mark: it shoved the right-aligned amount block (wallet balance /
+            USD) left on the selected row. Selection already reads from bg-bg-primary plus
+            the primary label colour. */}
+      </button>
+    );
+  };
+
+  /** Section heading: icon + label + picked/total (+ the note of an empty section). Multi: a button toggling the section. */
+  const renderGroup = (g: SelectionGroup, rows: SelectionItem[]) => {
+    const ids = rows.map((r) => r.id);
+    const live = rows.filter((r) => !r.disabled);
+    const n = live.filter((r) => tempSelected.includes(r.id)).length;
+    const inner = (
+      <>
+        {g.icon && <span className="flex h-5 w-5 shrink-0 items-center justify-center">{g.icon}</span>}
+        <span className="min-w-0 truncate font-medium text-fg-1">{g.label}</span>
+        {g.note ? <span className="min-w-0 truncate text-fg-3">· {g.note}</span> : live.length > 0 && <span className="ml-auto shrink-0 tabular-nums text-fg-3">{n}/{live.length}</span>}
+      </>
+    );
+    const cls = cn(MODAL_PADDING, 'flex w-full items-center gap-2 bg-bg-2 py-1.5 text-left text-xs');
+    return isMulti && live.length > 0 ? (
+      <button type="button" key={`g-${g.id}`} data-group={g.id} aria-pressed={allOn(ids)} onClick={() => toggleMany(ids)} className={cn(cls, 'hover:bg-bg-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring')}>
+        {inner}
+      </button>
+    ) : (
+      <div key={`g-${g.id}`} data-group={g.id} role="presentation" className={cn(cls, !live.length && 'opacity-60')}>
+        {inner}
+      </div>
+    );
+  };
+  const searching = !!debouncedSearch.trim();
+  const body = groups?.length
+    ? (() => {
+        let idx = 0;
+        const known = new Set(groups.map((g) => g.id));
+        const out: ComponentChildren[] = [];
+        for (const g of groups) {
+          const rows = ordered.filter((i) => i.group === g.id);
+          if (!rows.length && searching) continue;
+          out.push(renderGroup(g, rows));
+          for (const r of rows) out.push(renderRow(r, idx++));
+        }
+        for (const r of ordered.filter((i) => !i.group || !known.has(i.group))) out.push(renderRow(r, idx++));
+        return out;
+      })()
+    : ordered.map((item, idx) => renderRow(item, idx));
 
   return (
     <BaseModal
@@ -832,55 +971,8 @@ export function SelectionModal({
       }
     >
       <div className="divide-y divide-border">
-        {displayedItems.map((item, idx) => {
-          const isSelected = tempSelected.includes(item.id);
-          const isHighlighted = idx === selectedIndex;
-          const isDisabled = !!item.disabled;
-          return (
-            <button
-              key={item.id}
-              type="button"
-              disabled={isDisabled}
-              onClick={() => handleToggle(item.id)}
-              className={cn(
-                `w-full flex items-center gap-3 ${MODAL_PADDING} py-2 coarse:min-h-14 transition-colors`,
-                isDisabled
-                  ? 'opacity-60 cursor-not-allowed'
-                  : isHighlighted
-                    ? 'bg-bg-2'
-                    : 'hover:bg-bg-2',
-                isSelected && !isDisabled ? 'bg-bg-primary' : '',
-              )}
-            >
-              {item.icon &&
-                (isStringIcon(item.icon) && isSvgPath(item.icon) ? (
-                  <img src={item.icon} alt={item.label} className="w-8 h-8 rounded-xs" />
-                ) : (
-                  <div
-                    className={`w-8 h-8 flex items-center justify-center ${isSelected ? 'text-primary' : 'text-fg-2'}`}
-                  >
-                    {renderIcon(item.icon, 'w-5 h-5')}
-                  </div>
-                ))}
-              <div className="flex-1 text-left min-w-0">
-                <div
-                  className={`font-title text-sm truncate mt-0.5 ${isSelected ? 'text-primary font-medium' : ''}`}
-                >
-                  {item.label}
-                </div>
-                {item.caption && (
-                  <div className="text-xs text-fg-3 truncate -mt-1">{item.caption}</div>
-                )}
-                {item.note && <div className="text-xs text-red whitespace-normal break-words">{item.note}</div>}
-              </div>
-              {item.badge}
-              {/* No trailing check mark: it shoved the right-aligned amount block (wallet balance /
-                  USD) left on the selected row. Selection already reads from bg-bg-primary plus
-                  the primary label colour. */}
-            </button>
-          );
-        })}
-        {displayedItems.length === 0 && (
+        {body}
+        {ordered.length === 0 && !(groups?.length && !searching) && (
           <PageState
             kind="empty"
             message={search ? `${emptyMessage} for "${search}"` : emptyMessage}
@@ -964,7 +1056,7 @@ export function FilterButton({
               );
             })}
             {remainingCount > 0 && (
-              <span className="text-sm text-primary font-bold pl-0.5">+{remainingCount}</span>
+              <span className="text-sm text-primary font-semibold pl-0.5">+{remainingCount}</span>
             )}
             {onClear && (
               <button
