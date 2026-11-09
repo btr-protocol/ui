@@ -4,6 +4,10 @@ import { useEffect, useState } from 'preact/hooks';
 export const ROUTE_EVENT = 'btr:route';
 const PARAM = 'modal';
 
+/** The modal whose `history.back()` is in flight: a second close in the same tick (a select's own onSelect close + the modal's onClose)
+ *  must not pop a second entry and walk off the page. Cleared by the popstate that back produces (and on open). */
+let closing: string | null = null;
+
 const named = (name: string) =>
   history.state?.modal === name || new URLSearchParams(location.search).get(PARAM) === name;
 
@@ -16,7 +20,7 @@ const named = (name: string) =>
 export function useModalRoute(name: string): [open: boolean, setOpen: (open: boolean) => void] {
   const [open, set] = useState(() => typeof window !== 'undefined' && named(name));
   useEffect(() => {
-    const sync = () => set(named(name));
+    const sync = () => { closing = null; set(named(name)); };
     sync();
     addEventListener('popstate', sync);
     return () => removeEventListener('popstate', sync);
@@ -25,12 +29,17 @@ export function useModalRoute(name: string): [open: boolean, setOpen: (open: boo
     if (next === named(name)) return set(next);
     const url = new URL(location.href);
     if (next) {
+      closing = null;
       url.searchParams.set(PARAM, name);
       history.pushState({ ...history.state, idx: (history.state?.idx ?? 0) + 1, modal: name }, '', url);
       dispatchEvent(new Event(ROUTE_EVENT));
       return set(true);
     }
-    if (history.state?.modal === name) return history.back(); // our entry: popstate closes it
+    if (history.state?.modal === name) {
+      if (closing === name) return; // already closing
+      closing = name;
+      return history.back(); // our entry: popstate closes it
+    }
     url.searchParams.delete(PARAM); // deep link: nothing of ours behind it
     history.replaceState({ ...history.state, modal: undefined }, '', url);
     dispatchEvent(new Event(ROUTE_EVENT));
