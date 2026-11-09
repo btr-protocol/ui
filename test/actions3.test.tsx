@@ -13,7 +13,15 @@ test('formatQtyStr: the auto formatter on chain decimal strings', () => {
   expect(formatQtyStr('0.04567')).toBe('0.0457');
   expect(formatQtyStr('0.00000973')).toBe('0.00001');
   expect(formatQtyStr('0.5')).toBe('0.5');
-  expect(formatQtyStr('n/a')).toBe('n/a');
+  expect(formatQtyStr('n/a')).toBe('—');
+  expect(formatQtyStr('')).toBe('—');
+  expect(formatQtyStr('0x1f')).toBe('—');
+  expect(formatQtyStr('0.0000000001')).toBe('<0.000001');
+  expect(formatQtyStr('0.0000004')).toBe('<0.000001');
+  expect(formatQtyStr('0.0000006')).toBe('0.000001');
+  expect(formatQtyStr('0')).toBe('0');
+  expect(formatQtyStr('-0.0')).toBe('0');
+  expect(formatQtyStr('-0.00000000001')).toBe('>-0.000001');
 });
 
 test('TokenAmount: icon + formatted qty + symbol', () => {
