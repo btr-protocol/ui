@@ -27,11 +27,9 @@ export const DATA_TABLE_ROW = 'transition-colors hover:bg-bg-2';
  */
 export const ROW_ACTIONS =
   'transition-opacity hoverable:opacity-0 group-hover:opacity-100 focus-within:opacity-100';
-/** Selected row of a `selectable` table: the same surface as the detail pane it opens (bg-1, so it
- *  fuses into it when the list sits on bg-0), a primary bar on the left and bold text, so the
- *  state is never colour alone. */
-export const SELECTED_ROW =
-  'bg-bg-1 hover:bg-bg-1 font-semibold shadow-[inset_3px_0_0_var(--primary)]';
+/** Selected row of a `selectable` table: the SelectionModal highlight (primary tint + primary text, bold so
+ *  the state is never colour alone). Cells that pin their own text colour must follow it themselves. */
+export const SELECTED_ROW = 'bg-bg-primary hover:bg-bg-primary text-primary font-semibold';
 
 /** Roving-focus target for a row key: arrows step (clamped), Home/End jump. null = not ours. */
 export function rowNavTarget(key: string, index: number, count: number): number | null {
@@ -229,6 +227,8 @@ export interface TableProps<Row> {
   selectedKey?: string | null;
   /** Visually hides the column header (kept for screen readers). The frame (outer border, nested radius, row dividers) stays. */
   noHeader?: boolean;
+  /** false = no own border/radius/fill (the table sits inside a frame that already has one, e.g. the master of a MasterDetail). Default true. */
+  frame?: boolean;
   rowKey: (row: Row, idx: number) => string;
   /** Rows held above the body: never searched, sorted or counted as empty (aggregates that frame
    *  the rows beneath them). Plain desktop table only: the virtual body and the mobile stack
@@ -422,6 +422,7 @@ export function Table<Row>({
   onSelect,
   selectedKey = null,
   noHeader = false,
+  frame = true,
   rowKey,
   pinned,
   emptyMessage = 'No results',
@@ -552,7 +553,7 @@ export function Table<Row>({
 
       <Panel
         // every table wears the frame (outer border, radius by nesting, divided rows)
-        className={cn('overflow-hidden', compact && 'flex flex-col flex-1 min-h-0')}
+        className={cn('overflow-hidden', !frame && 'rounded-none border-0 bg-transparent shadow-none', compact && 'flex flex-col flex-1 min-h-0')}
       >
         {title && (
           <PanelHeader>

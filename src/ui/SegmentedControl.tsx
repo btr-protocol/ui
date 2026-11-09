@@ -41,7 +41,7 @@ export function SegmentedControl<T extends string>({
   const pad =
     size === 'sm'
       ? 'px-2.5 py-1 text-xs touch:min-h-11'
-      : 'px-3 py-1.5 text-sm touch:min-h-[var(--ctl-m)]';
+      : 'px-3 text-sm';
 
   // Scrolls when the tabs outrun the row (6 admin tabs at 360dp): `seg-fade` masks whichever edge
   // still has content, and the active tab is centred.
@@ -84,6 +84,8 @@ export function SegmentedControl<T extends string>({
       }}
       className={cn(
         'seg-fade relative max-w-full snap-x items-center scroll-x bg-bg-2 p-0.5 border border-border',
+        // md rides the control height token: same height as Input sm / Button sm / SearchInput in one row.
+        size === 'md' && 'h-[var(--ctl-m)]',
         equal ? 'inline-grid grid-flow-col auto-cols-fr' : 'inline-flex',
         BORDER_RADIUS,
         className,
@@ -92,6 +94,7 @@ export function SegmentedControl<T extends string>({
       {options.map((opt) => {
         const cls = cn(
           pad,
+          size === 'md' && 'inline-flex h-full items-center',
           'shrink-0 snap-center whitespace-nowrap font-semibold transition-colors focus-visible:outline-offset-[-2px]',
           equal && 'justify-center text-center',
           BORDER_RADIUS,
