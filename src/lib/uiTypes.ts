@@ -15,6 +15,8 @@ export interface SelectionItem {
   badge?: ComponentChildren;
   data?: unknown;
   disabled?: boolean;
+  /** Stays first, whatever the sort (an "All" scope row); still a normal row for search, keyboard and selection. */
+  pinned?: boolean;
 }
 
 /** Dropdown menu item. */

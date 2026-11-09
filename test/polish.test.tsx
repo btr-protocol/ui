@@ -4,7 +4,9 @@ import { Button, ChartPanel, ChainGlyph, Notice, PageHeader, SegmentedControl, S
 
 test('Notice: icon is one line tall and centred; a Button child sits in the tone slot', () => {
   const h = render(<Notice tone="warning" action={<Button size="sm">Review</Button>}>x</Notice>);
-  expect(h).toContain('h-6');
+  expect(h).toContain('h-[var(--ctl-m)]'); // the glyph slot is one control tall: a notice with and without an action has the same height
+  expect(h).toContain('min-h-[calc(var(--ctl-m)+1.5rem)]');
+  expect(render(<Notice tone="warning">x</Notice>)).toContain('min-h-[calc(var(--ctl-m)+1.5rem)]');
   expect(h).toContain('h-5 w-5');
   expect(h).toContain('notice-slot');
 });

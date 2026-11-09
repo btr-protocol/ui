@@ -82,3 +82,9 @@ test('ClickMenu: focus first item on open, arrows rove, Home/End, Esc returns fo
   expect(document.activeElement).toBe(trg);
   unmount();
 });
+
+test('Notice action: a toggle exposes aria-pressed', () => {
+  const { host, unmount } = mount(<Notice tone="error" action={{ label: 'Acknowledge', onClick: () => {}, pressed: true }}>x</Notice>);
+  expect(host.querySelector('button')!.getAttribute('aria-pressed')).toBe('true');
+  unmount();
+});

@@ -66,7 +66,7 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        primary: 'border border-primary bg-primary text-black hover:brightness-110 font-semibold',
+        primary: 'border border-primary bg-primary text-black hover:brightness-110 font-semibold disabled:border-border disabled:bg-bg-3 disabled:text-fg-2 disabled:opacity-100',
         // bg-glass, not bg-bg-1/80: the palette has no alpha channel, so a slash-opacity colour
         // compiled to nothing. `--glass` is the translucent token. No blur: at 92% it is invisible.
         secondary:
