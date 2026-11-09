@@ -816,7 +816,7 @@ export function SelectionModal({
         {presets.map((p) => {
           const on = allOn(p.ids);
           return (
-            <Button key={p.id} size="sm" variant={on ? 'primary' : 'secondary'} aria-pressed={on} disabled={!p.ids.some((id) => !items.find((i) => i.id === id)?.disabled)} onClick={() => toggleMany(p.ids)}>
+            <Button key={p.id} size="sm" active={on} aria-pressed={on} disabled={!p.ids.some((id) => !items.find((i) => i.id === id)?.disabled)} onClick={() => toggleMany(p.ids)}>
               {p.label}
             </Button>
           );
