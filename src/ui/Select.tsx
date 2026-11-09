@@ -573,6 +573,8 @@ interface SelectionModalProps {
   onResetFilters?: () => void;
   hasActiveFilters?: boolean;
   size?: ModalSize;
+  /** false = a titled modal without the search box (short fixed lists: swatches). Default true. */
+  searchable?: boolean;
   multiSelect?: boolean;
   applyLabel?: string;
   labels?: Partial<SelectionLabels>;
@@ -594,6 +596,7 @@ export function SelectionModal({
   onClose,
   title,
   searchPlaceholder = 'Search...',
+  searchable = true,
   items,
   selectedIds,
   onSelect,
@@ -783,7 +786,7 @@ export function SelectionModal({
       isOpen={isOpen}
       onClose={onClose}
       title={title}
-      headerType="input"
+      headerType={searchable ? 'input' : 'title'}
       placeholder={searchPlaceholder}
       searchValue={search}
       onSearchChange={setSearch}
@@ -841,7 +844,7 @@ export function SelectionModal({
               className={cn(
                 `w-full flex items-center gap-3 ${MODAL_PADDING} py-2 coarse:min-h-14 transition-colors`,
                 isDisabled
-                  ? 'opacity-40 cursor-not-allowed'
+                  ? 'opacity-60 cursor-not-allowed'
                   : isHighlighted
                     ? 'bg-bg-2'
                     : 'hover:bg-bg-2',
@@ -867,6 +870,7 @@ export function SelectionModal({
                 {item.caption && (
                   <div className="text-xs text-fg-3 truncate -mt-1">{item.caption}</div>
                 )}
+                {item.note && <div className="text-xs text-red whitespace-normal break-words">{item.note}</div>}
               </div>
               {item.badge}
               {/* No trailing check mark: it shoved the right-aligned amount block (wallet balance /
