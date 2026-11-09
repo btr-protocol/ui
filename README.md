@@ -90,9 +90,16 @@ import { MasterDetail, Table, StackedIcons, Timeline, ChainMultiSelect } from '@
 
 - `Table` `onSelect` + `selectedKey` make rows selectable: `aria-selected`, roving tabindex, ArrowUp/Down/Home/End move focus, Enter/Space/click select. Selected row = detail-pane surface + left primary bar + bold (`SELECTED_ROW`). `noHeader` hides the column header visually (screen readers keep it); every table keeps its frame (outer border, nested radius, row dividers).
 - `NavItem.badge` / `badgeLabel` (Header + TabBar): `{ path, title, badge: 3, badgeLabel: '3 transactions awaiting your signature' }`. Hidden at 0, `99+` cap, count is visual, the sentence is read. TabBar labels now ellipsise (no crowding at 360px).
-- `<StackedIcons items={[{ id, label, icon }]} max={3} size="sm|md" />`: first N icons, `+N` chip, full list as accessible name.
+- `<StackedIcons items={[{ id, label, icon }]} max={3} size="sm|md" shape="circle|square" />`: first N icons, `+N` chip, full list as accessible name.
 - `<Timeline items={[{ id, icon: 'check', title, meta, href, linkLabel, group: 'Today' }]} empty="No activity yet" />`.
 - `<ChainMultiSelect chains={chains} value={ids} onChange={setIds} />`: trigger with stacked chain icons ("All" when full), modal with search, sort and Select All, at least one stays selected.
+
+## 0.5 rules (type scale, icon shapes, one multi picker)
+
+- **Type scale** (`lib/design.ts` `TYPE_SIZES` / `TYPE_WEIGHTS`, enforced by `test/ui-lint.test.ts`): `text-2xs` 11px micro (counters, badges) · `text-xs` 12px meta (captions, heads, helper text) · `text-sm` 14px body · `text-base` 16px emphasis / touch inputs · `text-xl` 20px headings (modal, panel) · `text-2xl` 24px display values · `text-3xl` 30px page title. Weights: `font-normal` (reset), `font-medium`, `font-semibold`. No `lg`, `4xl`, `3xs`, bold, light or arbitrary `text-[…]` sizes. Apps copy `typeViolations` into their own lint.
+- **Icon shapes**: chains are rounded squares (`ChainGlyph`, no shape option; chain sets = `<ChainStack chains={[{id,name}]} />`), tokens and protocols circles (`TokenGlyph`, `ProtocolGlyph`). `StackedIcons shape="square"` is the chain stack; the lint fails on chain marks in a round stack.
+- **One multi picker**: `MultiSelectModal` (and `SelectionModal`) take `groups` (`[{id,label,icon?,note?}]`, rows carry `group`: pools under their chain; a section with no rows shows its `note`, e.g. "DEX not deployed"; a heading toggles its rows) and `presets` (`[{id,label,ids}]`: "Whole DEX", a pool, an asset; pressed when all picked). `triggerContent` replaces the trigger body.
+- Accordions (`Expandable`) carry the chevron at the far right only.
 
 ## Checks
 

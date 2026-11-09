@@ -274,7 +274,7 @@ export function BaseModal({
       >
         {/* Visually hidden title for accessibility */}
         <VisuallyHidden>
-          <h2 id={titleId} className="text-lg font-semibold leading-none tracking-tight">
+          <h2 id={titleId} className="text-xl font-semibold leading-none tracking-tight">
             {title}
           </h2>
         </VisuallyHidden>

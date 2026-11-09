@@ -143,3 +143,41 @@ test('no Dropdown popup in screens: pickers are modals (SelectModal / MultiSelec
   for (const f of files) if (!allowed.has(f) && f !== 'src/layout/Header.tsx' && /<Dropdown\b/.test(await read(f))) bad.push(f);
   expect(bad).toEqual([]);
 });
+
+// ── type scale: lib/design.ts TYPE_SIZES / TYPE_WEIGHTS only ──────────────────────────────────────────────────────────
+import { TYPE_SIZES, TYPE_WEIGHTS } from '../src/lib/design';
+const SRC = [...new Glob('src/**/*.{ts,tsx}').scanSync('.')].filter((f) => !f.endsWith('lib/design.ts'));
+/** Every type-size / weight utility (any variant prefix) in a source: a class token, not prose. */
+export function typeViolations(src: string, sizes: readonly string[] = TYPE_SIZES, weights: readonly string[] = TYPE_WEIGHTS): string[] {
+  const bad: string[] = [];
+  for (const m of src.matchAll(/(?<![\w-])(?:[\w-]+:)*text-(3xs|2xs|xs|sm|base|lg|xl|[2-9]xl|\[[^\]\s]+\])(?![\w-])/g)) {
+    const v = m[1]!;
+    if (v.startsWith('[') ? /^(?:\d|calc|clamp|var\(--fs)/.test(v.slice(1)) : !sizes.includes(v)) bad.push(m[0]);
+  }
+  for (const m of src.matchAll(/(?<![\w-])(?:[\w-]+:)*font-(thin|extralight|light|normal|medium|semibold|bold|extrabold|black)(?![\w-])/g)) if (!weights.includes(m[1]!)) bad.push(m[0]);
+  return bad;
+}
+test('type scale: only the documented sizes and weights, no arbitrary text sizes', async () => {
+  const bad: string[] = [];
+  for (const f of SRC) for (const v of typeViolations(await read(f))) bad.push(`${f}: ${v}`);
+  expect(bad).toEqual([]);
+});
+test('type-scale lint catches what it must', () => {
+  expect(typeViolations('a text-lg b sm:text-4xl text-[2rem] font-bold md:font-light text-3xs')).toEqual(['text-lg', 'sm:text-4xl', 'text-[2rem]', 'text-3xs', 'font-bold', 'md:font-light']);
+  expect(typeViolations('text-sm text-fg-2 text-[var(--fg-0)] font-title font-medium text-primary text-black')).toEqual([]);
+});
+
+// ── icon shapes: chains are rounded squares, tokens / protocols circles ──────────────────────────────────────────────
+test('chain marks are never circles: ChainGlyph has no round path, chain sets go through ChainStack', async () => {
+  const bad: string[] = [];
+  const cs = await read('src/ui/ChainSelect.tsx');
+  const glyph = cs.slice(cs.indexOf('export function ChainGlyph'), cs.indexOf('export function ChainStack'));
+  if (/rounded-full|shape/.test(glyph)) bad.push('ChainGlyph: round / shape option');
+  for (const f of files) {
+    const src = await read(f);
+    for (const t of tags(src, 'StackedIcons')) if (/ChainGlyph|chainIcon\(/.test(t.attrs) && !/shape="square"/.test(t.attrs)) bad.push(`${f}:${t.line}: chain marks in <StackedIcons> (use <ChainStack>)`);
+    for (const t of tags(src, 'img')) if (/chainIcon\(/.test(t.attrs) && /rounded-full/.test(t.attrs)) bad.push(`${f}:${t.line}: round chain img`);
+  }
+  for (const f of ['src/ui/TokenGlyph.tsx', 'src/ui/ProtocolGlyph.tsx']) if (!/rounded-full/.test(await read(f))) bad.push(`${f}: not a circle`);
+  expect(bad).toEqual([]);
+});

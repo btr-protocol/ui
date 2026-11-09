@@ -1,10 +1,9 @@
 import { useMemo } from 'preact/hooks';
 import { useOpen } from '../lib/modalRoute';
 import { Button } from './Button';
-import { type ChainItem, ChainGlyph, chainSelectItems, CHAIN_SORT_COLUMNS } from './ChainSelect';
+import { type ChainItem, ChainStack, chainSelectItems, CHAIN_SORT_COLUMNS } from './ChainSelect';
 import { Icon } from './Icon';
 import { SelectionModal } from './Select';
-import { StackedIcons } from './StackedIcons';
 
 export interface ChainMultiSelectProps {
   chains: readonly ChainItem[];
@@ -52,15 +51,7 @@ export function ChainMultiSelect({
         {all ? (
           <span className="text-fg-2">{allLabel}</span>
         ) : (
-          <StackedIcons
-            size="sm"
-            max={maxVisible}
-            items={picked.map((c) => ({
-              id: c.id,
-              label: c.name,
-              icon: c.icon ?? <ChainGlyph chainId={c.id} name={c.name} role="trigger" />,
-            }))}
-          />
+          <ChainStack max={maxVisible} chains={picked} />
         )}
       </Button>
       <SelectionModal

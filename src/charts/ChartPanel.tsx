@@ -81,7 +81,7 @@ export function ChartPanel({ title, value, date, valueRef, dateRef, controls, ta
         <div className="mr-auto min-w-0 max-sm:flex max-sm:items-baseline max-sm:gap-2">
           <h3 id={titleId} className="truncate font-title text-sm font-semibold text-fg-0">{title}</h3>
           <div className="flex flex-wrap items-baseline gap-x-2" aria-live="off">
-            <span ref={valueRef} className="font-title text-xl font-bold tabular-nums text-fg-0">{value}</span>
+            <span ref={valueRef} className="font-title text-xl font-semibold tabular-nums text-fg-0">{value}</span>
             <span ref={dateRef} className="font-title text-xs tabular-nums text-fg-3">{date}</span>
           </div>
         </div>

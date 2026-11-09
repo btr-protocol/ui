@@ -14,9 +14,8 @@ export default {
         DEFAULT: 'var(--radius-md)',
       },
       fontSize: {
-        // Micro labels: 10/11px on desktop, 12px floor on touch (--fs-* in tokens.css).
+        // Micro labels: 11px on desktop, 12px floor on touch (--fs-2xs in tokens.css). Scale: lib/design.ts TYPE_SIZES.
         '2xs': 'var(--fs-2xs)',
-        '3xs': 'var(--fs-3xs)',
       },
       zIndex: {
         rail: 'var(--z-index-rail)',

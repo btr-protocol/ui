@@ -9,7 +9,7 @@ export function WalletGlyph({ info, size = 28 }: { info: Pick<ProviderInfo, 'nam
     <span
       style={box}
       aria-hidden="true"
-      className="flex shrink-0 items-center justify-center rounded-sm bg-bg-3 text-xs font-bold text-fg-1"
+      className="flex shrink-0 items-center justify-center rounded-sm bg-bg-3 text-xs font-semibold text-fg-1"
     >
       {info.name.charAt(0).toUpperCase()}
     </span>
