@@ -117,7 +117,7 @@ export function AddressField({
             {addressGroups(check.value).map((g, i) => (
               <span key={i}>
                 {g.map((s, j) => (
-                  <span key={j} className={s.bold ? 'font-bold text-fg-1' : undefined}>
+                  <span key={j} className={s.bold ? 'font-semibold text-fg-1' : undefined}>
                     {s.text}
                   </span>
                 ))}

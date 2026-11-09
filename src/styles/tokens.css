@@ -20,9 +20,8 @@
   --ctl-s: 1.5rem;
   --ctl-m: 2rem;
   --ctl-l: 2.5rem;
-  /* 2xs/3xs micro labels: desktop keeps 10/11px, touch floors at 12px. */
-  --fs-2xs: 0.625rem;
-  --fs-3xs: 0.6875rem;
+  /* 2xs micro labels (the one size under xs, see lib/design.ts TYPE_SIZES): 11px on desktop, touch floors at 12px. */
+  --fs-2xs: 0.6875rem;
 
   --dvh: 1vh; /* dynamic viewport unit, vh where dvh is unknown (iOS < 15.4) */
   --dur-2: 180ms;
@@ -68,7 +67,6 @@
 @media (pointer: coarse) {
   :root {
     --fs-2xs: 0.75rem;
-    --fs-3xs: 0.75rem;
   }
 }
 

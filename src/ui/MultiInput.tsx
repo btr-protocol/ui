@@ -112,7 +112,7 @@ export function MultiInput({
             )}
           />
           {separator && index === Math.floor(length / 2) - 1 && (
-            <span className="mx-0.5 text-2xl sm:mx-3 sm:text-4xl text-fg-2">{separator}</span>
+            <span className="mx-0.5 text-2xl sm:mx-3 sm:text-3xl text-fg-2">{separator}</span>
           )}
         </>
       ))}

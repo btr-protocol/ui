@@ -103,7 +103,7 @@ export function Footer({
 
   return (
     // h/pb/pl/pr = --chrome-b + safe insets; ::before paints bg-0 under the system nav bar.
-    <footer className="no-print max-lg:hidden kbd:hidden fixed inset-x-0 bottom-0 z-footer flex h-[var(--chrome-b)] items-center pb-[var(--sab)] pl-[var(--sal)] pr-[var(--sar)] font-light text-sm safe-b">
+    <footer className="no-print max-lg:hidden kbd:hidden fixed inset-x-0 bottom-0 z-footer flex h-[var(--chrome-b)] items-center pb-[var(--sab)] pl-[var(--sal)] pr-[var(--sar)] text-sm safe-b">
       <nav className="relative px-3 max-w-6xl h-full mx-auto flex items-center justify-between border border-b-0 rounded-t-lg backdrop-blur-md bg-glass border-border w-full">
         <div className="flex items-center gap-3">
           <SocialLinks links={social} onNavigate={onNavigate} />

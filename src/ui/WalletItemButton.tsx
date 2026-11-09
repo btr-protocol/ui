@@ -68,7 +68,7 @@ export function WalletItemButton({
             <span className={`font-medium text-sm ${isSelected ? 'text-primary' : 'text-fg-1'}`}>
               {name}
             </span>
-            {caption && <span className="text-3xs text-fg-3 truncate">{caption}</span>}
+            {caption && <span className="text-2xs text-fg-3 truncate">{caption}</span>}
           </span>
         }
         valueClassName="flex items-center"

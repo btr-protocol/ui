@@ -19,7 +19,7 @@ export function SettingRow({ label, description, children }: SettingRowProps) {
         description ? (
           <span className="flex flex-col gap-0.5">
             <span>{label}</span>
-            <span className="text-3xs leading-snug text-fg-3">{description}</span>
+            <span className="text-2xs leading-snug text-fg-3">{description}</span>
           </span>
         ) : (
           label

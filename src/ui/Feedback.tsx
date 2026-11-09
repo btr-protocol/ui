@@ -148,7 +148,7 @@ export function Notice({ label, tone = 'default', size = 'bar', icon, role, chil
       className={cn(
         'flex flex-wrap items-start',
         note
-          ? 'mt-1 gap-1.5 px-1 text-3xs leading-snug'
+          ? 'mt-1 gap-1.5 px-1 text-2xs leading-snug'
           : cn('surface min-h-[calc(var(--ctl-m)+1.5rem)] gap-x-3 gap-y-2 rounded-lg border px-4 py-3 text-sm leading-6', neutral && 'text-fg-2'),
         neutral && (note ? 'text-fg-2' : 'border-border bg-bg-2'),
         className,

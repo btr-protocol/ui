@@ -77,7 +77,7 @@ export function ChartShell({
           style={watermarkBoxStyle}
         >
           <div
-            className="font-title font-bold text-fg-3 opacity-10 whitespace-nowrap overflow-hidden px-4 max-w-full"
+            className="font-title font-semibold text-fg-3 opacity-10 whitespace-nowrap overflow-hidden px-4 max-w-full"
             style={watermarkStyle ?? { fontSize: watermarkSize(title) }}
           >
             {title}

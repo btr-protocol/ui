@@ -666,7 +666,7 @@ export function Table<Row>({
                             <tr>
                               <td
                                 colSpan={columns.length}
-                                className="py-2 text-center text-3xs uppercase tracking-wide text-fg-3"
+                                className="py-2 text-center text-2xs uppercase tracking-wide text-fg-3"
                               >
                                 End of activity
                               </td>

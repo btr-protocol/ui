@@ -1,6 +1,6 @@
 import { expect, test } from 'bun:test';
 import { render } from 'preact-render-to-string';
-import { Button, ChartPanel, ChainGlyph, Notice, PageHeader, SegmentedControl, StackedIcons } from '../src';
+import { Button, ChartPanel, ChainGlyph, ChainStack, Notice, PageHeader, ProtocolGlyph, SegmentedControl, StackedIcons, TokenGlyph } from '../src';
 
 test('Notice: icon is one line tall and centred; a Button child sits in the tone slot', () => {
   const h = render(<Notice tone="warning" action={<Button size="sm">Review</Button>}>x</Notice>);
@@ -11,9 +11,17 @@ test('Notice: icon is one line tall and centred; a Button child sits in the tone
   expect(h).toContain('notice-slot');
 });
 
-test('glyphs are circular', () => {
-  expect(render(<ChainGlyph chainId={143} />)).toContain('rounded-full');
-  expect(render(<ChainGlyph chainId={143} />)).not.toContain('rounded-xs');
+test('icon shapes: chains are rounded squares (owner round 4), tokens and protocols circles', () => {
+  for (const c of [143, 999999]) {
+    const g = render(<ChainGlyph chainId={c} name="Zz" />);
+    expect(g).toContain('rounded-xs');
+    expect(g).not.toContain('rounded-full');
+  }
+  const cs = render(<ChainStack chains={[{ id: 143, name: 'Monad' }, { id: 1, name: 'Ethereum' }]} />);
+  expect(cs).toContain('rounded-xs');
+  expect(cs).not.toMatch(/class="[^"]*rounded-full[^"]*"[^>]*><img/);
+  for (const sym of ['USDC', 'NOPE_TOKEN']) expect(render(<TokenGlyph symbol={sym} />)).toContain('rounded-full');
+  expect(render(<ProtocolGlyph name="Aave" />)).toContain('rounded-full');
   const s = render(<StackedIcons items={[{ id: 1, label: 'a', icon: '/a.png' }, { id: 2, label: 'b', icon: '/b.png' }]} max={1} />);
   expect(s).toContain('rounded-full');
   expect(s).not.toContain('rounded-xs');

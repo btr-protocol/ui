@@ -89,3 +89,22 @@ export const DROPDOWN_ITEM_SIZES = {
     check: 'w-4 h-4',
   },
 } as const;
+
+// ============================================================================
+// Type scale (lint: test/ui-lint.test.ts; nothing else compiles to a size the preset knows)
+// ============================================================================
+
+/**
+ * The ONLY type sizes and weights. Pick by role, never by eye:
+ *   text-2xs   11px (12 on touch)  micro: counters, badges, tab-bar labels
+ *   text-xs    12px                meta: captions, table heads, helper/error text, chips
+ *   text-sm    14px                body: rows, inputs, buttons (sm), menus
+ *   text-base  16px                emphasis body: default buttons, touch inputs (no iOS zoom)
+ *   text-xl    20px                headings: modal + panel titles, section values
+ *   text-2xl   24px                display: hero values, amount input
+ *   text-3xl   30px                page title (h1), large hero values from sm
+ * Weights: font-normal (reset), font-medium (labels, selected), font-semibold (headings, values). No bold / light.
+ * No arbitrary `text-[…]` sizes.
+ */
+export const TYPE_SIZES = ['2xs', 'xs', 'sm', 'base', 'xl', '2xl', '3xl'] as const;
+export const TYPE_WEIGHTS = ['normal', 'medium', 'semibold'] as const;

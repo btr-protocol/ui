@@ -17,7 +17,7 @@ export function PageHeader({ title, subtitle, controls, actions }: PageHeaderPro
   return (
     <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
       <div className="min-w-0">
-        <h1 className="text-3xl font-bold text-fg-0">{title}</h1>
+        <h1 className="text-3xl font-semibold text-fg-0">{title}</h1>
         {subtitle && <p className="text-fg-2 text-sm mt-1">{subtitle}</p>}
       </div>
       {/* Controls wrap: a chain picker plus a window select exceeds 320px on their own. */}
