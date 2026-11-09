@@ -173,6 +173,9 @@ test('distinctShade: 12 hues at least 30 deg apart, then the cycle; yellows dark
   const hs = Array.from({ length: DISTINCT_MAX }, (_, i) => hue(distinctShade(i, 'dark')));
   for (let i = 0; i < hs.length; i++) for (let j = i + 1; j < hs.length; j++) { const d = Math.abs(hs[i] - hs[j]); expect(Math.min(d, 360 - d)).toBeGreaterThan(25); }
   expect(distinctShade(DISTINCT_MAX, 'dark')).toBe(distinctShade(0, 'dark'));
+  // a hue's 30-deg neighbour differs in lightness too
+  const L = (hex: string) => { const v = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16)); return (Math.max(...v) + Math.min(...v)) / 510; };
+  for (let i = 0; i < 6; i++) for (let j = 6; j < 12; j++) { const d = Math.abs(hs[i] - hs[j]); if (Math.min(d, 360 - d) < 45) expect(Math.abs(L(distinctShade(i, 'dark')) - L(distinctShade(j, 'dark')))).toBeGreaterThan(0.12); }
   const lum = (hex: string) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16)).reduce((a, b) => a + b, 0);
   const yellow = hs.findIndex((h) => h > 50 && h < 70);
   expect(lum(distinctShade(yellow, 'light'))).toBeLessThan(lum(distinctShade(yellow, 'dark')));
