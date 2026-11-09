@@ -106,10 +106,13 @@ export function NoticeAction({ label, onClick, disabled, pressed, ariaLabel }: N
   );
 }
 
-/** One line of a merged notice: its own text and its own (tone-matched) action. */
+/** One line of a merged notice: its own text, its own (tone-matched) action, its own live role and, when it differs from its siblings, its own icon. */
 export interface NoticeRow {
   id?: string | number;
   label?: string;
+  icon?: IconName;
+  /** On the row's text only: toggling the row's action (e.g. Acknowledge) never re-announces it. */
+  role?: 'alert' | 'status';
   children?: ComponentChildren;
   action?: NoticeActionProps | ComponentChildren;
 }
@@ -142,7 +145,6 @@ export function Notice({ label, tone = 'default', size = 'bar', icon, role, chil
   const tint = neutral ? undefined : color;
   return (
     <div
-      role={role ?? (tone === 'error' ? 'alert' : undefined)}
       className={cn(
         'flex flex-wrap items-start',
         note
@@ -178,7 +180,8 @@ export function Notice({ label, tone = 'default', size = 'bar', icon, role, chil
         <ul className="notice-rows min-w-0 flex-1">
           {rows.map((r, i) => (
             <li key={r.id ?? i} className="flex min-h-[var(--ctl-m)] flex-wrap items-center gap-x-3 gap-y-1">
-              <span className="min-w-0 flex-1 basis-48">
+              <span role={r.role} className="min-w-0 flex-1 basis-48">
+                {r.icon && <Icon name={r.icon} className="mr-1.5 inline h-4 w-4 align-[-0.1875rem]" style={tint ? { color: tint } : undefined} />}
                 {r.label && <span className={cn('font-medium', neutral && 'text-fg-1')} style={tint && { color: tint }}>{r.label}</span>}
                 {r.label && r.children != null && r.children !== false && r.children !== '' && <span className="mx-2 text-fg-3">·</span>}
                 {r.children}
@@ -188,7 +191,8 @@ export function Notice({ label, tone = 'default', size = 'bar', icon, role, chil
           ))}
         </ul>
       ) : (
-      <div className={cn('min-w-0 flex-1 basis-64', !note && 'py-[calc((var(--ctl-m)-1.5rem)/2)]')}>
+      // the live role sits on the text, not on the notice: a toggled action (Acknowledge) or icon never re-announces it
+      <div role={role ?? (tone === 'error' ? 'alert' : undefined)} className={cn('min-w-0 flex-1 basis-64', !note && 'py-[calc((var(--ctl-m)-1.5rem)/2)]')}>
         {label && (
           <span
             className={cn('font-medium', neutral && !note && 'text-fg-1')}
@@ -201,7 +205,7 @@ export function Notice({ label, tone = 'default', size = 'bar', icon, role, chil
         {body && children}
       </div>
       )}
-      {action && !rows?.length && (
+      {action && (
         <span className={cn('notice-slot ml-auto shrink-0 self-center', !note && 'max-sm:pl-8')}>
           {isActionSpec(action) ? <NoticeAction {...action} /> : (action as ComponentChildren)}
         </span>
@@ -210,32 +214,35 @@ export function Notice({ label, tone = 'default', size = 'bar', icon, role, chil
   );
 }
 
-const toRows = (n: NoticeProps): NoticeRow[] =>
-  n.rows?.length ? [...n.rows] : [{ id: n.id, label: n.label, children: n.children, action: n.action }];
+const liveRole = (n: NoticeProps) => n.role ?? (n.tone === 'error' ? 'alert' : undefined);
+const toRows = (n: NoticeProps, icon: boolean): NoticeRow[] =>
+  n.rows?.length
+    ? [...n.rows]
+    : [{ id: n.id, label: n.label, children: n.children, action: n.action, role: liveRole(n), ...(icon && n.icon ? { icon: n.icon } : {}) }];
 
-/** One notice per tone, most severe first (error, warning, success, info...): same-tone notices merge into ONE notice whose rows keep
- *  their own text and action (no stack of identical banners); a tone never borrows another's colour or icon. Falsy entries are skipped,
- *  a lone notice passes through untouched. The merged notice is an `alert` if any of its notices was. */
+/** One notice per tone (and size), most severe first (error, warning, success, info...): same-tone notices merge into ONE notice whose rows keep
+ *  their own text, action and live role (an `alert` row stays an alert, a `status` row a status), and their own icon when the icons differ (an
+ *  acknowledged alert keeps its check). A tone never borrows another's colour. Falsy entries are skipped, a lone notice passes through untouched;
+ *  the merged notice keeps the size and the class names of its notices. */
 export function groupNotices(list: readonly (NoticeProps | null | false | undefined)[]): NoticeProps[] {
-  const by = new Map<NoticeTone, NoticeProps[]>();
-  for (const n of list) if (n) { const t = n.tone ?? 'default'; (by.get(t) ?? by.set(t, []).get(t)!).push(n); }
-  return [...by]
-    .sort(([a], [b]) => NOTICE_RANK[b] - NOTICE_RANK[a])
-    .map(([tone, ns]) => {
+  const by = new Map<string, NoticeProps[]>();
+  for (const n of list) if (n) { const k = `${n.tone ?? 'default'}|${n.size ?? 'bar'}`; (by.get(k) ?? by.set(k, []).get(k)!).push(n); }
+  return [...by.values()]
+    .sort((a, b) => NOTICE_RANK[b[0].tone ?? 'default'] - NOTICE_RANK[a[0].tone ?? 'default'])
+    .map((ns) => {
       if (ns.length === 1) return ns[0];
-      const icons = new Set(ns.map((n) => n.icon));
-      const role = ns.some((n) => (n.role ?? (tone === 'error' ? 'alert' : undefined)) === 'alert') ? 'alert' : ns.some((n) => n.role === 'status') ? 'status' : undefined;
-      return { tone, role, icon: icons.size === 1 ? ns[0].icon : undefined, rows: ns.flatMap(toRows) };
+      const same = new Set(ns.map((n) => n.icon)).size === 1;
+      const cls = [...new Set(ns.map((n) => n.className).filter(Boolean))].join(' ') || undefined;
+      return { id: ns[0].id, tone: ns[0].tone, size: ns[0].size, className: cls, icon: same ? ns[0].icon : undefined, rows: ns.flatMap((n) => toRows(n, !same)) };
     });
 }
 
 /** The page's notices: `<NoticeSlot notices={[offline && {...}, stale && {...}]} />` renders one notice per tone, most severe first, same-tone
- *  messages merged as rows (groupNotices). */
+ *  messages merged as rows (groupNotices). Always the same wrapper, whatever the count. */
 export function NoticeSlot({ notices, className }: { notices: readonly (NoticeProps | null | false | undefined)[]; className?: string }) {
   const gs = groupNotices(notices);
   if (!gs.length) return null;
-  if (gs.length === 1 && !className) return <Notice {...gs[0]} />;
-  return <div className={cn('space-y-2', className)}>{gs.map((n, i) => <Notice key={n.id ?? n.tone ?? i} {...n} />)}</div>;
+  return <div className={cn('space-y-2', className)}>{gs.map((n, i) => <Notice key={`${n.tone ?? 'default'}|${n.size ?? 'bar'}|${i}`} {...n} />)}</div>;
 }
 
 export type ToastKind = Severity | 'loading';
