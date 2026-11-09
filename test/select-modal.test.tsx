@@ -1,6 +1,6 @@
 import { expect, test } from 'bun:test';
 import { MultiSelectModal, SelectModal } from '../src';
-import { click, key, mount, until, useDom } from './dom';
+import { act, click, key, mount, until, useDom } from './dom';
 
 useDom();
 const items = [
@@ -51,5 +51,20 @@ test('closing after a pick pops exactly one history entry (select close + modal 
   click(row('Beta'));
   history.back = back;
   expect(n).toBe(1);
+  unmount();
+});
+
+test('MultiSelectModal: Select All picks only the filtered, enabled rows', async () => {
+  const got: string[][] = [];
+  const list = [{ value: 'a', label: 'Alpha' }, { value: 'b', label: 'Gamma' }, { value: 'c', label: 'Ogamma' }, { value: 'd', label: 'Gamma off', disabled: true }, { value: 'e', label: 'Beta' }];
+  const { host, unmount } = mount(<MultiSelectModal routeKey="t-all" label="Pools" items={list} value={['e']} onChange={(v) => got.push(v)} />);
+  click(trigger(host));
+  const input = document.querySelector<HTMLInputElement>('[role=dialog] input')!;
+  act(() => { input.value = 'gam'; input.dispatchEvent(new Event('input', { bubbles: true })); input.dispatchEvent(new Event('change', { bubbles: true })); });
+  await until(() => !([...document.querySelectorAll('[role=dialog] button')].some((b) => b.textContent?.trim() === 'Alpha')), 1500);
+  const btn = (l: string) => [...document.querySelectorAll<HTMLElement>('[role=dialog] button')].find((b) => b.textContent?.trim() === l)!;
+  click(btn('Select All'));
+  click(btn('Apply'));
+  expect([...got[0]].sort()).toEqual(['b', 'c', 'e']); // e was already chosen outside the filter; a and d never
   unmount();
 });

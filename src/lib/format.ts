@@ -41,8 +41,16 @@ export function formatQty(v: number, locale?: string): string {
   return new Intl.NumberFormat(locale, { maximumFractionDigits: d }).format(v);
 }
 
-/** `formatQty` for a decimal string as the chain scan gives it ("149.950130446265320681"). Non-numeric input is returned as is. */
+const DECIMAL = /^-?\d+(?:\.\d+)?$/;
+/** `formatQty` for a decimal string as the chain scan gives it ("149.950130446265320681"). Anything that is not a plain decimal
+ *  (empty, hex, NaN text) is "—", never a guess; non-zero dust below the 6-dp floor is "<0.000001"; never "-0". */
 export function formatQtyStr(human: string, locale?: string): string {
-  const n = Number(human);
-  return Number.isFinite(n) ? formatQty(n, locale) : human;
+  const h = human.trim();
+  if (!DECIMAL.test(h)) return '—';
+  const n = Number(h);
+  if (!Number.isFinite(n)) return '—';
+  if (n === 0) return '0';
+  if (Math.abs(n) < 0.0000005) return n > 0 ? '<0.000001' : '>-0.000001';
+  const out = formatQty(n, locale);
+  return out === '-0' ? '0' : out;
 }

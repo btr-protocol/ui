@@ -695,19 +695,22 @@ export function SelectionModal({
   };
 
   const handleSelectAll = () => {
-    setTempSelected(items.filter((item) => !item.disabled).map((item) => item.id));
+    // only what the search leaves visible (and enabled); rows already chosen outside the filter stay chosen
+    const visible = filteredItems.filter((item) => !item.disabled).map((item) => item.id);
+    setTempSelected((prev) => [...new Set([...prev, ...visible])]);
   };
 
   const handleDeselectAll = () => {
-    if (tempSelected.length > minSelections) {
-      setTempSelected(tempSelected.slice(0, minSelections));
-    }
+    // clears only the visible rows
+    const next = tempSelected.filter((id) => !selectableIds.includes(id));
+    if (next.length >= minSelections) setTempSelected(next);
+    else setTempSelected(tempSelected.slice(0, minSelections));
   };
 
   // Counted over what Select All can actually reach: disabled rows are skipped there, so
   // comparing against `items.length` left the label stuck on 'Select All' forever.
-  const selectableCount = items.filter((item) => !item.disabled).length;
-  const allSelected = tempSelected.length === selectableCount && selectableCount > 0;
+  const selectableIds = filteredItems.filter((item) => !item.disabled).map((item) => item.id);
+  const allSelected = selectableIds.length > 0 && selectableIds.every((id) => tempSelected.includes(id));
 
   const handleApply = () => {
     if (tempSelected.length < minSelections) {
