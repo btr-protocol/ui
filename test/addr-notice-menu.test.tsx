@@ -29,38 +29,46 @@ test('pickNotice: highest severity wins, first of equals, falsy skipped', () => 
   expect(pickNotice([null, false])).toBeUndefined();
 });
 
-test('NoticeSlot: one notice per tone, most severe first; a lone notice passes through', () => {
+test('NoticeSlot: one notice per tone, most severe first, always one wrapper; a lone notice renders as itself', () => {
   const html = render(<NoticeSlot notices={[{ tone: 'info', label: 'FYI' }, { tone: 'error', label: 'Down' }, false]} />);
-  expect(html).toContain('Down');
-  expect(html).toContain('FYI');
   expect(html.indexOf('Down')).toBeLessThan(html.indexOf('FYI'));
   expect(html).not.toContain('notice-rows');
   expect(render(<NoticeSlot notices={[false]} />)).toBe('');
-  expect(render(<NoticeSlot notices={[{ tone: 'warning', label: 'only' }]} />)).toBe(render(<Notice tone="warning" label="only" />));
+  expect(render(<NoticeSlot notices={[{ tone: 'warning', label: 'only' }]} />)).toBe(`<div class="space-y-2">${render(<Notice tone="warning" label="only" />)}</div>`);
   expect(render(<Notice label="x" />)).toContain('x'); // Notice itself unchanged
 });
 
-test('groupNotices: same tone merges into ONE notice of rows (own text, own action), tones stay apart', () => {
+test('groupNotices: same tone merges into ONE notice of rows; rows keep text, action, live role, own icon when icons differ', () => {
   const ack = { label: 'Acknowledge', onClick: () => {} };
   const gs = groupNotices([
-    { tone: 'warning', children: 'Partial balances', role: 'status' },
+    { tone: 'warning', children: 'Partial balances', role: 'status', className: 'a' },
     { tone: 'error', children: 'Sim failed' },
-    { tone: 'warning', children: 'Out of date', action: ack },
+    { tone: 'warning', children: 'Out of date', action: ack, className: 'a' },
     null,
     { tone: 'warning', rows: [{ id: 'r', children: 'nested' }] },
+    { tone: 'warning', size: 'note', children: 'small' },
   ]);
-  expect(gs.map((g) => g.tone)).toEqual(['error', 'warning']);
+  expect(gs.map((g) => [g.tone, g.size])).toEqual([['error', undefined], ['warning', undefined], ['warning', 'note']]);
   expect(gs[0].children).toBe('Sim failed'); // lone: untouched
   expect(gs[1].rows?.map((r) => r.children)).toEqual(['Partial balances', 'Out of date', 'nested']);
+  expect(gs[1].rows?.map((r) => r.role)).toEqual(['status', undefined, undefined]);
   expect(gs[1].rows?.[1].action).toBe(ack);
-  expect(gs[1].role).toBe('status');
-  expect(groupNotices([{ tone: 'error', children: 'a', role: 'status' }, { tone: 'error', children: 'b' }])[0].role).toBe('alert'); // an implicit alert keeps the group an alert
-  const html = render(<NoticeSlot notices={gs} />);
-  expect((html.match(/role="alert"/g) ?? []).length).toBe(1);
+  expect(gs[1].className).toBe('a');
+  const html = render(<NoticeSlot notices={gs.slice(0, 2)} />);
   expect((html.match(/notice-rows/g) ?? []).length).toBe(1);
   expect((html.match(/<li[ >]/g) ?? []).length).toBe(3);
   expect((html.match(/notice-action/g) ?? []).length).toBe(1);
   expect((html.match(/<svg/g) ?? []).length).toBe(2); // one icon per tone, not per row
+  // two alerts, one acknowledged: each row its own role=alert on the TEXT (the action outside it), the acknowledged keeps its check
+  const highs = groupNotices([{ tone: 'error', icon: 'check-circle', children: 'h1', action: ack }, { tone: 'error', children: 'h2', action: ack }])[0];
+  expect(highs.icon).toBeUndefined();
+  expect(highs.rows?.map((r) => [r.role, r.icon])).toEqual([['alert', 'check-circle'], ['alert', undefined]]);
+  const h = render(<Notice {...highs} />);
+  expect((h.match(/role="alert"/g) ?? []).length).toBe(2);
+  expect(h).not.toMatch(/role="alert"[^>]*>[^<]*<button/); // the button never sits inside the live text
+  const single = render(<Notice tone="error" action={ack}>x</Notice>);
+  expect(single.match(/^<div [^>]*>/)![0]).not.toContain('role='); // no role on the container: the text carries it
+  expect(single).toContain('<div role="alert" class="min-w-0');
 });
 
 test('Table always wears the frame; noHeader only hides the header', () => {
