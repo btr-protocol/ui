@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test';
-import { MultiSelectModal, SelectModal } from '../src';
+import { ChainSelect, Expandable, InitialsGlyph, MultiSelectModal, SelectModal, WalletItemButton } from '../src';
 import { act, click, key, mount, until, useDom } from './dom';
 
 useDom();
@@ -79,4 +79,51 @@ test('SelectModal/MultiSelectModal: triggerIcon, triggerLabel and a wrapped note
   click(trigger(many.host));
   expect(dialog()!.textContent).toContain('no role on this chain');
   many.unmount();
+});
+
+test('WalletItemButton: connecting loader sits in a fixed centred slot that is there before it spins', () => {
+  const text = mount(<WalletItemButton name="Disconnect" onClick={() => {}} />);
+  expect(text.host.querySelector('span.h-5.w-5')).toBeNull(); // a text-only row cannot show a loader: no reserved slot
+  text.unmount();
+  const idle = mount(<WalletItemButton name="Rabby" icon={<i />} onClick={() => {}} />);
+  const slot = idle.host.querySelector('span.h-5.w-5');
+  expect(slot).not.toBeNull();
+  expect(slot!.children.length).toBe(0);
+  idle.unmount();
+  const busy = mount(<WalletItemButton name="Rabby" icon={<i />} isConnecting onClick={() => {}} />);
+  expect(busy.host.querySelector('span.h-5.w-5 .animate-spin')).not.toBeNull();
+  busy.unmount();
+});
+
+test('Expandable bordered: own border + nesting radius, flat stays a divider row', () => {
+  const a = mount(<Expandable bordered header="H">B</Expandable>);
+  expect(a.host.firstElementChild!.className).toContain('surface');
+  expect(a.host.firstElementChild!.className).toContain('border-border');
+  a.unmount();
+  const b = mount(<Expandable header="H">B</Expandable>);
+  expect(b.host.firstElementChild!.className).not.toContain('surface');
+  b.unmount();
+});
+
+test('ChainSelect: all-chains scope is a pinned row (not a list row); chain rows are rounded squares', () => {
+  const picked: string[] = [];
+  const { host, unmount } = mount(<ChainSelect routeKey="t-chain" chains={[{ id: 143, name: 'Monad' }, { id: 1, name: 'Ethereum' }]} value={null} allLabel="All networks" onAll={() => picked.push('all')} onChange={(c) => picked.push(String(c))} />);
+  expect(host.querySelector('button')!.textContent).toContain('All networks');
+  click(host.querySelector('button')!);
+  expect(document.querySelector('[role=dialog]')!.innerHTML).toContain('rounded-xs');
+  const rows = [...document.querySelectorAll<HTMLElement>('[role=dialog] [role=option], [role=dialog] button')];
+  expect(rows.some((r) => r.textContent?.includes('All networks') && r.querySelector('svg'))).toBe(true); // icon slot like the other rows
+  click(row('All networks'));
+  expect(picked).toEqual(['all']);
+  unmount();
+});
+
+test('InitialsGlyph: graphemes, no 0x, tint', () => {
+  const a = mount(<InitialsGlyph label="0xAb12 cd" />);
+  expect(a.host.textContent).toBe('AC');
+  a.unmount();
+  const b = mount(<InitialsGlyph label="Émile Zola" color="#ff0000" />);
+  expect(b.host.textContent).toBe('ÉZ');
+  expect(b.host.innerHTML).toContain('color: #ff0000');
+  b.unmount();
 });

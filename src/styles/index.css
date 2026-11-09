@@ -28,13 +28,13 @@
   .notice-slot > :is(button, a) {
     display: inline-flex;
     align-items: center;
-    height: 1.75rem;
+    height: var(--ctl-m, 2rem);
     padding: 0 0.75rem;
     border-radius: var(--radius-sm);
     border: 1px solid color-mix(in srgb, var(--nt) 28%, transparent);
     background: color-mix(in srgb, var(--nt) 10%, transparent);
     color: var(--nt);
-    font: 500 0.75rem/1 var(--font-title);
+    font: 500 0.875rem/1 var(--font-title);
     transition: background-color 0.15s, border-color 0.15s;
   }
   /* A Button passed as a Notice child inherits the tone too (neutral grey would clash with the tinted bar). */

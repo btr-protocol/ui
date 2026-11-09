@@ -657,15 +657,16 @@ export function SelectionModal({
 
   const displayedItems = useMemo(() => {
     if (!sortColumns?.length || !sort.key || !sort.dir) return filteredItems;
-    return compareSorted(
-      filteredItems,
+    const pin = filteredItems.filter((i) => i.pinned);
+    return [...pin, ...compareSorted(
+      filteredItems.filter((i) => !i.pinned),
       (item) => {
         if (sort.key === 'asset') return item.label;
         const data = item.data as Record<string, number | string | null | undefined> | undefined;
         return data?.[sort.key!] ?? null;
       },
       sort.dir,
-    );
+    )];
   }, [filteredItems, sortColumns, sort.key, sort.dir]);
 
   const { selectedIndex, handleKeyDown } = useKeyboardNav({

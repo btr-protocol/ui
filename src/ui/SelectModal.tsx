@@ -4,7 +4,8 @@ import { useOpen } from '../lib/modalRoute';
 import type { IconType } from '../lib/uiTypes';
 import { Button } from './Button';
 import { Icon } from './Icon';
-import { type SelectionItem, SelectionModal } from './Select';
+import { type SelectionItem, type SelectionSortColumn, SelectionModal } from './Select';
+import { cn } from '../lib/cn';
 
 export interface SelectModalItem<T extends string = string> {
   value: T;
@@ -17,6 +18,21 @@ export interface SelectModalItem<T extends string = string> {
   detail?: ComponentChildren;
   icon?: IconType;
   disabled?: boolean;
+  /** Sort values by column key (`sortColumns`), e.g. `{ value: 1200 }`. */
+  data?: Record<string, string | number | null>;
+}
+
+/** Up to two initials by grapheme (an emoji or accented letter is one), skipping a leading "0x" of an address. */
+const initials = (label: string): string =>
+  label.replace(/^0x/i, '').split(/[\s_-]+/).filter(Boolean).map((w) => Array.from(w)[0]!).slice(0, 2).join('').toUpperCase() || '?';
+
+/** A 32px rounded-square mark with initials, for rows that have no brand glyph (a Safe, an account): the same frame as a network mark in the main app. */
+export function InitialsGlyph({ label, color, className }: { label: string; /** Tint (a CSS colour): text and a soft fill of it, e.g. a Safe's colour. */ color?: string; className?: string }) {
+  return (
+    <span aria-hidden="true" style={color ? { color, backgroundColor: `color-mix(in srgb, ${color} 18%, transparent)` } : undefined} className={cn('flex h-8 w-8 shrink-0 items-center justify-center rounded-xs font-title text-xs font-semibold ring-1 ring-bg-0', !color && 'bg-bg-3 text-fg-1', className)}>
+      {initials(label)}
+    </span>
+  );
 }
 
 interface Common<T extends string> {
@@ -35,12 +51,17 @@ interface Common<T extends string> {
   triggerLabel?: string;
   /** Show the selected row's icon before its label in the trigger (a Safe's colour dot). Single only. */
   triggerIcon?: boolean;
+  /** Sortable columns beside the pinned primary column, as the main app's chain modal (`Network / Chain ID`). */
+  sortColumns?: SelectionSortColumn[];
+  primaryColumnLabel?: string;
+  /** Row pinned above the list. */
+  listHeader?: ComponentChildren;
 }
 
-const toItem = <T extends string>(i: SelectModalItem<T>): SelectionItem => ({ id: i.value, label: i.label, caption: i.caption, note: i.note, badge: i.detail, icon: i.icon, disabled: i.disabled });
+const toItem = <T extends string>(i: SelectModalItem<T>): SelectionItem => ({ id: i.value, label: i.label, caption: i.caption, note: i.note, badge: i.detail, icon: i.icon, disabled: i.disabled, data: i.data });
 
 /** Single choice: a trigger Button (label + current value) that opens the modal picker. THE selector of the design system: no dropdown popups. */
-export function SelectModal<T extends string>({ value, onChange, items, label, title, searchPlaceholder = 'Search…', routeKey, applyLabel, triggerIcon = false }: Common<T> & { value: T | ''; onChange: (v: T) => void }) {
+export function SelectModal<T extends string>({ value, onChange, items, label, title, searchPlaceholder = 'Search…', routeKey, applyLabel, triggerIcon = false, sortColumns, primaryColumnLabel, listHeader }: Common<T> & { value: T | ''; onChange: (v: T) => void }) {
   const [open, setOpen] = useOpen(routeKey);
   const sel = useMemo(() => items.map(toItem), [items]);
   const cur = items.find((i) => i.value === value);
@@ -59,6 +80,9 @@ export function SelectModal<T extends string>({ value, onChange, items, label, t
         selectedIds={value ? [value] : []}
         onSelect={(ids) => { setOpen(false); const v = (Array.isArray(ids) ? ids[0] : ids) as T | undefined; if (v !== undefined) onChange(v); }}
         applyLabel={applyLabel}
+        sortColumns={sortColumns}
+        primaryColumnLabel={primaryColumnLabel}
+        listHeader={listHeader}
         size="sm"
       />
     </>
@@ -66,7 +90,7 @@ export function SelectModal<T extends string>({ value, onChange, items, label, t
 }
 
 /** Several choices: the same trigger, the modal in multi mode (Select all / none, Apply). */
-export function MultiSelectModal<T extends string>({ value, onChange, items, label, title, searchPlaceholder = 'Search…', routeKey, applyLabel = 'Apply', allLabel = 'All', triggerLabel }: Common<T> & { value: readonly T[]; onChange: (v: T[]) => void; allLabel?: string }) {
+export function MultiSelectModal<T extends string>({ value, onChange, items, label, title, searchPlaceholder = 'Search…', routeKey, applyLabel = 'Apply', allLabel = 'All', triggerLabel, sortColumns, primaryColumnLabel, listHeader }: Common<T> & { value: readonly T[]; onChange: (v: T[]) => void; allLabel?: string }) {
   const [open, setOpen] = useOpen(routeKey);
   const sel = useMemo(() => items.map(toItem), [items]);
   const all = items.length > 0 && value.length >= items.length;
@@ -86,6 +110,9 @@ export function MultiSelectModal<T extends string>({ value, onChange, items, lab
         minSelect={0}
         onSelect={(ids) => { setOpen(false); onChange((Array.isArray(ids) ? ids : [ids]) as T[]); }}
         applyLabel={applyLabel}
+        sortColumns={sortColumns}
+        primaryColumnLabel={primaryColumnLabel}
+        listHeader={listHeader}
         size="sm"
       />
     </>

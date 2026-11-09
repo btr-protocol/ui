@@ -11,7 +11,7 @@ import { Icon } from './Icon';
 export function CopyAddressButton({
   value,
   copiedMessage = 'Copied to clipboard',
-  className = 'hover:text-primary transition-colors',
+  className = 'relative hover:text-primary transition-colors after:absolute after:-inset-2 after:content-[""] coarse:after:-inset-3',
   label = 'Copy address',
   children,
 }: {
@@ -36,7 +36,7 @@ export function CopyAddressButton({
         {children}
         <Icon
           name="copy"
-          className={`w-3 h-3 coarse:w-4 coarse:h-4 ${copied ? 'text-success' : 'text-fg-3'} group-hover:text-primary`}
+          className={`w-4 h-4 ${copied ? 'text-success' : 'text-fg-3'} group-hover:text-primary`}
         />
       </button>
     </Tooltip>
@@ -46,7 +46,7 @@ export function CopyAddressButton({
 export function ExplorerButton({
   href,
   kind = 'address',
-  className = 'hover:text-primary transition-colors',
+  className = 'relative hover:text-primary transition-colors after:absolute after:-inset-2 after:content-[""] coarse:after:-inset-3',
 }: {
   /** Explorer URL of the value; without one nothing renders (a dead-looking control is worse than none). */
   href?: string;
@@ -68,7 +68,7 @@ export function ExplorerButton({
       >
         <Icon
           name="external-link"
-          className="w-3 h-3 coarse:w-4 coarse:h-4 text-fg-3 hover:text-primary"
+          className="w-4 h-4 text-fg-3 hover:text-primary"
         />
       </button>
     </Tooltip>

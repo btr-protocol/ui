@@ -31,16 +31,19 @@ export function ChainGlyph({
   chainId,
   name,
   role = 'row',
+  shape = 'circle',
   className,
 }: {
   chainId: number;
   name?: string;
   role?: GlyphRole;
+  /** `square` = the main app's network rule (a chain mark is a brand lockup in a rounded square, tokens are circles); chain pickers use it. */
+  shape?: 'circle' | 'square';
   className?: string;
 }) {
   const src = chainIcon(chainId);
   const dim = `${glyphSize(role) / 16}rem`;
-  const cls = cn('shrink-0 align-middle ring-1 ring-bg-0 rounded-full object-cover', className);
+  const cls = cn('shrink-0 align-middle ring-1 ring-bg-0 object-cover', shape === 'square' ? 'rounded-xs' : 'rounded-full', className);
   if (src) {
     return <img src={src} alt="" aria-hidden="true" style={{ width: dim, height: dim }} className={cls} />;
   }
@@ -92,7 +95,7 @@ export function chainSelectItems(
     .map((chain) => ({
       id: String(chain.id),
       label: chain.name,
-      icon: chain.icon ?? <ChainGlyph chainId={chain.id} name={chain.name} />,
+      icon: chain.icon ?? <ChainGlyph chainId={chain.id} name={chain.name} shape="square" />,
       disabled: !!chain.planned,
       caption: chain.planned ? CHAIN_PLANNED_CAPTION : undefined,
       data: { chainId: chain.id, testnet: !!chain.testnet },
@@ -100,13 +103,18 @@ export function chainSelectItems(
     }));
 }
 
+const ALL_ID = '__all__';
+
 interface ChainSelectModalProps {
   isOpen: boolean;
   onClose: () => void;
   chains: readonly ChainItem[];
-  /** Selected chain id, or null when the wallet is on a chain this list does not carry. */
+  /** Selected chain id, or null when the wallet is on a chain this list does not carry (or, with `allLabel`, "all chains"). */
   value: number | null;
   onSelect: (chainId: number) => void;
+  /** An "all chains" scope: a row pinned above the list (never a synthetic list row), picked with `onAll`. */
+  allLabel?: string;
+  onAll?: () => void;
   title?: string;
   /** Row pinned above the list. */
   listHeader?: ComponentChildren;
@@ -124,18 +132,21 @@ export function ChainSelectModal({
   title = 'Select network',
   listHeader,
   size = 'sm',
+  allLabel,
+  onAll,
 }: ChainSelectModalProps) {
   const [showPlanned, setShowPlanned] = useState(false);
-  const hasPlanned = chains.some((c) => c.planned);
   const items: SelectionItem[] = useMemo(() => {
     const shown = chainSelectItems(chains, { includePlanned: showPlanned });
+    // "All chains" is a real, pinned row: same icon slot, in the arrow-key order, selected like any other.
+    const all: SelectionItem[] = allLabel && onAll ? [{ id: ALL_ID, label: allLabel, pinned: true, icon: <span aria-hidden="true" className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xs bg-bg-3 text-fg-1 ring-1 ring-bg-0"><Icon name="globe" className="h-5 w-5" /></span> }] : [];
     if (showPlanned || value == null || shown.some((item) => Number(item.id) === value)) {
-      return shown;
+      return [...all, ...shown];
     }
-    return chainSelectItems(chains, { includePlanned: true }).filter(
+    return [...all, ...chainSelectItems(chains, { includePlanned: true }).filter(
       (item) => Number(item.id) === value || !item.disabled,
-    );
-  }, [chains, showPlanned, value]);
+    )];
+  }, [chains, showPlanned, value, allLabel, onAll]);
 
   return (
     <SelectionModal
@@ -144,9 +155,11 @@ export function ChainSelectModal({
       title={title}
       searchPlaceholder="Search networks…"
       items={items}
-      selectedIds={value == null ? [] : [String(value)]}
+      selectedIds={value == null ? (allLabel && onAll ? [ALL_ID] : []) : [String(value)]}
       onSelect={(id) => {
-        const chainId = Number(Array.isArray(id) ? id[0] : id);
+        const raw = Array.isArray(id) ? id[0] : id;
+        if (raw === ALL_ID) { onClose(); onAll?.(); return; }
+        const chainId = Number(raw);
         onClose();
         if (Number.isFinite(chainId)) onSelect(chainId);
       }}
@@ -157,7 +170,7 @@ export function ChainSelectModal({
       hasActiveFilters={showPlanned}
       onResetFilters={() => setShowPlanned(false)}
       headerRight={
-        hasPlanned ? (
+        (
           <label className="flex items-center gap-1.5 cursor-pointer">
             <span className="text-xs uppercase tracking-wide text-fg-2 max-sm:hidden">Planned</span>
             <Switch
@@ -166,7 +179,7 @@ export function ChainSelectModal({
               aria-label="Show planned networks"
             />
           </label>
-        ) : undefined
+        )
       }
       size={size}
     />
@@ -175,18 +188,20 @@ export function ChainSelectModal({
 
 interface ChainSelectProps {
   chains: readonly ChainItem[];
-  /** Selected chain id. */
-  value: number;
+  /** Selected chain id; null = the `allLabel` scope. */
+  value: number | null;
   onChange: (chainId: number) => void;
+  allLabel?: string;
+  onAll?: () => void;
   title?: string;
   /** Opt-in: the modal gets a history entry (`?modal=<routeKey>`): Back closes, Forward reopens, deep link opens. */
   routeKey?: string;
 }
 
 /** The standard chain trigger: a button over `ChainSelectModal`. Reports ids only. */
-export function ChainSelect({ chains, value, onChange, title, routeKey }: ChainSelectProps) {
+export function ChainSelect({ chains, value, onChange, title, routeKey, allLabel, onAll }: ChainSelectProps) {
   const [open, setOpen] = useOpen(routeKey);
-  const current = chains.find((c) => c.id === value);
+  const current = value == null ? undefined : chains.find((c) => c.id === value);
   return (
     <>
       <Button
@@ -195,12 +210,12 @@ export function ChainSelect({ chains, value, onChange, title, routeKey }: ChainS
         onClick={() => setOpen(true)}
         leftIcon={
           current ? (
-            (current.icon ?? <ChainGlyph chainId={current.id} name={current.name} role="trigger" />)
+            (current.icon ?? <ChainGlyph chainId={current.id} name={current.name} role="trigger" shape="square" />)
           ) : undefined
         }
         rightIcon={<Icon name="caret-down" className="w-3.5 h-3.5 text-fg-3 shrink-0" />}
       >
-        <span className="truncate max-w-40">{current?.name ?? `Chain ${value}`}</span>
+        <span className="truncate max-w-40">{current?.name ?? (value == null ? (allLabel ?? '') : `Chain ${value}`)}</span>
       </Button>
       <ChainSelectModal
         isOpen={open}
@@ -209,6 +224,8 @@ export function ChainSelect({ chains, value, onChange, title, routeKey }: ChainS
         value={value}
         onSelect={onChange}
         title={title}
+        allLabel={allLabel}
+        onAll={onAll}
       />
     </>
   );

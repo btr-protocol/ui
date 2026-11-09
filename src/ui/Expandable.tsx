@@ -16,6 +16,8 @@ export interface ExpandableProps {
   dense?: boolean;
   /** Side gutter. `panel` = a Panel's `px-3`, so header and body align with the Panel title. Default `px-4`. */
   gutter?: 'default' | 'panel';
+  /** Its own container: border, panel fill and the nesting radius (`surface`), like every other box. For a standalone accordion; leave off inside a Panel or table. */
+  bordered?: boolean;
 }
 
 export function Expandable({
@@ -28,6 +30,7 @@ export function Expandable({
   icon,
   dense = false,
   gutter = 'default',
+  bordered = false,
 }: ExpandableProps) {
   const [own, setOwn] = useState(defaultExpanded);
   const isExpanded = open ?? own;
@@ -35,11 +38,11 @@ export function Expandable({
   const toggle = onToggle ?? (() => setOwn(!own));
 
   return (
-    <div className={`w-full border-b border-border last:border-b-0 ${className}`}>
+    <div className={`w-full ${bordered ? 'surface overflow-hidden rounded-lg border border-border bg-bg-1' : 'border-b border-border last:border-b-0'} ${className}`}>
       <button
         onClick={toggle}
         aria-expanded={isExpanded}
-        className={`w-full cursor-pointer transition-colors hover:bg-bg-2 ${
+        className={`w-full cursor-pointer transition-colors hover:bg-bg-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring ${
           dense ? 'px-1 py-1 coarse:min-h-[var(--ctl-m)]' : `${px} py-3`
         } ${isExpanded ? 'text-fg-0' : 'text-fg-2'}`}
       >

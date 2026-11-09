@@ -57,7 +57,7 @@ export function HeaderTool({
       aria-label={label}
       title={title ?? label}
       className={cn(
-        'tap-min relative px-2 coarse:px-3 flex items-center justify-center gap-1.5 text-fg-2 hover:bg-bg-3 hover:text-fg-0 transition-colors border-l border-border first:border-l-0 first:rounded-l-sm last:rounded-r-sm',
+        'tap-min relative min-w-[var(--ctl-m)] px-2 coarse:px-3 flex items-center justify-center gap-1.5 text-fg-2 hover:bg-bg-3 hover:text-fg-0 transition-colors border-l border-border first:border-l-0 first:rounded-l-sm last:rounded-r-sm',
         desktopOnly && 'max-lg:hidden',
       )}
     >

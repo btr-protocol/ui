@@ -88,15 +88,19 @@ export interface NoticeActionProps {
   label: string;
   onClick: () => void;
   disabled?: boolean;
+  /** A toggle (e.g. "Acknowledge"): exposed as `aria-pressed`. */
+  pressed?: boolean;
+  /** Accessible name when the visible label is not enough ("Acknowledge: <alert text>"). */
+  ariaLabel?: string;
 }
 
 const isActionSpec = (a: unknown): a is NoticeActionProps =>
   typeof a === 'object' && a !== null && !('props' in a) && typeof (a as NoticeActionProps).label === 'string';
 
 /** The notice's own button: tint, border and hover come from the notice tone (`--nt`), not the neutral Button. */
-export function NoticeAction({ label, onClick, disabled }: NoticeActionProps) {
+export function NoticeAction({ label, onClick, disabled, pressed, ariaLabel }: NoticeActionProps) {
   return (
-    <button type="button" className="notice-action" onClick={onClick} disabled={disabled}>
+    <button type="button" className="notice-action" onClick={onClick} disabled={disabled} aria-pressed={pressed} aria-label={ariaLabel}>
       {label}
     </button>
   );
@@ -131,7 +135,7 @@ export function Notice({ label, tone = 'default', size = 'bar', icon, role, chil
         'flex flex-wrap items-start',
         note
           ? 'mt-1 gap-1.5 px-1 text-3xs leading-snug'
-          : cn('surface gap-x-3 gap-y-2 rounded-lg border px-4 py-3 text-[0.9375rem] leading-6', neutral && 'text-fg-2'),
+          : cn('surface min-h-[calc(var(--ctl-m)+1.5rem)] gap-x-3 gap-y-2 rounded-lg border px-4 py-3 text-[0.9375rem] leading-6', neutral && 'text-fg-2'),
         neutral && (note ? 'text-fg-2' : 'border-border bg-bg-2'),
         className,
       )}
@@ -153,11 +157,11 @@ export function Notice({ label, tone = 'default', size = 'bar', icon, role, chil
           <Icon name={glyph} className={cn('mt-0.5 h-3 w-3 shrink-0', neutral && 'text-fg-3')} />
         ) : (
           // One line-height tall (1.5rem): the glyph centres on the first line, so a single-line notice is centred and a wrapped one keeps it on line one.
-          <span className="flex h-6 shrink-0 items-center">
+          <span className="flex h-[var(--ctl-m)] shrink-0 items-center">
             <Icon name={glyph} className={cn('h-5 w-5', neutral && 'text-fg-3')} style={tint ? { color: tint } : undefined} />
           </span>
         ))}
-      <div className={cn('min-w-0 flex-1 basis-64')}>
+      <div className={cn('min-w-0 flex-1 basis-64', !note && 'py-[calc((var(--ctl-m)-1.5rem)/2)]')}>
         {label && (
           <span
             className={cn('font-medium', neutral && !note && 'text-fg-1')}

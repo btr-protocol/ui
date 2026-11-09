@@ -38,7 +38,7 @@ export function SocialLinks({
           <button
             onClick={() => open(link, onNavigate)}
             aria-label={link.description || link.title}
-            className="p-1 hover:opacity-80 transition-opacity"
+            className="inline-flex h-[var(--ctl-s)] w-[var(--ctl-s)] items-center justify-center rounded-sm hover:opacity-80 transition-opacity"
           >
             <MaskIcon
               src={link.icon ?? ''}
