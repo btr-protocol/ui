@@ -46,7 +46,9 @@ export function useModalRoute(name: string): [open: boolean, setOpen: (open: boo
       if (after) afterClose = after;
       if (closing === name) return; // already closing
       closing = name;
-      setTimeout(() => { if (closing === name) { closing = null; flushAfter(); } }, 400); // a back that never pops (no entry left): still deliver
+      // a back whose popstate never reached us: deliver only once the modal's entry is really gone. While the history still says this modal, a URL
+      // write would land on the very entry the back is dropping, so nothing is flushed (the popstate, when it comes, delivers it).
+      setTimeout(() => { if (closing === name && history.state?.modal !== name) { closing = null; flushAfter(); } }, 400);
       return history.back(); // our entry: popstate closes it
     }
     url.searchParams.delete(PARAM); // deep link: nothing of ours behind it
