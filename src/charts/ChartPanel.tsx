@@ -5,6 +5,7 @@
 // CHART_MIN_H. With `fullscreenKey` the header carries a full-size button: the panel itself becomes a full-viewport sheet
 // (same element, so the chart stays mounted and just refits), its state lives in the history (`?modal=<key>`: Back closes it) and Esc closes it.
 import type { ComponentChildren, Ref } from 'preact';
+import { createPortal } from 'preact/compat';
 import { useEffect, useId, useRef } from 'preact/hooks';
 import { cn } from '../lib/cn';
 import { useModalRoute } from '../lib/modalRoute';
@@ -58,9 +59,21 @@ export function ChartPanel({ title, value, date, valueRef, dateRef, controls, ta
       btn?.focus({ preventScroll: true });
     };
   }, [open]);
-  return (
+  const fsButton = fullscreenKey ? (
+    <Button
+      ref={opener}
+      type="button"
+      size="sm"
+      onClick={() => setFull(!open)}
+      aria-label={open ? fullscreenLabels.close : fullscreenLabels.open}
+      title={open ? fullscreenLabels.close : fullscreenLabels.open}
+      aria-expanded={open}
+      leftIcon={<Icon name={open ? 'x' : 'corners-out'} className="h-4 w-4" />}
+    />
+  ) : null;
+  const panel = (
     <section
-      className={cn('surface overflow-hidden border border-border bg-bg-1', open ? 'fixed inset-0 z-[100] flex flex-col rounded-none' : 'rounded-lg', className)}
+      className={cn('surface overflow-hidden border border-border bg-bg-1', open ? 'fixed inset-0 z-[1000] flex flex-col rounded-none' : 'rounded-lg', className)}
       {...(open ? { role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': titleId } : {})}
     >
       <header className="flex shrink-0 flex-wrap items-center gap-x-4 gap-y-2 border-b border-border px-3 py-2.5">
@@ -71,23 +84,9 @@ export function ChartPanel({ title, value, date, valueRef, dateRef, controls, ta
             <span ref={dateRef} className="font-title text-xs tabular-nums text-fg-3">{date}</span>
           </div>
         </div>
-        {(controls || fullscreenKey) && (
-          <div className="flex flex-wrap items-center gap-2">
-            {controls}
-            {fullscreenKey && (
-              <Button
-                ref={opener}
-                type="button"
-                size="sm"
-                onClick={() => setFull(!open)}
-                aria-label={open ? fullscreenLabels.close : fullscreenLabels.open}
-                title={open ? fullscreenLabels.close : fullscreenLabels.open}
-                aria-expanded={open}
-                leftIcon={<Icon name={open ? 'x' : 'corners-out'} className="h-4 w-4" />}
-              />
-            )}
-          </div>
-        )}
+        {/* The full-size button stays on the title row at every width; the toolbar drops under it on phones. */}
+        {fsButton && <div className="order-2 sm:order-3">{fsButton}</div>}
+        {controls && <div className="order-last flex w-full flex-wrap items-center gap-2 sm:order-2 sm:w-auto">{controls}</div>}
       </header>
       <div
         className={cn('grid min-w-0', table && 'xl:grid-cols-[var(--cp-w)_minmax(0,1fr)]', open && 'min-h-0 flex-1 overflow-y-auto xl:grid-rows-[minmax(0,1fr)] xl:overflow-hidden')}
@@ -106,4 +105,6 @@ export function ChartPanel({ title, value, date, valueRef, dateRef, controls, ta
       </div>
     </section>
   );
+  // Full size: the same panel, portalled to <body>, so no ancestor (app header, bottom nav, a transformed layout) can stack over it.
+  return open && typeof document !== 'undefined' ? createPortal(panel, document.body) : panel;
 }
