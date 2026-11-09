@@ -158,3 +158,22 @@ describe('seriesPaint on a stacked series', () => {
     );
   });
 });
+
+test('fade: a stacked area keeps an OPAQUE fill, paled toward the background; its line keeps the colour', () => {
+  const spec = { id: 'a', label: 'a', type: 'area' as const, color: '#ff0000', stack: true, fade: 0.75, points: [] };
+  const p = seriesPaint(spec, 1, '#000000');
+  expect(p.topColor).toBe('rgba(64, 0, 0, 1)');
+  expect(p.lineColor).toBe('rgba(255, 0, 0, 1)');
+  expect(seriesPaint({ ...spec, fade: undefined }, 1, '#000000').topColor).toBe('rgba(255, 0, 0, 1)');
+});
+
+test('distinctShade: 12 hues at least 30 deg apart, then the cycle; yellows darker on light', async () => {
+  const { distinctShade, DISTINCT_MAX } = await import('./colors');
+  const hue = (hex: string) => { const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255); const mx = Math.max(r, g, b), d = mx - Math.min(r, g, b); const h = mx === r ? ((g - b) / d) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4; return (h * 60 + 360) % 360; };
+  const hs = Array.from({ length: DISTINCT_MAX }, (_, i) => hue(distinctShade(i, 'dark')));
+  for (let i = 0; i < hs.length; i++) for (let j = i + 1; j < hs.length; j++) { const d = Math.abs(hs[i] - hs[j]); expect(Math.min(d, 360 - d)).toBeGreaterThan(25); }
+  expect(distinctShade(DISTINCT_MAX, 'dark')).toBe(distinctShade(0, 'dark'));
+  const lum = (hex: string) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16)).reduce((a, b) => a + b, 0);
+  const yellow = hs.findIndex((h) => h > 50 && h < 70);
+  expect(lum(distinctShade(yellow, 'light'))).toBeLessThan(lum(distinctShade(yellow, 'dark')));
+});
