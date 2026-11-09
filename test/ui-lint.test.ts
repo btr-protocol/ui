@@ -146,7 +146,7 @@ test('no Dropdown popup in screens: pickers are modals (SelectModal / MultiSelec
 
 // ── type scale: lib/design.ts TYPE_SIZES / TYPE_WEIGHTS only ──────────────────────────────────────────────────────────
 import { TYPE_SIZES, TYPE_WEIGHTS } from '../src/lib/design';
-const SRC = [...new Glob('src/**/*.{ts,tsx}').scanSync('.')].filter((f) => !f.endsWith('lib/design.ts'));
+const SRC = [...new Glob('src/**/*.{ts,tsx,css}').scanSync('.')].filter((f) => !f.endsWith('lib/design.ts'));
 /** Every type-size / weight utility (any variant prefix) in a source: a class token, not prose. */
 export function typeViolations(src: string, sizes: readonly string[] = TYPE_SIZES, weights: readonly string[] = TYPE_WEIGHTS): string[] {
   const bad: string[] = [];
@@ -155,6 +155,7 @@ export function typeViolations(src: string, sizes: readonly string[] = TYPE_SIZE
     if (v.startsWith('[') ? /^(?:\d|calc|clamp|var\(--fs)/.test(v.slice(1)) : !sizes.includes(v)) bad.push(m[0]);
   }
   for (const m of src.matchAll(/(?<![\w-])(?:[\w-]+:)*font-(thin|extralight|light|normal|medium|semibold|bold|extrabold|black)(?![\w-])/g)) if (!weights.includes(m[1]!)) bad.push(m[0]);
+  for (const m of src.matchAll(/(?<![\w-])(?:[\w-]+:)*font-\[\d+\]/g)) bad.push(m[0]);
   return bad;
 }
 test('type scale: only the documented sizes and weights, no arbitrary text sizes', async () => {
@@ -163,7 +164,7 @@ test('type scale: only the documented sizes and weights, no arbitrary text sizes
   expect(bad).toEqual([]);
 });
 test('type-scale lint catches what it must', () => {
-  expect(typeViolations('a text-lg b sm:text-4xl text-[2rem] font-bold md:font-light text-3xs')).toEqual(['text-lg', 'sm:text-4xl', 'text-[2rem]', 'text-3xs', 'font-bold', 'md:font-light']);
+  expect(typeViolations('a text-lg b sm:text-4xl text-[2rem] font-bold md:font-light text-3xs font-[600]')).toEqual(['text-lg', 'sm:text-4xl', 'text-[2rem]', 'text-3xs', 'font-bold', 'md:font-light', 'font-[600]']);
   expect(typeViolations('text-sm text-fg-2 text-[var(--fg-0)] font-title font-medium text-primary text-black')).toEqual([]);
 });
 
@@ -171,7 +172,9 @@ test('type-scale lint catches what it must', () => {
 test('chain marks are never circles: ChainGlyph has no round path, chain sets go through ChainStack', async () => {
   const bad: string[] = [];
   const cs = await read('src/ui/ChainSelect.tsx');
-  const glyph = cs.slice(cs.indexOf('export function ChainGlyph'), cs.indexOf('export function ChainStack'));
+  const [g0, g1] = [cs.indexOf('export function ChainGlyph'), cs.indexOf('export function ChainStack')];
+  expect(g0 >= 0 && g1 > g0).toBe(true);
+  const glyph = cs.slice(g0, g1);
   if (/rounded-full|shape/.test(glyph)) bad.push('ChainGlyph: round / shape option');
   for (const f of files) {
     const src = await read(f);

@@ -152,3 +152,17 @@ test('MultiSelectModal groups + presets: sections in order, empty section shows 
   expect(got).toEqual([['b:a', 'm:a']]);
   unmount();
 });
+
+test('presets never select phantom or disabled ids; a noted section takes no picks; min is kept', async () => {
+  const got: string[][] = [];
+  const list = [{ value: 'a', label: 'A1', group: 'x' }, { value: 'b', label: 'B1', group: 'y' }];
+  const { host, unmount } = mount(<MultiSelectModal routeKey="t-phantom" label="S" items={list} value={[]} groups={[{ id: 'x', label: 'X' }, { id: 'y', label: 'Y', note: 'off' }]} presets={[{ id: 'p', label: 'Ghost', ids: ['zz'] }, { id: 'q', label: 'Mix', ids: ['a', 'zz'] }]} onChange={(v) => got.push(v)} />);
+  click(trigger(host));
+  const btn = (label: string) => [...document.querySelectorAll<HTMLButtonElement>('[role=dialog] button')].find((b) => b.textContent?.trim() === label)!;
+  expect(btn('Ghost').disabled).toBe(true);
+  click(btn('Mix'));
+  expect(document.querySelector('[role=dialog] [data-group="y"]')!.tagName).toBe('DIV');
+  click(btn('Apply'));
+  expect(got).toEqual([['a']]);
+  unmount();
+});
