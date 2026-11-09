@@ -68,7 +68,7 @@ for (const [name, vars] of Object.entries({ dark, light })) {
     for (const i of [1, 2, 3, 4, 5, 6])
       for (const bg of ['--bg-0', '--bg-1']) expect(ratio(vars, `--series-${i}`, bg), `series-${i} on ${bg}`).toBeGreaterThanOrEqual(3);
     expect(ratio(vars, '--line-ui', '--bg-0')).toBeGreaterThanOrEqual(3);
-    for (const bg of ['--bg-0', '--bg-1', '--bg-2']) expect(ratio(vars, '--line-ui', bg), `ProgressSteps unfilled segment (bg-line) on ${bg}`).toBeGreaterThanOrEqual(3);
+    for (const bg of ['--bg-0', '--bg-1', '--bg-2']) expect(ratio(vars, '--line-ui', bg), `ProgressSteps missing segment (.progress-pending base, --line-ui) on ${bg}`).toBeGreaterThanOrEqual(3);
     expect(ratio(vars, '--brand-safe', '--bg-0')).toBeGreaterThanOrEqual(3);
   });
 }

@@ -1,6 +1,6 @@
 import { expect, test } from 'bun:test';
 import { render } from 'preact-render-to-string';
-import { AddressDisplay, ClickMenu, KeyValueTable, Notice, NoticeSlot, Table, groupNotices, pickNotice, shortAddr } from '../src';
+import { AddressDisplay, ClickMenu, KeyValueTable, PageHeader, PageShell, Notice, NoticeSlot, Table, groupNotices, pickNotice, shortAddr } from '../src';
 import { click, key, mount, until, useDom } from './dom';
 
 const ADDR = '0x4B1D26DD52Ec0e5285BFC9f2C1DE314074801521';
@@ -121,4 +121,23 @@ test('Notice action: a toggle exposes aria-pressed', () => {
   const { host, unmount } = mount(<Notice tone="error" action={{ label: 'Acknowledge', onClick: () => {}, pressed: true }}>x</Notice>);
   expect(host.querySelector('button')!.getAttribute('aria-pressed')).toBe('true');
   unmount();
+});
+
+test('KeyValueTable: a continued row joins the one above (no divider), every other row is divided; one key column', () => {
+  const html = render(<KeyValueTable sections={[{ id: 's', rows: [{ key: 'a', label: 'fn', value: 'x' }, { key: 'b', label: 'arg', value: 'y', continued: true }, { key: 'c', label: 'fn2', value: 'z' }] }]} />);
+  const rows = html.split('<div class="grid').slice(1);
+  expect(rows).toHaveLength(3);
+  expect(rows[0]).not.toContain('border-t');
+  expect(rows[1]).not.toContain('border-t');
+  expect(rows[2]).toContain('border-t');
+  expect(rows.every((r) => r.includes('sm:grid-cols-[10rem_minmax(0,1fr)]'))).toBe(true);
+});
+
+test('PageHeader crumbs: parents are links inside the SAME h1 as the title (a detail page keeps its list header)', () => {
+  const list = render(<PageShell title="Pending"><p>x</p></PageShell>);
+  const card = render(<PageShell title="#12" crumbs={[{ label: 'Pending', href: '/pending' }]}><p>x</p></PageShell>);
+  const head = (h: string) => h.slice(0, h.indexOf('<h1')) + h.match(/<h1 class="[^"]*"/)![0];
+  expect(head(card)).toBe(head(list)); // same wrapper, same h1 classes: the title cannot move
+  expect(card).toMatch(/<h1[^>]*><span><a href="\/pending"[^>]*>Pending<\/a><span aria-hidden="true"[^>]*>›<\/span><\/span><span aria-current="page">#12<\/span><\/h1>/);
+  expect(render(<PageHeader title="Pending" />)).not.toContain('aria-current');
 });
