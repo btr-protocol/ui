@@ -8,6 +8,7 @@ import type { ComponentChildren, Ref } from 'preact';
 import { useEffect, useId, useRef } from 'preact/hooks';
 import { cn } from '../lib/cn';
 import { useModalRoute } from '../lib/modalRoute';
+import { Button } from '../ui/Button';
 import { Icon } from '../ui/Icon';
 
 /** Floor of the chart area (px-free, rem): phones and short tables. */
@@ -74,17 +75,16 @@ export function ChartPanel({ title, value, date, valueRef, dateRef, controls, ta
           <div className="flex flex-wrap items-center gap-2">
             {controls}
             {fullscreenKey && (
-              <button
+              <Button
                 ref={opener}
                 type="button"
+                size="sm"
                 onClick={() => setFull(!open)}
                 aria-label={open ? fullscreenLabels.close : fullscreenLabels.open}
                 title={open ? fullscreenLabels.close : fullscreenLabels.open}
                 aria-expanded={open}
-                className="tap-min inline-flex h-8 w-8 items-center justify-center rounded-sm border border-border text-fg-2 hover:bg-bg-2 hover:text-fg-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              >
-                <Icon name={open ? 'x' : 'corners-out'} className="h-4 w-4" />
-              </button>
+                leftIcon={<Icon name={open ? 'x' : 'corners-out'} className="h-4 w-4" />}
+              />
             )}
           </div>
         )}
