@@ -59,3 +59,21 @@ test('ChartPanel: the chart fills the body (floor on phones, as tall as the tabl
   expect(full).toContain('aria-expanded="false"');
   expect(full).not.toContain('fixed inset-0');
 });
+
+test('ChartPanel: a ?modal=<key> deep link renders the panel as a full-viewport dialog', () => {
+  const g = globalThis as any;
+  const saved = { location: g.location, history: g.history, window: g.window };
+  g.window = {};
+  g.location = { search: '?modal=holdings-chart', href: 'http://x/?modal=holdings-chart' };
+  g.history = { state: null };
+  try {
+    const html = render(<ChartPanel title="T" fullscreenKey="holdings-chart">c</ChartPanel>);
+    expect(html).toContain('role="dialog"');
+    expect(html).toContain('aria-modal="true"');
+    expect(html).toContain('fixed inset-0');
+    expect(html).toContain('aria-expanded="true"');
+    expect(render(<ChartPanel title="T" fullscreenKey="other">c</ChartPanel>)).not.toContain('role="dialog"');
+  } finally {
+    Object.assign(g, saved);
+  }
+});
