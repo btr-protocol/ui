@@ -82,7 +82,7 @@ export function SelectModal<T extends string>({ value, onChange, items, label, t
         searchPlaceholder={searchPlaceholder}
         items={sel}
         selectedIds={value ? [value] : []}
-        onSelect={(ids) => { setOpen(false); const v = (Array.isArray(ids) ? ids[0] : ids) as T | undefined; if (v !== undefined) onChange(v); }}
+        onSelect={(ids) => { const v = (Array.isArray(ids) ? ids[0] : ids) as T | undefined; setOpen(false, v !== undefined ? () => onChange(v) : undefined); }}
         applyLabel={applyLabel}
         sortColumns={sortColumns}
         primaryColumnLabel={primaryColumnLabel}
@@ -123,7 +123,7 @@ export function MultiSelectModal<T extends string>({ value, onChange, items, lab
         selectedIds={value.map(String)}
         multiSelect
         minSelect={0}
-        onSelect={(ids) => { setOpen(false); onChange((Array.isArray(ids) ? ids : [ids]) as T[]); }}
+        onSelect={(ids) => setOpen(false, () => onChange((Array.isArray(ids) ? ids : [ids]) as T[]))}
         applyLabel={applyLabel}
         sortColumns={sortColumns}
         primaryColumnLabel={primaryColumnLabel}

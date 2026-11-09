@@ -166,3 +166,39 @@ test('presets never select phantom or disabled ids; a noted section takes no pic
   expect(got).toEqual([['a']]);
   unmount();
 });
+
+test('a pick lands AFTER the modal entry is popped: a URL write in onChange survives the close (grouping never reverts)', async () => {
+  const back = history.back.bind(history);
+  history.replaceState({}, '', '/'); // clean slate: earlier tests leave their modal params behind
+  const before = location.href;
+  history.back = () => { setTimeout(() => { history.replaceState({}, '', before); dispatchEvent(new PopStateEvent('popstate')); }, 5); }; // async, like a browser
+  const seen: string[] = [];
+  const { host, unmount } = mount(<SelectModal routeKey="t-url" label="Group" items={items} value="a" onChange={(v) => { const u = new URL(location.href); u.searchParams.set('by', v); history.replaceState({}, '', u); seen.push(location.search); }} />);
+  click(trigger(host));
+  expect(location.search).toContain('modal=t-url');
+  click(row('Beta'));
+  expect(seen).toEqual([]); // not yet: the back is in flight
+  await until(() => seen.length > 0);
+  expect(seen).toEqual(['?by=b']); // written on the entry the modal returned to, not on the modal's own
+  expect(location.search).toBe('?by=b');
+  history.back = back;
+  history.replaceState({}, '', before);
+  unmount();
+});
+
+test('another routed modal listening to popstate never swallows the pick (its listener runs first)', async () => {
+  const back = history.back.bind(history);
+  history.replaceState({}, '', '/');
+  const before = location.href;
+  history.back = () => { setTimeout(() => { history.replaceState({}, '', before); dispatchEvent(new PopStateEvent('popstate')); }, 5); };
+  const seen: string[] = [];
+  const other = mount(<SelectModal routeKey="t-other" label="Other" items={items} value="a" onChange={() => {}} />); // mounted FIRST: its popstate listener runs first
+  const { host, unmount } = mount(<SelectModal routeKey="t-url2" label="Group" items={items} value="a" onChange={(v) => seen.push(v)} />);
+  click(trigger(host));
+  click(row('Gamma'));
+  await until(() => seen.length > 0);
+  expect(seen).toEqual(['c']);
+  history.back = back;
+  history.replaceState({}, '', before);
+  unmount(); other.unmount();
+});

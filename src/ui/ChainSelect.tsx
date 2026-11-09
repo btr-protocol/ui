@@ -227,10 +227,10 @@ export function ChainSelect({ chains, value, onChange, title, routeKey, allLabel
         onClose={() => setOpen(false)}
         chains={chains}
         value={value}
-        onSelect={onChange}
+        onSelect={(c) => setOpen(false, () => onChange(c))}
         title={title}
         allLabel={allLabel}
-        onAll={onAll}
+        onAll={onAll && (() => setOpen(false, onAll))}
       />
     </>
   );
