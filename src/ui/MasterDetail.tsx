@@ -27,7 +27,8 @@ const isPhone = () => typeof window !== 'undefined' && window.matchMedia('(max-w
  * Master list + detail pane. >= lg: fixed clamp(280px, 22%, 360px) master beside the detail, both
  * visible. < lg: one at a time, list -> detail drill-down with a Back row. Focus: drilling down
  * moves focus to the detail pane, Back restores it to the row last focused in the list.
- * Surfaces: master sits on bg-0, detail on bg-1, so a selected row painted bg-1 fuses into it.
+ * One frame (rounded border) groups both: the master is the full-height left part (give its Table `frame={false}`),
+ * separated from the detail by the shared border; the selected row wears the SelectionModal highlight.
  */
 export function MasterDetail({
   master,
@@ -72,7 +73,7 @@ export function MasterDetail({
         onFocusIn={(e) => {
           lastRow.current = e.target as HTMLElement;
         }}
-        className={cn('min-w-0 bg-bg-0 lg:block lg:border-r-0', selected && 'max-lg:hidden')}
+        className={cn('min-w-0 bg-bg-0 lg:block lg:border-r lg:border-border', selected && 'max-lg:hidden')}
       >
         {master}
       </div>

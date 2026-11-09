@@ -40,3 +40,9 @@ export function formatQty(v: number, locale?: string): string {
   const d = a >= 1000 ? 0 : a >= 1 ? 2 : a >= 0.01 ? 4 : 6;
   return new Intl.NumberFormat(locale, { maximumFractionDigits: d }).format(v);
 }
+
+/** `formatQty` for a decimal string as the chain scan gives it ("149.950130446265320681"). Non-numeric input is returned as is. */
+export function formatQtyStr(human: string, locale?: string): string {
+  const n = Number(human);
+  return Number.isFinite(n) ? formatQty(n, locale) : human;
+}

@@ -22,6 +22,7 @@ export { scrollPane } from './lib/scroll';
 export { LOGO_URL, LOGO_MARK_URL, SOCIAL_ICONS } from './lib/assets';
 export { type Address, type Hex, isAddress, checksumAddress, shortenAddress, shortAddr } from './lib/address';
 export * from './lib/format';
+export { SWATCH_COUNT, SWATCH_NAMES, swatchColor } from './lib/swatch';
 export { tokenIcon } from './lib/tokenIcon';
 export { protocolIcon } from './lib/protocolIcon';
 export { chainIcon, chainSlug, CHAIN_ICON_SLUG, type ChainSlug } from './lib/chainIcon';

@@ -22,7 +22,7 @@ test('Table selectable: aria-selected, fused style, roving tabindex', () => {
   expect(html).toContain('role="grid"');
   expect(html).toContain('aria-selected="true"');
   expect(html).toContain('aria-selected="false"');
-  expect(html).toContain('font-semibold shadow-[inset_3px_0_0_var(--primary)]');
+  expect(html).toContain('bg-bg-primary hover:bg-bg-primary text-primary font-semibold');
   // only the selected row is a tab stop
   expect(html.match(/tabindex="0"/g)?.length).toBe(2); // desktop tr + mobile card
   expect(render(<Table columns={cols} data={rows} rowKey={(r) => r.id} />)).not.toContain('aria-selected');
