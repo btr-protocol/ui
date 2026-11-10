@@ -55,7 +55,7 @@ Strings are props; the kit is English by default. Routing is the host's: pass `o
 src/styles    tokens.css  fonts.css  index.css  tailwind.preset.js
 src/layout    Shell Header Footer TabBar PageShell PageToolbar Notifications
 src/ui        Button Badge Input Select(Dropdown, SelectionModal) Table BaseModal ConfirmSheet Feedback Tooltip ...
-src/wallet    EIP-6963 discovery + signal store, WalletButton, WalletModal
+src/wallet    connect modal (injected + WalletConnect), account guard + signal store, WalletButton (accounts + chains)
 src/lib       cn, notifications (toasts), theme, nav seam, address helpers
 src/assets    brand/logo.svg, icons/, fonts/
 ```
@@ -121,3 +121,23 @@ Designed, not mirrored from dark (Linear / Stripe / Mercury family). Dark separa
 | `--series-1..6` | `#c26a00 #2f63e0 #0a8f64 #c02ac7 #6d55e6 #0e8a96` | chart series, >=3:1 |
 | `--brand-safe` | `#0a7a43` (dark: `#12ff80`) | Safe mark |
 | `--shadow-float` | `0 1px 2px / 0 6px 16px` at 6-7% ink | popovers only; cards use borders |
+
+## 0.6 wallet
+
+```ts
+import { configureWalletConnect, WalletModal, WalletButton, assertActiveAccount } from '@btr-protocol/ui';
+
+configureWalletConnect({
+  projectId: import.meta.env.VITE_WC_PROJECT_ID ?? '', // public Reown client id; '' = installed wallets only
+  metadata: { name: 'BTR', description: '…', url: 'https://btr.markets', icons: ['https://btr.markets/pwa/apple-icon-180.png'] },
+  chains: () => [143, 1, 56],
+  reader: (chainId, method) => readProviderFor(chainId), // every non-signing method; the wallet only signs
+  loadSignClient: () => import('@walletconnect/sign-client'),
+});
+
+<WalletModal onConnect={async (provider, wallet) => adopt(provider, wallet)} footer={<Terms />} />
+<WalletButton chains={chains} address={session} sessionAddress={session} signers={owners} onSwitchAccount={reauthAs} />
+await assertActiveAccount(provider, session); // before eth_signTypedData_v4 / eth_sendTransaction
+```
+
+The wallet signs with its ACTIVE account whatever `from` says (Rabby, Ledger Live, most WalletConnect peers), so the kit re-reads `eth_accounts` right before a signature and refuses a mismatch; switching happens in the wallet (`wallet_requestPermissions` picker) and the store follows `accountsChanged`. CSP: WalletConnect needs `connect-src wss://relay.walletconnect.org https://verify.walletconnect.org https://verify.walletconnect.com https://pulse.walletconnect.org` and `frame-src https://verify.walletconnect.org https://verify.walletconnect.com`.

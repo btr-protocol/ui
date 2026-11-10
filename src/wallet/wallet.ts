@@ -1,7 +1,6 @@
-// Wallet core: EIP-6963 provider discovery, account request, personal_sign, a SIWE (EIP-4361) guard,
-// and a small signal store for the connected account. The legacy `window.ethereum` global is never
-// read. WalletConnect is not bundled: an app that wants it renders its own entry via WalletModal's
-// `extra` slot and calls `connectWallet` with the resulting EIP-1193 provider.
+// Wallet core: provider discovery, account request, personal_sign, a SIWE (EIP-4361) guard, the account-mismatch
+// guard every signature goes through, and a small signal store for the connected wallet. The connect modal (EIP-6963 +
+// legacy injected + WalletConnect) is `WalletModal`; an app that owns its own connection state passes `onConnect`.
 import { signal } from '@preact/signals';
 import { type Address, type Hex, isAddress } from '../lib/address';
 
@@ -17,15 +16,17 @@ export interface ProviderInfo {
   /** Data URI announced by the wallet. */
   icon?: string;
   rdns?: string;
+  /** SDK catalog id (`metamask`, `rabby`, `walletconnect`, …): picks the bundled raster. */
+  id?: string;
 }
 
-/** One EIP-6963 announcement. */
+/** One EIP-6963 announcement (or any EIP-1193 provider with a name: legacy injected, WalletConnect). */
 export interface ProviderEntry {
   info: ProviderInfo;
   provider: Eip1193Provider;
 }
 
-/** EIP-6963 discovery only: provider objects stay local and `window.ethereum` is never read. */
+/** EIP-6963 discovery: provider objects stay local. */
 export function discoverProviders(timeoutMs = 400): Promise<ProviderEntry[]> {
   return new Promise((resolve) => {
     const found = new Map<string, ProviderEntry>();
@@ -58,18 +59,91 @@ const chainIdOf = async (p: Eip1193Provider): Promise<number | undefined> => {
   }
 };
 
-export async function connectProvider(
-  entry: ProviderEntry,
-): Promise<{ entry: ProviderEntry; address: Address }> {
-  const accounts = (await entry.provider.request({ method: 'eth_requestAccounts' })) as unknown;
-  const address = (Array.isArray(accounts) ? accounts : []).find(
-    (a): a is Address => typeof a === 'string' && isAddress(a),
-  );
-  if (!address) throw new Error('no account authorized in the wallet');
-  return { entry, address };
+// ─── accounts ─────────────────────────────────────────────────────────────────────────────
+
+export const sameAddress = (a?: string | null, b?: string | null): boolean =>
+  !!a && !!b && a.toLowerCase() === b.toLowerCase();
+
+/** Valid, deduped addresses of an `eth_accounts`-shaped answer; the wallet's ACTIVE account is first. */
+export function accountList(v: unknown): Address[] {
+  const out: Address[] = [];
+  for (const a of Array.isArray(v) ? v : [])
+    if (typeof a === 'string' && isAddress(a) && !out.some((x) => sameAddress(x, a))) out.push(a);
+  return out;
 }
 
-export function personalSign(entry: ProviderEntry, address: string, message: string): Promise<Hex> {
+/** The accounts this site may use, active first (`eth_accounts`: never prompts). */
+export async function readAccounts(p: Eip1193Provider): Promise<Address[]> {
+  return accountList(await p.request({ method: 'eth_accounts' }));
+}
+
+/** True when the wallet's active account is known and is not `expected` (the session / the signer the app asked for). */
+export const accountMismatch = (active?: string | null, expected?: string | null): boolean =>
+  !!active && !!expected && !sameAddress(active, expected);
+
+/** The wallet would sign as `active`, not `expected`: refused before the wallet is ever asked. */
+export class WrongAccountError extends Error {
+  readonly active?: Address;
+  readonly expected: string;
+  constructor(expected: string, active?: Address) {
+    super(
+      active
+        ? `Your wallet is on ${active}, not ${expected}. Switch the account in your wallet, then try again.`
+        : `Your wallet exposes no account. Unlock it and select ${expected}.`,
+    );
+    this.name = 'WrongAccountError';
+    this.expected = expected;
+    this.active = active;
+  }
+}
+
+/**
+ * Re-read the wallet's live accounts and refuse unless its ACTIVE account is `expected`. Many wallets (Rabby, Ledger
+ * Live, most WalletConnect peers) sign with the active account whatever `from` says, so this runs right before every
+ * signature: a wrong-account signature is never produced. Syncs the store when `p` is the connected provider.
+ */
+export async function assertActiveAccount(p: Eip1193Provider, expected: string): Promise<Address> {
+  const accounts = await readAccounts(p);
+  if (walletEntry.value?.provider === p) adoptAccounts(accounts);
+  const [active] = accounts;
+  if (!active || !sameAddress(active, expected)) throw new WrongAccountError(expected, active);
+  return active;
+}
+
+/**
+ * Open the wallet's own account picker (`wallet_requestPermissions`, MetaMask / Rabby and most extensions) and return
+ * the accounts it then exposes, active first. A wallet without that method (WalletConnect peers) falls back to
+ * `eth_requestAccounts`, which only re-reads: the user switches inside the wallet app and `accountsChanged` follows.
+ */
+export async function pickWalletAccount(p: Eip1193Provider): Promise<Address[]> {
+  try {
+    await p.request({ method: 'wallet_requestPermissions', params: [{ eth_accounts: {} }] });
+  } catch (e) {
+    if ((e as { code?: number })?.code === 4001) throw e; // the user closed the picker
+  }
+  const accounts = accountList(await p.request({ method: 'eth_requestAccounts' }));
+  if (walletEntry.value?.provider === p) adoptAccounts(accounts);
+  return accounts;
+}
+
+/** Make `target` the wallet's active account: already active -> true; else the wallet's picker, then re-check. */
+export async function switchWalletAccount(p: Eip1193Provider, target: string): Promise<boolean> {
+  if (sameAddress((await readAccounts(p))[0], target)) return true;
+  return sameAddress((await pickWalletAccount(p))[0], target);
+}
+
+export async function connectProvider(
+  entry: ProviderEntry,
+): Promise<{ entry: ProviderEntry; address: Address; accounts: Address[] }> {
+  const accounts = accountList(await entry.provider.request({ method: 'eth_requestAccounts' }));
+  const [address] = accounts;
+  if (!address) throw new Error('no account authorized in the wallet');
+  return { entry, address, accounts };
+}
+
+/** personal_sign as `address`, refused unless it is the wallet's active account (see `assertActiveAccount`). */
+export async function personalSign(entry: ProviderEntry, address: string, message: string): Promise<Hex> {
+  await assertActiveAccount(entry.provider, address);
   const hexMsg = message.startsWith('0x')
     ? message
     : `0x${Array.from(new TextEncoder().encode(message), (b) => b.toString(16).padStart(2, '0')).join('')}`;
@@ -95,9 +169,12 @@ export function assertSiweMessage(
     throw new Error('Refused to sign: foreign URI.');
 }
 
-// ─── connected-account store ──────────────────────────────────────────────────────────────
+// ─── connected-wallet store ───────────────────────────────────────────────────────────────
 
+/** The wallet's ACTIVE account (what it signs with), live through `accountsChanged`. */
 export const walletAddress = signal<Address | undefined>(undefined);
+/** Every account the wallet exposes to this site, active first. */
+export const walletAccounts = signal<Address[]>([]);
 export const walletChainId = signal<number | undefined>(undefined);
 export const walletEntry = signal<ProviderEntry | undefined>(undefined);
 export const connectModalOpen = signal(false);
@@ -109,18 +186,35 @@ export const closeConnectModal = () => {
   connectModalOpen.value = false;
 };
 
+/** localStorage key of the last wallet used (catalog id or rdns): orders the modal and drives `restoreWallet`. */
+export const LAST_WALLET_KEY = 'btr-last-wallet';
+const remember = (v?: string) => {
+  try {
+    if (v) localStorage.setItem(LAST_WALLET_KEY, v);
+  } catch {}
+};
+export const lastWallet = (): string | undefined => {
+  try {
+    return localStorage.getItem(LAST_WALLET_KEY) ?? undefined;
+  } catch {
+    return undefined;
+  }
+};
+
+function adoptAccounts(accounts: Address[]): void {
+  walletAccounts.value = accounts;
+  walletAddress.value = accounts[0];
+}
+
 let detach: (() => void) | undefined;
 
-/** Connect an EIP-1193 provider and keep the store in sync with its account / chain events. */
-export async function connectWallet(entry: ProviderEntry): Promise<Address> {
-  const { address } = await connectProvider(entry);
+function bind(entry: ProviderEntry, accounts: Address[]): void {
   detach?.();
   walletEntry.value = entry;
-  walletAddress.value = address;
-  walletChainId.value = await chainIdOf(entry.provider);
+  adoptAccounts(accounts);
   const onAccounts = (...a: unknown[]) => {
-    const next = (a[0] as string[] | undefined)?.find(isAddress);
-    if (next) walletAddress.value = next;
+    const next = accountList(a[0]);
+    if (next.length) adoptAccounts(next);
     else disconnectWallet();
   };
   const onChain = (...a: unknown[]) => {
@@ -128,21 +222,63 @@ export async function connectWallet(entry: ProviderEntry): Promise<Address> {
       walletChainId.value = Number(BigInt(String(a[0])));
     } catch {}
   };
+  const onEnd = () => disconnectWallet();
   entry.provider.on?.('accountsChanged', onAccounts);
   entry.provider.on?.('chainChanged', onChain);
+  entry.provider.on?.('disconnect', onEnd);
   detach = () => {
     entry.provider.removeListener?.('accountsChanged', onAccounts);
     entry.provider.removeListener?.('chainChanged', onChain);
+    entry.provider.removeListener?.('disconnect', onEnd);
   };
+}
+
+/** Connect an EIP-1193 provider and keep the store in sync with its account / chain events. */
+export async function connectWallet(entry: ProviderEntry): Promise<Address> {
+  const { address, accounts } = await connectProvider(entry);
+  bind(entry, accounts);
+  walletChainId.value = await chainIdOf(entry.provider);
+  remember(entry.info.rdns ?? entry.info.id);
   return address;
 }
 
+/**
+ * Re-adopt the last wallet without a prompt (`eth_accounts`): the injected wallet named by `LAST_WALLET_KEY` among
+ * `entries` (default: EIP-6963 discovery), else a persisted WalletConnect session. Resolves the active account or undefined.
+ */
+export async function restoreWallet(entries?: ProviderEntry[]): Promise<Address | undefined> {
+  if (walletEntry.value) return walletAddress.value;
+  const last = lastWallet();
+  if (!last) return undefined;
+  if (last === 'walletconnect') {
+    const { loadWc, store, WC_FLAG } = await import('./walletConnectShell');
+    if (!store.get(WC_FLAG)) return undefined;
+    const wc = await (await loadWc()).restoreWalletConnect().catch(() => null);
+    if (!wc) return undefined;
+    bind({ info: { uuid: 'walletconnect', name: 'WalletConnect', id: 'walletconnect' }, provider: wc.provider }, await readAccounts(wc.provider));
+  } else {
+    const list = entries ?? (await discoverProviders());
+    const entry = list.find((e) => e.info.rdns === last || e.info.id === last);
+    if (!entry) return undefined;
+    const accounts = await readAccounts(entry.provider).catch((): Address[] => []);
+    if (!accounts.length) return undefined;
+    bind(entry, accounts);
+  }
+  const bound = walletEntry.peek();
+  if (bound) walletChainId.value = await chainIdOf(bound.provider);
+  return walletAddress.peek();
+}
+
 export function disconnectWallet(): void {
+  const p = walletEntry.value?.provider;
   detach?.();
   detach = undefined;
   walletEntry.value = undefined;
+  walletAccounts.value = [];
   walletAddress.value = undefined;
   walletChainId.value = undefined;
+  if ((p as { isWalletConnect?: boolean } | undefined)?.isWalletConnect)
+    void import('./walletConnectShell').then((m) => m.loadWc()).then((m) => m.disconnectWalletConnect());
 }
 
 /** Ask the wallet to switch chain; resolves false when it refuses or is not connected. */
@@ -161,6 +297,7 @@ export async function switchWalletChain(chainId: number): Promise<boolean> {
   }
 }
 
+/** @deprecated use `connectError` (the btr.markets copy). */
 export function connectErrorMessage(e: unknown): string {
   const err = e as { code?: number; message?: string };
   if (err?.code === 4001) return 'Connection request rejected in the wallet.';
