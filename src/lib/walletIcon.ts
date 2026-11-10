@@ -1,0 +1,41 @@
+/** Wallet marks bundled with the kit (the btr.markets rasters, WebP 1x + 2x). GENERATED from front/public/wallets: one
+ *  `new URL` per file so the consumer's bundler emits each as an asset. */
+const WALLETS: Record<string, readonly [string, string]> = {
+  '1inch': [new URL('../assets/wallets/1inch.webp', import.meta.url).href, new URL('../assets/wallets/1inch@2x.webp', import.meta.url).href],
+  argent: [new URL('../assets/wallets/argent.webp', import.meta.url).href, new URL('../assets/wallets/argent@2x.webp', import.meta.url).href],
+  backpack: [new URL('../assets/wallets/backpack.webp', import.meta.url).href, new URL('../assets/wallets/backpack@2x.webp', import.meta.url).href],
+  base: [new URL('../assets/wallets/base.webp', import.meta.url).href, new URL('../assets/wallets/base@2x.webp', import.meta.url).href],
+  binance: [new URL('../assets/wallets/binance.webp', import.meta.url).href, new URL('../assets/wallets/binance@2x.webp', import.meta.url).href],
+  bitget: [new URL('../assets/wallets/bitget.webp', import.meta.url).href, new URL('../assets/wallets/bitget@2x.webp', import.meta.url).href],
+  bitgo: [new URL('../assets/wallets/bitgo.webp', import.meta.url).href, new URL('../assets/wallets/bitgo@2x.webp', import.meta.url).href],
+  brave: [new URL('../assets/wallets/brave.webp', import.meta.url).href, new URL('../assets/wallets/brave@2x.webp', import.meta.url).href],
+  bybit: [new URL('../assets/wallets/bybit.webp', import.meta.url).href, new URL('../assets/wallets/bybit@2x.webp', import.meta.url).href],
+  coin98: [new URL('../assets/wallets/coin98.webp', import.meta.url).href, new URL('../assets/wallets/coin98@2x.webp', import.meta.url).href],
+  copper: [new URL('../assets/wallets/copper.webp', import.meta.url).href, new URL('../assets/wallets/copper@2x.webp', import.meta.url).href],
+  ctrl: [new URL('../assets/wallets/ctrl.webp', import.meta.url).href, new URL('../assets/wallets/ctrl@2x.webp', import.meta.url).href],
+  family: [new URL('../assets/wallets/family.webp', import.meta.url).href, new URL('../assets/wallets/family@2x.webp', import.meta.url).href],
+  fireblocks: [new URL('../assets/wallets/fireblocks.webp', import.meta.url).href, new URL('../assets/wallets/fireblocks@2x.webp', import.meta.url).href],
+  frame: [new URL('../assets/wallets/frame.webp', import.meta.url).href, new URL('../assets/wallets/frame@2x.webp', import.meta.url).href],
+  gate: [new URL('../assets/wallets/gate.webp', import.meta.url).href, new URL('../assets/wallets/gate@2x.webp', import.meta.url).href],
+  imtoken: [new URL('../assets/wallets/imtoken.webp', import.meta.url).href, new URL('../assets/wallets/imtoken@2x.webp', import.meta.url).href],
+  kucoin: [new URL('../assets/wallets/kucoin.webp', import.meta.url).href, new URL('../assets/wallets/kucoin@2x.webp', import.meta.url).href],
+  ledger: [new URL('../assets/wallets/ledger.webp', import.meta.url).href, new URL('../assets/wallets/ledger@2x.webp', import.meta.url).href],
+  metamask: [new URL('../assets/wallets/metamask.webp', import.meta.url).href, new URL('../assets/wallets/metamask@2x.webp', import.meta.url).href],
+  nightly: [new URL('../assets/wallets/nightly.webp', import.meta.url).href, new URL('../assets/wallets/nightly@2x.webp', import.meta.url).href],
+  okx: [new URL('../assets/wallets/okx.webp', import.meta.url).href, new URL('../assets/wallets/okx@2x.webp', import.meta.url).href],
+  onekey: [new URL('../assets/wallets/onekey.webp', import.meta.url).href, new URL('../assets/wallets/onekey@2x.webp', import.meta.url).href],
+  phantom: [new URL('../assets/wallets/phantom.webp', import.meta.url).href, new URL('../assets/wallets/phantom@2x.webp', import.meta.url).href],
+  rabby: [new URL('../assets/wallets/rabby.webp', import.meta.url).href, new URL('../assets/wallets/rabby@2x.webp', import.meta.url).href],
+  rainbow: [new URL('../assets/wallets/rainbow.webp', import.meta.url).href, new URL('../assets/wallets/rainbow@2x.webp', import.meta.url).href],
+  safe: [new URL('../assets/wallets/safe.webp', import.meta.url).href, new URL('../assets/wallets/safe@2x.webp', import.meta.url).href],
+  safepal: [new URL('../assets/wallets/safepal.webp', import.meta.url).href, new URL('../assets/wallets/safepal@2x.webp', import.meta.url).href],
+  tangem: [new URL('../assets/wallets/tangem.webp', import.meta.url).href, new URL('../assets/wallets/tangem@2x.webp', import.meta.url).href],
+  tokenpocket: [new URL('../assets/wallets/tokenpocket.webp', import.meta.url).href, new URL('../assets/wallets/tokenpocket@2x.webp', import.meta.url).href],
+  trezor: [new URL('../assets/wallets/trezor.webp', import.meta.url).href, new URL('../assets/wallets/trezor@2x.webp', import.meta.url).href],
+  trust: [new URL('../assets/wallets/trust.webp', import.meta.url).href, new URL('../assets/wallets/trust@2x.webp', import.meta.url).href],
+  uniswap: [new URL('../assets/wallets/uniswap.webp', import.meta.url).href, new URL('../assets/wallets/uniswap@2x.webp', import.meta.url).href],
+  zerion: [new URL('../assets/wallets/zerion.webp', import.meta.url).href, new URL('../assets/wallets/zerion@2x.webp', import.meta.url).href],
+};
+
+/** `[1x, 2x]` raster of a catalog wallet id (`metamask`, `rabby`, …), or undefined for one we do not ship. */
+export const walletIcon = (id: string): readonly [string, string] | undefined => WALLETS[id];
