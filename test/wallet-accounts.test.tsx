@@ -300,3 +300,17 @@ describe('WalletConnect glue', () => {
     await wc.disconnect();
   });
 });
+
+describe('configureNotifications', () => {
+  test("the kit's toasts reach the host's store when a sink is set", async () => {
+    const { addNotification, configureNotifications } = await import('../src');
+    const got: string[] = [];
+    configureNotifications({ add: (t, m) => (got.push(`${t}:${m}`), 'x') });
+    try {
+      addNotification('success', 'Connected via WalletConnect');
+    } finally {
+      configureNotifications({});
+    }
+    expect(got).toEqual(['success:Connected via WalletConnect']);
+  });
+});

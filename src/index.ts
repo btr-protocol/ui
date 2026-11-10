@@ -4,6 +4,7 @@ export * from './wallet';
 export { ThemeProvider, THEME_STORAGE_KEY, useTheme } from './lib/theme';
 export {
   addNotification,
+  configureNotifications,
   removeNotification,
   clearLog,
   useNotifications,

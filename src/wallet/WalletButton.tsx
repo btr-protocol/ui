@@ -1,17 +1,12 @@
-import type { ComponentChildren } from 'preact';
 import { useState } from 'preact/hooks';
 import { shortenAddress } from '../lib/address';
 import { chainIcon } from '../lib/chainIcon';
-import { connectError } from './connection';
-import { CopyAddressButton, ExplorerButton } from '../ui/AddrActions';
-import { MODAL_PADDING } from '../ui/BaseModal';
 import { Button } from '../ui/Button';
-import { type ChainItem, ChainSelectModal } from '../ui/ChainSelect';
-import { Notice } from '../ui/Feedback';
+import type { ChainItem } from '../ui/ChainSelect';
 import { Tooltip } from '../ui/FloatingPanel';
 import { Icon } from '../ui/Icon';
-import { FormRow } from '../ui/Primitives';
-import { type AccountLabels, AccountList, WrongAccountNotice, accountGate } from './AccountPanel';
+import { type AccountLabels, accountGate } from './AccountPanel';
+import { AccountModal } from './AccountModal';
 import { WalletGlyph } from './WalletGlyph';
 import {
   disconnectWallet,
@@ -92,8 +87,6 @@ export function WalletButton({
   labels = { wallet: 'Wallet', disconnect: 'Disconnect', copied: 'Copied wallet address' },
 }: WalletButtonProps) {
   const [showAccountModal, setShowAccountModal] = useState(false);
-  const [busy, setBusy] = useState<string>();
-  const [err, setErr] = useState('');
 
   if (!address) {
     return (
@@ -107,103 +100,7 @@ export function WalletButton({
 
   const chain = chains?.find((c) => c.id === chainId);
   const chainName = chain?.name ?? (chainId ? `Chain ${chainId}` : 'No network');
-  const expected = sessionAddress ?? address;
   const gate = accountGate(activeAddress, sessionAddress);
-
-  const run = async (key: string, fn: () => unknown) => {
-    setBusy(key);
-    setErr('');
-    try {
-      return await fn();
-    } catch (e) {
-      setErr(connectError(e));
-    } finally {
-      setBusy(undefined);
-    }
-  };
-  const pick = (a: string) =>
-    void run(a, async () => {
-      if ((await onSwitchAccount(a)) !== false) setShowAccountModal(false);
-    });
-  const close = () => {
-    setShowAccountModal(false);
-    setErr('');
-  };
-
-  const identity: ComponentChildren = (
-    <FormRow
-      gap="md"
-      className={`${MODAL_PADDING} border-b border-border py-2`}
-      label={
-        <div className="flex items-center gap-2 min-w-0">
-          {wallet ? <WalletGlyph id={wallet.id} name={wallet.name} announcedIcon={wallet.icon} size={16} /> : <Icon name="wallet" className="w-4 h-4 text-fg-2 shrink-0" />}
-          <span className="font-numeric text-xs text-fg-0 truncate" title={address}>
-            {address}
-          </span>
-        </div>
-      }
-      value={
-        <div className="flex items-center gap-3">
-          <CopyAddressButton value={address} copiedMessage={labels.copied} />
-          <ExplorerButton href={explorerHref?.(address)} />
-          <Tooltip content={labels.disconnect} side="bottom">
-            <button
-              type="button"
-              onClick={() => {
-                onDisconnect();
-                close();
-              }}
-              aria-label={labels.disconnect}
-              className="p-1.5 hover:text-primary transition-colors"
-            >
-              <Icon name="sign-out" className="w-4 h-4 text-fg-3" />
-            </button>
-          </Tooltip>
-        </div>
-      }
-    />
-  );
-
-  const header = (
-    <>
-      {identity}
-      {err && (
-        <div className={`${MODAL_PADDING} py-2`}>
-          <Notice tone="error" role="alert">
-            {err}
-          </Notice>
-        </div>
-      )}
-      {gate.mismatch && gate.active && gate.expected && (
-        <div className={`${MODAL_PADDING} py-2`}>
-          <WrongAccountNotice
-            active={gate.active}
-            expected={gate.expected}
-            busy={busy !== undefined}
-            labels={labels}
-            onSwitch={() => pick(expected)}
-            onUseActive={() => gate.active && pick(gate.active)}
-          />
-        </div>
-      )}
-      {(accounts.length > 0 || !!sessionAddress) && (
-        <AccountList
-          accounts={accounts}
-          active={activeAddress}
-          session={sessionAddress}
-          signers={signers}
-          busy={busy}
-          labels={labels}
-          onSelect={pick}
-          onChooseInWallet={() => void run('', onChooseAccount)}
-          onConnectOther={() => {
-            close();
-            onConnectOther();
-          }}
-        />
-      )}
-    </>
-  );
 
   // A connected wallet reads as an ACTIVE nav item - primary text on the low-opacity primary fill.
   return (
@@ -233,17 +130,24 @@ export function WalletButton({
         </Button>
       </Tooltip>
 
-      <ChainSelectModal
+      <AccountModal
         isOpen={showAccountModal}
-        onClose={close}
-        title={labels.wallet}
-        size="md"
-        chains={chains ?? []}
-        value={chainId ?? null}
-        onSelect={(next) => {
-          void Promise.resolve(onSwitchChain(next));
-        }}
-        listHeader={header}
+        onClose={() => setShowAccountModal(false)}
+        address={address}
+        chainId={chainId}
+        chains={chains}
+        activeAddress={activeAddress}
+        accounts={accounts}
+        sessionAddress={sessionAddress}
+        signers={signers}
+        wallet={wallet}
+        explorerHref={explorerHref}
+        onDisconnect={onDisconnect}
+        onSwitchChain={onSwitchChain}
+        onSwitchAccount={onSwitchAccount}
+        onChooseAccount={onChooseAccount}
+        onConnectOther={onConnectOther}
+        labels={labels}
       />
     </>
   );
