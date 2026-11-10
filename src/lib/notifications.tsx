@@ -77,6 +77,13 @@ const BUZZ: Partial<Record<NotificationType, Haptic>> = {
   error: 'err',
 };
 
+type AddNotification = typeof addNotification;
+let sink: AddNotification | undefined;
+/** Route the kit's own toasts (copy, connect, wallet errors) into a host app's toast store instead of the kit's. */
+export function configureNotifications(o: { add?: AddNotification }): void {
+  sink = o.add;
+}
+
 /** `opts.id` dedupes: while a toast with that id is on screen a repeat is dropped. A `sticky` toast
  *  (no auto-close; its owner removes it) is instead updated in place, so one status line can move
  *  from pending to settled without stacking. */
@@ -91,6 +98,7 @@ export function addNotification(
     locked?: boolean;
   },
 ) {
+  if (sink) return sink(type, message, opts);
   const id = opts?.id ?? Math.random().toString(36).slice(2);
   const existing = toastState.find((n) => n.id === id);
   if (opts?.id && existing && !(opts.sticky && existing.duration === 0)) return id;

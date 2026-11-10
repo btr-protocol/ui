@@ -202,7 +202,7 @@ export function WalletModal({
   const showQr = pairing && (!mobile || qrOpen);
   const finish = async (provider: Eip1193Provider, w: ConnectedWallet) => {
     await onConnect(provider, w);
-    if (w.via === 'walletconnect' && isKnownWallet(w.id)) keepLast(w.id);
+    if (isKnownWallet(w.id)) keepLast(w.id);
     onClose();
   };
   const {
