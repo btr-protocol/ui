@@ -363,3 +363,29 @@ describe('review fixes', () => {
     expect(l.installed).toBe(WALLET_MODAL_LABELS.installed);
   });
 });
+
+describe('WalletConnect restore by topic', () => {
+  test("pickLiveSession takes this app's topic only, never the newest other session", async () => {
+    const { pickLiveSession, readWcFlag, wcFlag } = await import('../src/wallet/walletConnect');
+    const s = (topic: string, expiry: number) => ({ topic, expiry, namespaces: { eip155: { accounts: [] } } });
+    const all = [s('mine', 100), s('other-newer', 900)];
+    expect(pickLiveSession(all, 50, 'mine')?.topic).toBe('mine');
+    expect(pickLiveSession(all, 150, 'mine')).toBeUndefined(); // expired: nothing, not the other one
+    expect(readWcFlag(wcFlag('mine', 143))).toEqual({ topic: 'mine', chain: 143 });
+    expect(readWcFlag('143')).toBeUndefined(); // a pre-topic flag restores nothing
+  });
+
+  test('binding a different wallet ends the WalletConnect session on the relay', async () => {
+    const calls: string[] = [];
+    const wcLike = Object.assign(fakeWallet([SESSION]), { isWalletConnect: true });
+    const wc = await import('../src/wallet/walletConnect');
+    await connectWallet({ info: { uuid: 'walletconnect', name: 'WalletConnect', id: 'walletconnect' }, provider: wcLike });
+    // a live session in the glue (the one the relay must see ended)
+    const client = { on: () => {}, request: async () => '0x', disconnect: async ({ topic }: { topic: string }) => void calls.push(topic), session: { getAll: () => [] }, core: { relayer: { restartTransport: async () => {} }, pairing: { disconnect: async () => {} } } };
+    wc.bindClientEvents(client as never);
+    wc.buildWcProvider(client as never, { topic: 'live', expiry: 9e9, namespaces: { eip155: { accounts: [`eip155:143:${SESSION}`] } } });
+    await connectWallet(entry(fakeWallet([OTHER])));
+    await until(() => calls.length > 0);
+    expect(calls).toEqual(['live']);
+  });
+});
