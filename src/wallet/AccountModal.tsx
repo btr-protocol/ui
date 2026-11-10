@@ -9,7 +9,8 @@ import { Notice } from '../ui/Feedback';
 import { Tooltip } from '../ui/FloatingPanel';
 import { Icon } from '../ui/Icon';
 import { FormRow } from '../ui/Primitives';
-import { type AccountLabels, AccountList, WrongAccountNotice, accountGate } from './AccountPanel';
+import { AccountList, WrongAccountNotice, accountGate } from './AccountPanel';
+import { ACCOUNT_LABELS, type AccountLabels } from './labels';
 import { WalletGlyph } from './WalletGlyph';
 import { connectError } from './connection';
 
@@ -38,7 +39,7 @@ export interface AccountModalProps {
   onSwitchAccount: (address: string) => boolean | Promise<boolean>;
   onChooseAccount?: () => unknown;
   onConnectOther?: () => void;
-  labels?: { wallet?: string; disconnect?: string; copied?: string } & Partial<AccountLabels>;
+  labels?: Partial<AccountLabels>;
 }
 
 export function AccountModal({
@@ -63,7 +64,7 @@ export function AccountModal({
 }: AccountModalProps) {
   const [busy, setBusy] = useState<string>();
   const [err, setErr] = useState('');
-  const l = { wallet: 'Wallet', disconnect: 'Disconnect', copied: 'Copied wallet address', ...labels };
+  const l = { ...ACCOUNT_LABELS, ...labels };
   const gate = accountGate(activeAddress, sessionAddress);
   const close = () => {
     setErr('');

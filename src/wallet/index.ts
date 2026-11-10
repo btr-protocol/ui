@@ -1,20 +1,21 @@
+// The barrel stays light: the two modals are lazy (`ConnectModalHost`, `WalletButton`) or imported by subpath
+// (`@btr-protocol/ui/wallet/WalletModal`, `@btr-protocol/ui/wallet/AccountModal`), never from here.
 export * from './wallet';
 export { useProviders } from './useProviders';
 export { useInjectedWallets, type WalletInfo } from './useInjectedWallets';
-export { WalletButton, type WalletChain } from './WalletButton';
-export { WalletModal, type WalletModalProps, type WalletModalLabels, type ConnectedWallet } from './WalletModal';
+export { WalletButton } from './WalletButton';
+export type { WalletModalProps, ConnectedWallet } from './WalletModal';
+export type { AccountModalProps } from './AccountModal';
 export { WalletGlyph } from './WalletGlyph';
-export { AccountModal, type AccountModalProps } from './AccountModal';
 export { ConnectModalHost } from './ConnectModalHost';
+export { AccountList, WrongAccountNotice, accountGate, type AccountGate, type AccountListProps } from './AccountPanel';
 export {
   ACCOUNT_LABELS,
-  AccountList,
-  WrongAccountNotice,
-  accountGate,
-  type AccountGate,
+  WALLET_MODAL_LABELS,
+  labelsFrom,
   type AccountLabels,
-  type AccountListProps,
-} from './AccountPanel';
+  type WalletModalLabels,
+} from './labels';
 export { connectError, useWalletConnection } from './connection';
 export {
   WC_FLAG,

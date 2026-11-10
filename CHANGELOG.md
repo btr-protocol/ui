@@ -6,7 +6,9 @@
 - `WalletButton`'s modal is the kit `ChainSelectModal` (same chain list as every picker) with an accounts section: every exposed account, one click to switch, "In wallet" / "Signed in" / "Signer" badges, and a wrong-account banner ("Switch wallet to …" / "Use … instead"). New props: `activeAddress`, `accounts`, `sessionAddress`, `signers`, `wallet`, `onSwitchAccount`, `onChooseAccount`; `chains` takes `ChainItem[]`.
 - `WalletGlyph` takes `id` / `name` / `announcedIcon` (bundled raster, then the announced icon, then the initial); `info` still works.
 - `AccountModal` (the modal behind `WalletButton`, usable alone: an app with its own chip lazy-loads `@btr-protocol/ui/wallet/AccountModal`); `configureNotifications({ add })` routes the kit's toasts into a host app's store; subpath exports `./wallet/WalletModal`, `./wallet/AccountModal`, `./lib/notifications`.
-- `ConnectModalHost`: mount once, the modal chunk loads on first open (off the entry).
+- `ConnectModalHost`: mount once, the modal chunk loads on first open (off the entry). The barrel no longer exports `WalletModal` / `AccountModal` (subpaths only); `WalletButton` lazy-loads its modal.
+- Breaking: `WalletChain` removed (use `ChainItem`); `WalletButton` / `AccountModal` `labels` = `Partial<AccountLabels>`. `labelsFrom(defaults, t)` + `WALLET_MODAL_LABELS` / `ACCOUNT_LABELS` translate by key.
+- `restoreWallet` never binds over a connect that landed while it awaited; a provider `disconnect` logs out only on 4900 / 4901 (else the wallet's accounts are re-read). Account rows: ↑↓ / Home / End, `aria-disabled` while busy.
 - Moved from the front: `walletLink` (deep links, `configureWalletLinks` for an app shell's native plugin), `useWalletConnection`, `connectError`, `useInjectedWallets`, the QR generator.
 
 ## 0.5.1

@@ -1,12 +1,14 @@
-import { useState } from 'preact/hooks';
+import type { ComponentType } from 'preact';
+import { useEffect, useState } from 'preact/hooks';
 import { shortenAddress } from '../lib/address';
 import { chainIcon } from '../lib/chainIcon';
 import { Button } from '../ui/Button';
 import type { ChainItem } from '../ui/ChainSelect';
 import { Tooltip } from '../ui/FloatingPanel';
 import { Icon } from '../ui/Icon';
-import { type AccountLabels, accountGate } from './AccountPanel';
-import { AccountModal } from './AccountModal';
+import type { AccountModalProps } from './AccountModal';
+import { accountGate } from './AccountPanel';
+import type { AccountLabels } from './labels';
 import { WalletGlyph } from './WalletGlyph';
 import {
   disconnectWallet,
@@ -19,9 +21,6 @@ import {
   walletChainId,
   walletEntry,
 } from './wallet';
-
-/** @deprecated `ChainItem` (the kit chain list: rounded-square icon, name, chain id). */
-export type WalletChain = ChainItem;
 
 interface WalletButtonProps {
   className?: string;
@@ -54,7 +53,23 @@ interface WalletButtonProps {
   onSwitchAccount?: (address: string) => boolean | Promise<boolean>;
   /** "Choose account in wallet". Default: the wallet's account picker. */
   onChooseAccount?: () => void | Promise<unknown>;
-  labels?: { wallet: string; disconnect: string; copied: string } & Partial<AccountLabels>;
+  labels?: Partial<AccountLabels>;
+}
+
+/** The account modal is fetched on first open: the chip stays light in an app's entry. */
+function useAccountModal(open: boolean): ComponentType<AccountModalProps> | null {
+  const [Modal, setModal] = useState<ComponentType<AccountModalProps> | null>(null);
+  useEffect(() => {
+    if (!open || Modal) return;
+    let cancelled = false;
+    void import('./AccountModal').then((m) => {
+      if (!cancelled) setModal(() => m.AccountModal);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [open, Modal]);
+  return Modal;
 }
 
 const storeSwitch = async (a: string) => {
@@ -84,9 +99,10 @@ export function WalletButton({
   onSwitchChain = switchWalletChain,
   onSwitchAccount = storeSwitch,
   onChooseAccount = storePick,
-  labels = { wallet: 'Wallet', disconnect: 'Disconnect', copied: 'Copied wallet address' },
+  labels,
 }: WalletButtonProps) {
   const [showAccountModal, setShowAccountModal] = useState(false);
+  const AccountModal = useAccountModal(showAccountModal);
 
   if (!address) {
     return (
@@ -112,7 +128,7 @@ export function WalletButton({
           size="sm"
           className={className}
           onClick={() => setShowAccountModal(true)}
-          aria-label={`Wallet ${shortenAddress(address)} on ${chainName}, open account`}
+          aria-label={`${labels?.wallet ?? 'Wallet'} ${shortenAddress(address)} on ${chainName}, open account`}
           leftIcon={
             gate.mismatch ? (
               <Icon name="warning" className="w-4 h-4 shrink-0 text-warning" />
@@ -130,25 +146,27 @@ export function WalletButton({
         </Button>
       </Tooltip>
 
-      <AccountModal
-        isOpen={showAccountModal}
-        onClose={() => setShowAccountModal(false)}
-        address={address}
-        chainId={chainId}
-        chains={chains}
-        activeAddress={activeAddress}
-        accounts={accounts}
-        sessionAddress={sessionAddress}
-        signers={signers}
-        wallet={wallet}
-        explorerHref={explorerHref}
-        onDisconnect={onDisconnect}
-        onSwitchChain={onSwitchChain}
-        onSwitchAccount={onSwitchAccount}
-        onChooseAccount={onChooseAccount}
-        onConnectOther={onConnectOther}
-        labels={labels}
-      />
+      {AccountModal && (
+        <AccountModal
+          isOpen={showAccountModal}
+          onClose={() => setShowAccountModal(false)}
+          address={address}
+          chainId={chainId}
+          chains={chains}
+          activeAddress={activeAddress}
+          accounts={accounts}
+          sessionAddress={sessionAddress}
+          signers={signers}
+          wallet={wallet}
+          explorerHref={explorerHref}
+          onDisconnect={onDisconnect}
+          onSwitchChain={onSwitchChain}
+          onSwitchAccount={onSwitchAccount}
+          onChooseAccount={onChooseAccount}
+          onConnectOther={onConnectOther}
+          labels={labels}
+        />
+      )}
     </>
   );
 }

@@ -31,6 +31,9 @@ interface WalletItemButtonProps {
   isSelected?: boolean;
   /** Secondary line under the name (e.g. "Not available" on an undeployed chain). */
   caption?: string;
+  /** Unavailable via `aria-disabled` instead of `disabled`: the row keeps focus (and arrow-key order) while busy; the
+   *  caller ignores clicks. */
+  ariaDisabled?: boolean;
 }
 
 export function WalletItemButton({
@@ -46,11 +49,13 @@ export function WalletItemButton({
   isHighlighted = false,
   isSelected = false,
   caption,
+  ariaDisabled = false,
 }: WalletItemButtonProps) {
-  const off = disabled || isConnecting;
+  const unavailable = disabled || isConnecting;
+  const off = !ariaDisabled && unavailable;
   // Only a row that can start a connection reserves the loader slot; a text-only row (disconnect, copy) or one with its own right icon does not.
   const canConnect = !!icon && !rightIcon;
-  const cls = `w-full flex items-center gap-3 h-12 px-3 border-b border-border disabled:opacity-50 disabled:cursor-not-allowed font-title transition-colors ${
+  const cls = `w-full flex items-center gap-3 h-12 px-3 border-b border-border disabled:opacity-50 disabled:cursor-not-allowed aria-disabled:opacity-50 aria-disabled:cursor-not-allowed font-title transition-colors ${
     isSelected
       ? 'bg-bg-primary hover-primary'
       : isHighlighted
@@ -98,7 +103,7 @@ export function WalletItemButton({
         {content}
       </a>
     ) : (
-      <button className={cls} onClick={onClick} disabled={off}>
+      <button className={cls} onClick={onClick} disabled={off} aria-disabled={(ariaDisabled && unavailable) || undefined}>
         {content}
       </button>
     );

@@ -4,7 +4,6 @@ import { afterEach, describe, expect, test } from 'bun:test';
 import {
   ConnectModalHost,
   WalletButton,
-  WalletModal,
   WrongAccountError,
   accountGate,
   accountList,
@@ -25,6 +24,8 @@ import {
   webHref,
 } from '../src';
 import { WALLETS } from '@btr-protocol/sdk/eth/wallets';
+import { WalletModal } from '../src/wallet/WalletModal';
+import { labelsFrom, WALLET_MODAL_LABELS } from '../src';
 import { act, click, mount, until, useDom } from './dom';
 
 useDom();
@@ -315,5 +316,50 @@ describe('configureNotifications', () => {
       configureNotifications({});
     }
     expect(got).toEqual(['success:Connected via WalletConnect']);
+  });
+});
+
+describe('review fixes', () => {
+  test('restoreWallet never binds over a connect that landed while it was awaiting', async () => {
+    const slow = fakeWallet([OTHER]);
+    let release!: () => void;
+    const gate = new Promise<void>((r) => (release = r));
+    const orig = slow.request.bind(slow);
+    slow.request = async (r: { method: string; params?: unknown[] }) => (r.method === 'eth_accounts' ? (await gate, [OTHER]) : orig(r));
+    localStorage.setItem('btr-last-wallet', 'io.slow');
+    const restoring = restoreWallet([entry(slow, 'io.slow')]);
+    const manual = fakeWallet([SESSION]);
+    await connectWallet(entry(manual, 'io.rabby'));
+    release();
+    await restoring;
+    expect(walletAddress.value).toBe(SESSION);
+  });
+
+  test('a transient disconnect (1013) re-checks the wallet; 4900 logs out', async () => {
+    const w = fakeWallet([SESSION]);
+    await connectWallet(entry(w));
+    w.emit('disconnect', { code: 1013 });
+    await act(async () => { await new Promise((r) => setTimeout(r, 10)); });
+    expect(walletAddress.value).toBe(SESSION);
+    w.emit('disconnect', { code: 4900 });
+    expect(walletAddress.value).toBeUndefined();
+  });
+
+  test('account rows: arrow keys move focus; a busy list keeps focus (aria-disabled, not disabled)', async () => {
+    const { AccountList } = await import('../src');
+    const { host } = mount(<AccountList accounts={[SESSION, OTHER, THIRD]} active={SESSION} busy={OTHER} onSelect={() => {}} />);
+    const rows = [...host.querySelectorAll('button')].filter((b) => /0x/.test(b.textContent ?? ''));
+    expect(rows.every((b) => !b.disabled && b.getAttribute('aria-disabled') === 'true')).toBe(true);
+    rows[0]!.focus();
+    act(() => { rows[0]!.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true })); });
+    expect(document.activeElement).toBe(rows[1]!);
+    act(() => { rows[1]!.dispatchEvent(new KeyboardEvent('keydown', { key: 'End', bubbles: true })); });
+    expect(document.activeElement).toBe(rows[2]!);
+  });
+
+  test('labelsFrom walks the keys: the app translates without mirroring the list', () => {
+    const l = labelsFrom(WALLET_MODAL_LABELS, (k) => (k === 'title' ? 'Portefeuille' : undefined));
+    expect(l.title).toBe('Portefeuille');
+    expect(l.installed).toBe(WALLET_MODAL_LABELS.installed);
   });
 });
