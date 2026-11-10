@@ -2,7 +2,10 @@
 // guard every signature goes through, and a small signal store for the connected wallet. The connect modal (EIP-6963 +
 // legacy injected + WalletConnect) is `WalletModal`; an app that owns its own connection state passes `onConnect`.
 import { signal } from '@preact/signals';
-import { type Address, type Hex, isAddress } from '../lib/address';
+import type { Address, Hex } from '../lib/address';
+
+// Local, not lib/address: that module pulls a keccak implementation into every entry that only needs the store.
+const isAddress = (v: string): v is Address => /^0x[a-fA-F0-9]{40}$/.test(v);
 
 export interface Eip1193Provider {
   request(args: { method: string; params?: unknown[] }): Promise<unknown>;
