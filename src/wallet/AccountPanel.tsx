@@ -128,8 +128,9 @@ export function AccountList({ accounts, active, session, signers = [], onSelect,
             caption={exposed ? undefined : l.notExposed}
             isSelected={current}
             isConnecting={busy !== undefined && sameAddress(busy, a)}
-            disabled={!onSelect || current || busy !== undefined}
-            onClick={() => onSelect?.(a)}
+            // The current account stays at full contrast (selected, not disabled); clicking it is a no-op.
+            disabled={!onSelect || busy !== undefined}
+            onClick={() => !current && onSelect?.(a)}
             rightIcon={
               <span className="flex shrink-0 items-center gap-1">
                 {signers.some((s) => sameAddress(s, a)) && <Badge variant="secondary">{l.signer}</Badge>}

@@ -184,13 +184,16 @@ describe('WalletButton account modal', () => {
     expect(text()).toContain('In wallet');
     expect(text()).toContain('Signed in');
     expect((text().match(/Signer(?!s)/g) ?? []).length).toBeGreaterThanOrEqual(2);
+    // the current account's row is selected, full contrast, and not a switch target
+    const current = buttons().find((b) => b.textContent?.includes('0xaB7B…0760')) as HTMLButtonElement;
+    expect(current.disabled).toBe(false);
+    click(current);
+    await act(async () => { await new Promise((r) => setTimeout(r, 20)); });
+    expect(switched).toEqual([]);
     const row = buttons().find((b) => b.textContent?.includes('0x0b83…1111')) as HTMLButtonElement;
-    expect(row.disabled).toBe(false);
     click(row);
     await until(() => switched.length > 0);
     expect(switched).toEqual([OTHER]);
-    // the current account's row is not a switch target
-    expect((buttons().find((b) => b.textContent?.includes('0xaB7B…0760')) as HTMLButtonElement)?.disabled ?? true).toBe(true);
   });
 
   test('the chain list is the kit ChainSelect list: names, chain ids, planned hidden', async () => {
