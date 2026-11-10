@@ -3,9 +3,7 @@
 // legacy injected + WalletConnect) is `WalletModal`; an app that owns its own connection state passes `onConnect`.
 import { signal } from '@preact/signals';
 import type { Address, Hex } from '../lib/address';
-
-// Local, not lib/address: that module pulls a keccak implementation into every entry that only needs the store.
-const isAddress = (v: string): v is Address => /^0x[a-fA-F0-9]{40}$/.test(v);
+import { WrongAccountError, accountList, readAccounts, requestAccountPicker, sameAddress } from './accounts';
 
 export interface Eip1193Provider {
   request(args: { method: string; params?: unknown[] }): Promise<unknown>;
@@ -62,43 +60,17 @@ const chainIdOf = async (p: Eip1193Provider): Promise<number | undefined> => {
   }
 };
 
-// ─── accounts ─────────────────────────────────────────────────────────────────────────────
+// ─── accounts (store-synced) ──────────────────────────────────────────────────────────────
 
-export const sameAddress = (a?: string | null, b?: string | null): boolean =>
-  !!a && !!b && a.toLowerCase() === b.toLowerCase();
-
-/** Valid, deduped addresses of an `eth_accounts`-shaped answer; the wallet's ACTIVE account is first. */
-export function accountList(v: unknown): Address[] {
-  const out: Address[] = [];
-  for (const a of Array.isArray(v) ? v : [])
-    if (typeof a === 'string' && isAddress(a) && !out.some((x) => sameAddress(x, a))) out.push(a);
-  return out;
-}
-
-/** The accounts this site may use, active first (`eth_accounts`: never prompts). */
-export async function readAccounts(p: Eip1193Provider): Promise<Address[]> {
-  return accountList(await p.request({ method: 'eth_accounts' }));
-}
-
-/** True when the wallet's active account is known and is not `expected` (the session / the signer the app asked for). */
-export const accountMismatch = (active?: string | null, expected?: string | null): boolean =>
-  !!active && !!expected && !sameAddress(active, expected);
-
-/** The wallet would sign as `active`, not `expected`: refused before the wallet is ever asked. */
-export class WrongAccountError extends Error {
-  readonly active?: Address;
-  readonly expected: string;
-  constructor(expected: string, active?: Address) {
-    super(
-      active
-        ? `Your wallet is on ${active}, not ${expected}. Switch the account in your wallet, then try again.`
-        : `Your wallet exposes no account. Unlock it and select ${expected}.`,
-    );
-    this.name = 'WrongAccountError';
-    this.expected = expected;
-    this.active = active;
-  }
-}
+export {
+  WrongAccountError,
+  accountList,
+  accountMismatch,
+  readAccounts,
+  requestAccountPicker,
+  requestAccountSwitch,
+  sameAddress,
+} from './accounts';
 
 /**
  * Re-read the wallet's live accounts and refuse unless its ACTIVE account is `expected`. Many wallets (Rabby, Ledger
@@ -119,12 +91,7 @@ export async function assertActiveAccount(p: Eip1193Provider, expected: string):
  * `eth_requestAccounts`, which only re-reads: the user switches inside the wallet app and `accountsChanged` follows.
  */
 export async function pickWalletAccount(p: Eip1193Provider): Promise<Address[]> {
-  try {
-    await p.request({ method: 'wallet_requestPermissions', params: [{ eth_accounts: {} }] });
-  } catch (e) {
-    if ((e as { code?: number })?.code === 4001) throw e; // the user closed the picker
-  }
-  const accounts = accountList(await p.request({ method: 'eth_requestAccounts' }));
+  const accounts = await requestAccountPicker(p);
   if (walletEntry.value?.provider === p) adoptAccounts(accounts);
   return accounts;
 }
