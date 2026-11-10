@@ -50,6 +50,8 @@ interface WalletButtonProps {
   /** Connected wallet's glyph (catalog id / name / announced icon). Default: the kit store. */
   wallet?: { id?: string; name: string; icon?: string };
   onConnect?: () => void;
+  /** "Connect another wallet" in the account modal. Default: `onConnect`. */
+  onConnectOther?: () => void;
   onDisconnect?: () => void;
   onSwitchChain?: (chainId: number) => boolean | Promise<boolean>;
   /** One click on an account row. Default: make it the wallet's active account (the wallet's picker when needed).
@@ -82,6 +84,7 @@ export function WalletButton({
   signers,
   wallet = walletEntry.value?.info,
   onConnect = openConnectModal,
+  onConnectOther = onConnect,
   onDisconnect = disconnectWallet,
   onSwitchChain = switchWalletChain,
   onSwitchAccount = storeSwitch,
@@ -195,7 +198,7 @@ export function WalletButton({
           onChooseInWallet={() => void run('', onChooseAccount)}
           onConnectOther={() => {
             close();
-            onConnect();
+            onConnectOther();
           }}
         />
       )}
