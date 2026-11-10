@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.6.2
+- A restore that lost the race to a manual connect ends its session without throwing on a relay error. Documented: one WalletConnect session per origin (other tabs' sessions are ended).
+
 ## 0.6.1
 - WalletConnect restore re-adopts THIS app's session by its stored topic (`WC_FLAG` = `{topic, chain}`), never the newest session in the client's store; a pre-topic flag restores nothing (reconnect once).
 - Binding a different (non-WalletConnect) wallet ends the previous WalletConnect session on the relay: its own `wcDisconnect` (topic-bound), captured synchronously, so a session built since survives. A restore that lost the race to a manual connect ends the restored session; a restore never replaces a live one.

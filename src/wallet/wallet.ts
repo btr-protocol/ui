@@ -257,9 +257,9 @@ export async function restoreWallet(entries?: ProviderEntry[]): Promise<Address 
     const wc = await (await loadWc()).restoreWalletConnect().catch(() => null);
     if (!wc) return walletAddress.peek();
     // A manual connect won while this restored: the restored session is not adopted, so it is ended, not left on the relay.
-    if (stale()) return void (await wc.disconnect()), walletAddress.peek();
+    if (stale()) return void (await wc.disconnect().catch(() => {})), walletAddress.peek();
     const accounts = await readAccounts(wc.provider);
-    if (stale()) return void (await wc.disconnect()), walletAddress.peek();
+    if (stale()) return void (await wc.disconnect().catch(() => {})), walletAddress.peek();
     bind({ info: { uuid: 'walletconnect', name: 'WalletConnect', id: 'walletconnect' }, provider: wc.provider }, accounts);
   } else {
     const list = entries ?? (await discoverProviders());
