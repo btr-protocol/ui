@@ -8,7 +8,7 @@ import { Badge } from '../ui/Badge';
 import { Button } from '../ui/Button';
 import { Notice } from '../ui/Feedback';
 import { WalletItemButton } from '../ui/WalletItemButton';
-import { ACCOUNT_LABELS, type AccountLabels } from './labels';
+import { ACCOUNT_LABELS, type AccountLabels } from './accountLabels';
 import { accountMismatch, sameAddress } from './wallet';
 
 const fill = (s: string, v: Record<string, string>) => s.replace(/\{(\w+)\}/g, (_, k: string) => v[k] ?? '');

@@ -1,5 +1,5 @@
 // Every string the wallet modals render, with their English defaults. An app translates by key: `labelsFrom(WALLET_MODAL_LABELS, t)`
-// walks the keys, so the app never mirrors the list by hand.
+// walks the keys, so the app never mirrors the list by hand. Account strings: ./accountLabels (light: an app shell imports them).
 
 export interface WalletModalLabels {
   title: string;
@@ -79,43 +79,6 @@ export const WALLET_MODAL_LABELS: WalletModalLabels = {
   connectedViaWc: 'Connected via WalletConnect',
 };
 
-export interface AccountLabels {
-  wallet: string;
-  disconnect: string;
-  copied: string;
-  accounts: string;
-  active: string;
-  signedIn: string;
-  signer: string;
-  /** Opens the wallet's account picker. */
-  chooseInWallet: string;
-  connectOther: string;
-  /** `{active}` / `{session}` = short addresses. */
-  mismatch: string;
-  /** `{addr}`. */
-  switchTo: string;
-  /** `{addr}`. */
-  useInstead: string;
-  /** Row caption of an account the wallet does not expose to this site. */
-  notExposed: string;
-}
-
-export const ACCOUNT_LABELS: AccountLabels = {
-  wallet: 'Wallet',
-  disconnect: 'Disconnect',
-  copied: 'Copied wallet address',
-  accounts: 'Accounts',
-  active: 'In wallet',
-  signedIn: 'Signed in',
-  signer: 'Signer',
-  chooseInWallet: 'Choose account in wallet',
-  connectOther: 'Connect another wallet',
-  mismatch: 'Your wallet is on {active}, but you are signed in as {session}. Signing now would fail.',
-  switchTo: 'Switch wallet to {addr}',
-  useInstead: 'Use {addr} instead',
-  notExposed: 'Not shared with this site: pick it in the wallet',
-};
-
 /** `defaults` with each key passed through `t` (a missing translation = undefined keeps the default). */
 export function labelsFrom<T extends object>(defaults: T, t: (key: keyof T & string) => string | undefined): T {
   const out = { ...defaults };
@@ -125,3 +88,5 @@ export function labelsFrom<T extends object>(defaults: T, t: (key: keyof T & str
   }
   return out;
 }
+
+export { ACCOUNT_LABELS, type AccountLabels } from './accountLabels';

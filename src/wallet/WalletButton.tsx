@@ -8,7 +8,7 @@ import { Tooltip } from '../ui/FloatingPanel';
 import { Icon } from '../ui/Icon';
 import type { AccountModalProps } from './AccountModal';
 import { accountGate } from './AccountPanel';
-import type { AccountLabels } from './labels';
+import type { AccountLabels } from './accountLabels';
 import { WalletGlyph } from './WalletGlyph';
 import {
   disconnectWallet,

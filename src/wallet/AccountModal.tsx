@@ -10,7 +10,7 @@ import { Tooltip } from '../ui/FloatingPanel';
 import { Icon } from '../ui/Icon';
 import { FormRow } from '../ui/Primitives';
 import { AccountList, WrongAccountNotice, accountGate } from './AccountPanel';
-import { ACCOUNT_LABELS, type AccountLabels } from './labels';
+import { ACCOUNT_LABELS, type AccountLabels } from './accountLabels';
 import { WalletGlyph } from './WalletGlyph';
 import { connectError } from './connection';
 
