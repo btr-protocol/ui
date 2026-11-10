@@ -12,6 +12,7 @@
     "./wallet": "./src/wallet/index.ts",
     "./wallet/WalletModal": "./src/wallet/WalletModal.tsx",
     "./wallet/AccountModal": "./src/wallet/AccountModal.tsx",
+    "./wallet/walletConnect": "./src/wallet/walletConnect.ts",
     "./lib/notifications": "./src/lib/notifications.tsx",
     "./lib/*": "./src/lib/*.ts",
     "./styles": "./src/styles/index.css",
