@@ -43,7 +43,7 @@ interface WalletButtonProps {
   /** Owners of the Safe in view (their rows read "Signer"). */
   signers?: readonly string[];
   /** Connected wallet's glyph (catalog id / name / announced icon). Default: the kit store. */
-  wallet?: { id?: string; name: string; icon?: string };
+  wallet?: { id?: string; name: string; icon?: string; rdns?: string };
   onConnect?: () => void;
   /** "Connect another wallet" in the account modal. Default: `onConnect`. */
   onConnectOther?: () => void;
@@ -117,7 +117,7 @@ export function WalletButton({
             gate.mismatch ? (
               <Icon name="warning" className="w-4 h-4 shrink-0 text-warning" />
             ) : wallet ? (
-              <WalletGlyph id={wallet.id} name={wallet.name} announcedIcon={wallet.icon} size={16} />
+              <WalletGlyph info={wallet} size={16} />
             ) : chainId && chainIcon(chainId, { mono: true }) ? (
               <img src={chainIcon(chainId, { mono: true })} alt="" className="w-4 h-4 shrink-0 icon-tint-primary" />
             ) : (

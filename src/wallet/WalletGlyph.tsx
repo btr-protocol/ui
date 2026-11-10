@@ -1,3 +1,4 @@
+import { walletId } from '@btr-protocol/sdk/eth/wallets';
 import { useEffect, useState } from 'preact/hooks';
 import { walletIcon } from '../lib/walletIcon';
 import type { ProviderInfo } from './wallet';
@@ -8,12 +9,13 @@ import type { ProviderInfo } from './wallet';
  */
 export function WalletGlyph({
   info,
-  id = info?.id,
+  // A bare EIP-6963 entry (restored, never through the modal) names itself by rdns: the SDK alias map gives the catalog id.
+  id = info?.id ?? (info?.rdns ? walletId(info.rdns) : undefined),
   name = info?.name ?? id ?? '?',
   announcedIcon = info?.icon,
   size = 28,
 }: {
-  info?: Pick<ProviderInfo, 'name' | 'icon' | 'id'>;
+  info?: Pick<ProviderInfo, 'name' | 'icon' | 'id' | 'rdns'>;
   id?: string;
   name?: string;
   announcedIcon?: string;
