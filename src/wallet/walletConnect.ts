@@ -113,9 +113,23 @@ export const pickSessionChain = (session: WcSession, preferred?: number): number
   return preferred !== undefined && approved.includes(preferred) ? preferred : approved[0];
 };
 
-/** Newest unexpired session: the client persists them in IndexedDB across app restarts. */
-export const pickLiveSession = (sessions: WcSession[], nowSec: number): WcSession | undefined =>
-  sessions.filter((s) => s.expiry > nowSec).sort((a, b) => b.expiry - a.expiry)[0];
+/** The session this app stored, if still unexpired. Never "the newest": the client persists every session in IndexedDB,
+ *  including another tab's or a wallet's stale one, and the account must be the one the user connected here. */
+export const pickLiveSession = (sessions: WcSession[], nowSec: number, topic: string): WcSession | undefined =>
+  sessions.find((s) => s.topic === topic && s.expiry > nowSec);
+
+/** `WC_FLAG` value: the live session's topic and current chain. Anything else (a pre-topic flag) restores nothing. */
+export const wcFlag = (topic: string, chain: number): string => JSON.stringify({ topic, chain });
+export function readWcFlag(v: string | null): { topic: string; chain?: number } | undefined {
+  try {
+    const f = JSON.parse(v ?? '') as { topic?: unknown; chain?: unknown };
+    return typeof f?.topic === 'string' && f.topic
+      ? { topic: f.topic, chain: typeof f.chain === 'number' ? f.chain : undefined }
+      : undefined;
+  } catch {
+    return undefined;
+  }
+}
 
 /** Pairing topic of a `wc:<topic>@2?…` URI. */
 export const pairingTopic = (uri: string): string | undefined => /^wc:([^@?]+)@/.exec(uri)?.[1];
@@ -274,7 +288,7 @@ export function buildWcProvider(
   if (!first || initial === undefined) throw new Error('No account returned from WalletConnect');
 
   const chain = wcChainTracker(initial, topic);
-  const remember = () => store.set(WC_FLAG, String(chain.current()));
+  const remember = () => store.set(WC_FLAG, wcFlag(topic, chain.current()));
   remember();
   // The peer's own name is the only thing that says WHICH wallet approved: a WC provider carries
   // no injected flags and announces no EIP-6963 rdns.
@@ -399,17 +413,22 @@ export async function connectWithWalletConnect(
   return res;
 }
 
-/** Re-adopt the newest live session after a reload or process kill; null when there is none. */
+/** Re-adopt THIS app's session (by its stored topic) after a reload or process kill; null when it is gone. */
 export async function restoreWalletConnect(): Promise<WalletConnectResult | null> {
-  const last = store.get(WC_FLAG);
-  if (!walletConnectEnabled() || !last) return null; // no flag: never pay for the sign-client chunk
+  const flag = store.get(WC_FLAG);
+  if (!walletConnectEnabled() || !flag) return null; // no flag: never pay for the sign-client chunk
+  const last = readWcFlag(flag);
+  if (!last) {
+    store.remove(WC_FLAG);
+    return null;
+  }
   const client = await getSignClient();
-  const session = pickLiveSession(client.session.getAll(), Date.now() / 1000);
+  const session = pickLiveSession(client.session.getAll(), Date.now() / 1000, last.topic);
   if (!session) {
     store.remove(WC_FLAG);
     return null;
   }
-  return buildWcProvider(client, session, parseWcChain(last));
+  return buildWcProvider(client, session, last.chain);
 }
 
 /** WalletConnect URI -> QR SVG data URL. */

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.6.1
+- WalletConnect restore re-adopts THIS app's session by its stored topic (`WC_FLAG` = `{topic, chain}`), never the newest session in the client's store; a pre-topic flag restores nothing (reconnect once).
+- Binding a different (non-WalletConnect) wallet ends the live WalletConnect session on the relay.
+
 ## 0.6.0
 - `WalletModal` is the btr.markets connect modal, moved from the front: installed wallets (EIP-6963 + legacy injected, SDK catalog names and rasters), WalletConnect pairing (QR, phone deep links, in-wallet browser rows, last-used / natively detected order). `onConnect(provider, wallet)` replaces `onSelect`; `providers` is gone. WalletConnect is off until the app calls `configureWalletConnect({ projectId, metadata, chains, reader, loadSignClient })`.
 - Account safety: `personalSign` re-reads `eth_accounts` and refuses (`WrongAccountError`) unless the wallet's ACTIVE account is the one asked for; `assertActiveAccount` does the same before any other signature. Store: `walletAccounts`, `restoreWallet`, `switchWalletAccount`, `pickWalletAccount`, `accountGate`.

@@ -184,7 +184,14 @@ let detach: (() => void) | undefined;
 /** Bumped by every connect / disconnect: a `restoreWallet` that started before one never binds over it. */
 let generation = 0;
 
+const isWc = (p?: Eip1193Provider) => (p as { isWalletConnect?: boolean } | undefined)?.isWalletConnect === true;
+
 function bind(entry: ProviderEntry, accounts: Address[]): void {
+  // A different wallet replaces a WalletConnect one: end that session on the relay too (a new WalletConnect session already
+  // replaced the old one in the glue, so only a non-WC provider triggers this; the live one must survive).
+  const prev = walletEntry.peek()?.provider;
+  if (prev && prev !== entry.provider && isWc(prev) && !isWc(entry.provider))
+    void import('./walletConnectShell').then((m) => m.loadWc()).then((m) => m.disconnectWalletConnect());
   detach?.();
   generation++;
   walletEntry.value = entry;
@@ -272,7 +279,7 @@ export function disconnectWallet(): void {
   walletAccounts.value = [];
   walletAddress.value = undefined;
   walletChainId.value = undefined;
-  if ((p as { isWalletConnect?: boolean } | undefined)?.isWalletConnect)
+  if (isWc(p))
     void import('./walletConnectShell').then((m) => m.loadWc()).then((m) => m.disconnectWalletConnect());
 }
 
