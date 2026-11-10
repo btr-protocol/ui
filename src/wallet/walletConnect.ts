@@ -307,11 +307,15 @@ export function buildWcProvider(
     for (const l of bus.get(name) ?? []) l(arg);
   };
 
+  // Only the LIVE session clears the shared glue state; the flag only while it still names this topic (another tab, or a
+  // newer session in this one, may own it by now).
   const teardown = (notify: boolean) => {
-    if (liveDisconnect === disconnect) liveDisconnect = null;
-    sessionHandler = null;
-    setWalletPeer(null);
-    store.remove(WC_FLAG);
+    if (liveDisconnect === disconnect) {
+      liveDisconnect = null;
+      sessionHandler = null;
+      setWalletPeer(null);
+    }
+    if (readWcFlag(store.get(WC_FLAG))?.topic === topic) store.remove(WC_FLAG);
     if (notify) emit('disconnect', { code: 4900, message: 'WalletConnect session ended' });
   };
 
@@ -344,6 +348,7 @@ export function buildWcProvider(
   const provider: WalletConnectProvider = {
     isWalletConnect: true,
     wcMethods: () => ns.methods ?? [],
+    wcDisconnect: async () => {}, // replaced below by this session's own disconnect
     async request({ method, params }: { method: string; params?: unknown[] }): Promise<unknown> {
       if (method === 'eth_accounts' || method === 'eth_requestAccounts') return accounts;
       if (method === 'eth_chainId') return chainHex(chain.current());
@@ -385,6 +390,10 @@ export function buildWcProvider(
 
   sessionHandler = handler;
   liveDisconnect = disconnect;
+  provider.wcDisconnect = disconnect;
+  // One session at a time: orphans (an offline switch, a reload then a fresh connect) are ended on the relay too.
+  for (const s of client.session.getAll())
+    if (s.topic !== topic) client.disconnect({ topic: s.topic, reason: USER_DISCONNECTED }).catch(() => {});
   return { provider, address: first as Address, disconnect };
 }
 
@@ -423,6 +432,7 @@ export async function restoreWalletConnect(): Promise<WalletConnectResult | null
     return null;
   }
   const client = await getSignClient();
+  if (liveDisconnect) return null; // a session connected meanwhile: never replace it with the restored one
   const session = pickLiveSession(client.session.getAll(), Date.now() / 1000, last.topic);
   if (!session) {
     store.remove(WC_FLAG);

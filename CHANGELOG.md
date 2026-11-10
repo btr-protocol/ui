@@ -2,7 +2,8 @@
 
 ## 0.6.1
 - WalletConnect restore re-adopts THIS app's session by its stored topic (`WC_FLAG` = `{topic, chain}`), never the newest session in the client's store; a pre-topic flag restores nothing (reconnect once).
-- Binding a different (non-WalletConnect) wallet ends the live WalletConnect session on the relay.
+- Binding a different (non-WalletConnect) wallet ends the previous WalletConnect session on the relay: its own `wcDisconnect` (topic-bound), captured synchronously, so a session built since survives. A restore that lost the race to a manual connect ends the restored session; a restore never replaces a live one.
+- Connect / restore end every other session in the client store (orphans). Teardown clears `WC_FLAG` only while it still names its own topic (two tabs).
 
 ## 0.6.0
 - `WalletModal` is the btr.markets connect modal, moved from the front: installed wallets (EIP-6963 + legacy injected, SDK catalog names and rasters), WalletConnect pairing (QR, phone deep links, in-wallet browser rows, last-used / natively detected order). `onConnect(provider, wallet)` replaces `onSelect`; `providers` is gone. WalletConnect is off until the app calls `configureWalletConnect({ projectId, metadata, chains, reader, loadSignClient })`.

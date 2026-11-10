@@ -48,6 +48,8 @@ export type WalletConnectProvider = Eip1193Provider & {
   isWalletConnect: true;
   /** Methods the wallet approved for this session. */
   wcMethods: () => readonly string[];
+  /** Ends THIS session (its topic), whatever session is live by the time it runs. */
+  wcDisconnect: () => Promise<void>;
 };
 export const isWalletConnectProvider = (p?: Eip1193Provider): p is WalletConnectProvider =>
   (p as WalletConnectProvider | undefined)?.isWalletConnect === true;
