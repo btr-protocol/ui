@@ -17,6 +17,7 @@ import { KeyboardShortcutGroup } from '../ui/KeyboardShortcut';
 import { Spinner } from '../ui/Spinner';
 import { WalletItemButton } from '../ui/WalletItemButton';
 import { WalletGlyph } from './WalletGlyph';
+import { WALLET_MODAL_LABELS, type WalletModalLabels } from './labels';
 import { connectError, useWalletConnection } from './connection';
 import { type WalletInfo, useInjectedWallets } from './useInjectedWallets';
 import {
@@ -37,84 +38,6 @@ import {
   orderWallets,
   walletHref,
 } from './walletLink';
-
-export interface WalletModalLabels {
-  title: string;
-  searchPlaceholder: string;
-  installed: string;
-  thisBrowser: string;
-  /** `{name}` = the wallet. */
-  connectInBrowser: string;
-  empty: string;
-  navigate: string;
-  select: string;
-  close: string;
-  connectMobile: string;
-  otherWallets: string;
-  preparing: string;
-  yourWallets: string;
-  moreWallets: string;
-  wallets: string;
-  lastUsed: string;
-  opensInApp: string;
-  /** `{name}` = the wallet. */
-  waitingFor: string;
-  approveThere: string;
-  openAgain: string;
-  showQr: string;
-  cancel: string;
-  /** `{name}` = the wallet. */
-  getWallet: string;
-  anotherDevice: string;
-  anotherDeviceQr: string;
-  scanWithMobile: string;
-  qrAlt: string;
-  qrFailed: string;
-  qrLoading: string;
-  copyLink: string;
-  copied: string;
-  tryAgain: string;
-  /** `{name}` = the wallet. */
-  couldNotOpen: string;
-  connectedViaWc: string;
-}
-
-const LABELS: WalletModalLabels = {
-  title: 'Connect wallet',
-  searchPlaceholder: 'Search wallets...',
-  installed: 'Installed',
-  thisBrowser: 'This browser',
-  connectInBrowser: 'Connect {name} (this browser)',
-  empty: 'No browser wallet detected.',
-  navigate: 'Navigate',
-  select: 'Select',
-  close: 'Close',
-  connectMobile: 'Connect a mobile wallet',
-  otherWallets: 'Other wallets',
-  preparing: 'Preparing connection...',
-  yourWallets: 'Your wallets',
-  moreWallets: 'More wallets',
-  wallets: 'Wallets',
-  lastUsed: 'Last used',
-  opensInApp: 'Opens this page in the app',
-  waitingFor: 'Waiting for {name}...',
-  approveThere: 'Approve the connection there, then come back here.',
-  openAgain: 'Open again',
-  showQr: 'Show QR',
-  cancel: 'Cancel',
-  getWallet: 'Not installed? Get {name}',
-  anotherDevice: 'Another device',
-  anotherDeviceQr: 'Another device (QR code)',
-  scanWithMobile: 'Scan with a mobile wallet',
-  qrAlt: 'WalletConnect QR code',
-  qrFailed: 'Could not generate the QR code.',
-  qrLoading: 'Generating QR code...',
-  copyLink: 'Copy link',
-  copied: 'Copied',
-  tryAgain: 'Try again',
-  couldNotOpen: 'Could not open {name}. Install it, or use another device.',
-  connectedViaWc: 'Connected via WalletConnect',
-};
 
 /** What connected: catalog id (`metamask`, `walletconnect`, an rdns for an unknown wallet), name, announced icon. */
 export interface ConnectedWallet {
@@ -172,7 +95,7 @@ export function WalletModal({
   footer,
   extra,
 }: WalletModalProps) {
-  const l = { ...LABELS, ...labels };
+  const l = { ...WALLET_MODAL_LABELS, ...labels };
   const injected = useInjectedWallets();
   const [lastKept, setLastKept] = useState(readLastWc);
   const lastWallet = lastProp ?? lastKept;

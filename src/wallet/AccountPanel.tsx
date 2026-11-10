@@ -8,38 +8,8 @@ import { Badge } from '../ui/Badge';
 import { Button } from '../ui/Button';
 import { Notice } from '../ui/Feedback';
 import { WalletItemButton } from '../ui/WalletItemButton';
+import { ACCOUNT_LABELS, type AccountLabels } from './labels';
 import { accountMismatch, sameAddress } from './wallet';
-
-export interface AccountLabels {
-  accounts: string;
-  active: string;
-  signedIn: string;
-  signer: string;
-  /** Opens the wallet's account picker. */
-  chooseInWallet: string;
-  connectOther: string;
-  /** `{active}` / `{session}` = short addresses. */
-  mismatch: string;
-  /** `{addr}`. */
-  switchTo: string;
-  /** `{addr}`. */
-  useInstead: string;
-  /** Row caption of an account the wallet does not expose to this site. */
-  notExposed: string;
-}
-
-export const ACCOUNT_LABELS: AccountLabels = {
-  accounts: 'Accounts',
-  active: 'In wallet',
-  signedIn: 'Signed in',
-  signer: 'Signer',
-  chooseInWallet: 'Choose account in wallet',
-  connectOther: 'Connect another wallet',
-  mismatch: 'Your wallet is on {active}, but you are signed in as {session}. Signing now would fail.',
-  switchTo: 'Switch wallet to {addr}',
-  useInstead: 'Use {addr} instead',
-  notExposed: 'Not shared with this site: pick it in the wallet',
-};
 
 const fill = (s: string, v: Record<string, string>) => s.replace(/\{(\w+)\}/g, (_, k: string) => v[k] ?? '');
 
@@ -114,8 +84,19 @@ export function AccountList({ accounts, active, session, signers = [], onSelect,
   const l = { ...ACCOUNT_LABELS, ...labels };
   const rows = [...accounts];
   if (session && !rows.some((a) => sameAddress(a, session))) rows.push(session);
+  // ↑↓ / Home / End move focus between the account rows (same keys as useKeyboardNav); the rows stay focusable while busy.
+  const onKeyDown = (e: KeyboardEvent) => {
+    const list = [...(e.currentTarget as HTMLElement).querySelectorAll<HTMLElement>(':scope > button')];
+    const i = list.indexOf(document.activeElement as HTMLElement);
+    const next = e.key === 'ArrowDown' ? i + 1 : e.key === 'ArrowUp' ? i - 1 : e.key === 'Home' ? 0 : e.key === 'End' ? list.length - 1 : null;
+    if (next === null || !list.length) return;
+    e.preventDefault();
+    e.stopPropagation();
+    list[(next + list.length) % list.length]?.focus();
+  };
   return (
     <ModalSection title={l.accounts}>
+      <div onKeyDown={onKeyDown}>
       {rows.map((a) => {
         const isActive = sameAddress(a, active);
         const isSession = sameAddress(a, session);
@@ -128,9 +109,11 @@ export function AccountList({ accounts, active, session, signers = [], onSelect,
             caption={exposed ? undefined : l.notExposed}
             isSelected={current}
             isConnecting={busy !== undefined && sameAddress(busy, a)}
-            // The current account stays at full contrast (selected, not disabled); clicking it is a no-op.
+            // The current account stays at full contrast (selected, not disabled); clicking it is a no-op. Busy = aria-disabled,
+            // so focus never drops out of the list while a switch runs.
             disabled={!onSelect || busy !== undefined}
-            onClick={() => !current && onSelect?.(a)}
+            ariaDisabled
+            onClick={() => !current && busy === undefined && onSelect?.(a)}
             rightIcon={
               <span className="flex shrink-0 items-center gap-1">
                 {signers.some((s) => sameAddress(s, a)) && <Badge variant="secondary">{l.signer}</Badge>}
@@ -141,6 +124,7 @@ export function AccountList({ accounts, active, session, signers = [], onSelect,
           />
         );
       })}
+      </div>
       {(onChooseInWallet || onConnectOther) && (
         <div className={`${MODAL_PADDING} flex flex-wrap gap-2 py-3`}>
           {onChooseInWallet && (

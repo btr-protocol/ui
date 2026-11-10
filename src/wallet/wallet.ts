@@ -177,9 +177,12 @@ function adoptAccounts(accounts: Address[]): void {
 }
 
 let detach: (() => void) | undefined;
+/** Bumped by every connect / disconnect: a `restoreWallet` that started before one never binds over it. */
+let generation = 0;
 
 function bind(entry: ProviderEntry, accounts: Address[]): void {
   detach?.();
+  generation++;
   walletEntry.value = entry;
   adoptAccounts(accounts);
   const onAccounts = (...a: unknown[]) => {
@@ -192,7 +195,18 @@ function bind(entry: ProviderEntry, accounts: Address[]): void {
       walletChainId.value = Number(BigInt(String(a[0])));
     } catch {}
   };
-  const onEnd = () => disconnectWallet();
+  // EIP-1193 `disconnect`: 4900 (provider disconnected) / 4901 (chain disconnected), and WalletConnect teardown (4900), log
+  // out. Anything else (a transient 1013 "try again later" from a reconnecting socket) is re-checked against the wallet first.
+  const onEnd = (...a: unknown[]) => {
+    if (walletEntry.peek() !== entry) return;
+    const code = (a[0] as { code?: number } | undefined)?.code;
+    if (code === 4900 || code === 4901) return disconnectWallet();
+    void readAccounts(entry.provider)
+      .then((l) => {
+        if (!l.length && walletEntry.peek() === entry) disconnectWallet();
+      })
+      .catch(() => {});
+  };
   entry.provider.on?.('accountsChanged', onAccounts);
   entry.provider.on?.('chainChanged', onChain);
   entry.provider.on?.('disconnect', onEnd);
@@ -218,29 +232,36 @@ export async function connectWallet(entry: ProviderEntry): Promise<Address> {
  */
 export async function restoreWallet(entries?: ProviderEntry[]): Promise<Address | undefined> {
   if (walletEntry.value) return walletAddress.value;
+  const g = generation;
+  // A manual connect (or disconnect) while this was awaiting wins: never bind over it.
+  const stale = () => g !== generation || !!walletEntry.peek();
   const last = lastWallet();
   if (!last) return undefined;
   if (last === 'walletconnect') {
     const { loadWc, store, WC_FLAG } = await import('./walletConnectShell');
     if (!store.get(WC_FLAG)) return undefined;
     const wc = await (await loadWc()).restoreWalletConnect().catch(() => null);
-    if (!wc) return undefined;
-    bind({ info: { uuid: 'walletconnect', name: 'WalletConnect', id: 'walletconnect' }, provider: wc.provider }, await readAccounts(wc.provider));
+    if (!wc || stale()) return walletAddress.peek();
+    const accounts = await readAccounts(wc.provider);
+    if (stale()) return walletAddress.peek();
+    bind({ info: { uuid: 'walletconnect', name: 'WalletConnect', id: 'walletconnect' }, provider: wc.provider }, accounts);
   } else {
     const list = entries ?? (await discoverProviders());
     const entry = list.find((e) => e.info.rdns === last || e.info.id === last);
-    if (!entry) return undefined;
+    if (!entry || stale()) return walletAddress.peek();
     const accounts = await readAccounts(entry.provider).catch((): Address[] => []);
-    if (!accounts.length) return undefined;
+    if (!accounts.length || stale()) return walletAddress.peek();
     bind(entry, accounts);
   }
   const bound = walletEntry.peek();
-  if (bound) walletChainId.value = await chainIdOf(bound.provider);
+  const id = bound && (await chainIdOf(bound.provider));
+  if (bound && walletEntry.peek() === bound) walletChainId.value = id;
   return walletAddress.peek();
 }
 
 export function disconnectWallet(): void {
   const p = walletEntry.value?.provider;
+  generation++;
   detach?.();
   detach = undefined;
   walletEntry.value = undefined;

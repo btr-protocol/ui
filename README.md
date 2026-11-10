@@ -31,7 +31,7 @@ import '@btr-protocol/ui/styles'; // fonts + tokens + base rules + @tailwind
 ## Usage
 
 ```tsx
-import { Shell, Header, Footer, TabBar, PageShell, WalletButton, WalletModal, ThemeProvider, SOCIAL_ICONS } from '@btr-protocol/ui';
+import { Shell, Header, Footer, TabBar, PageShell, WalletButton, ConnectModalHost, ThemeProvider, SOCIAL_ICONS } from '@btr-protocol/ui';
 
 const items = [{ path: '/safety', title: 'Safety', icon: 'shield' }];
 
@@ -43,7 +43,7 @@ const items = [{ path: '/safety', title: 'Safety', icon: 'shield' }];
   >
     <PageShell title="Safety">...</PageShell>
   </Shell>
-  <WalletModal />
+  <ConnectModalHost />
 </ThemeProvider>;
 ```
 
@@ -125,7 +125,7 @@ Designed, not mirrored from dark (Linear / Stripe / Mercury family). Dark separa
 ## 0.6 wallet
 
 ```ts
-import { configureWalletConnect, WalletModal, WalletButton, assertActiveAccount } from '@btr-protocol/ui';
+import { configureWalletConnect, ConnectModalHost, WalletButton, assertActiveAccount, labelsFrom, WALLET_MODAL_LABELS } from '@btr-protocol/ui';
 
 configureWalletConnect({
   projectId: import.meta.env.VITE_WC_PROJECT_ID ?? '', // public Reown client id; '' = installed wallets only
@@ -135,9 +135,11 @@ configureWalletConnect({
   loadSignClient: () => import('@walletconnect/sign-client'),
 });
 
-<WalletModal onConnect={async (provider, wallet) => adopt(provider, wallet)} footer={<Terms />} />
+// Lazy: the modal chunk loads on first open. Labels by key, never a hand-mirrored list.
+<ConnectModalHost onConnect={async (provider, wallet) => adopt(provider, wallet)} footer={<Terms />} labels={labelsFrom(WALLET_MODAL_LABELS, (k) => t(`wallet.${k}`))} />
 <WalletButton chains={chains} address={session} sessionAddress={session} signers={owners} onSwitchAccount={reauthAs} />
 await assertActiveAccount(provider, session); // before eth_signTypedData_v4 / eth_sendTransaction
+// The barrel never carries the modals: an app with its own state imports `@btr-protocol/ui/wallet/WalletModal` / `.../AccountModal` lazily.
 ```
 
 The wallet signs with its ACTIVE account whatever `from` says (Rabby, Ledger Live, most WalletConnect peers), so the kit re-reads `eth_accounts` right before a signature and refuses a mismatch; switching happens in the wallet (`wallet_requestPermissions` picker) and the store follows `accountsChanged`. CSP: WalletConnect needs `connect-src wss://relay.walletconnect.org https://verify.walletconnect.org https://verify.walletconnect.com https://pulse.walletconnect.org` and `frame-src https://verify.walletconnect.org https://verify.walletconnect.com`.
