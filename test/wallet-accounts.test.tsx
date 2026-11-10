@@ -2,6 +2,7 @@
 // WalletConnect glue's account events. happy-dom; fake EIP-1193 providers record every request.
 import { afterEach, describe, expect, test } from 'bun:test';
 import {
+  ConnectModalHost,
   WalletButton,
   WalletModal,
   WrongAccountError,
@@ -230,6 +231,18 @@ describe('WalletModal', () => {
     act(() => { announce(fakeWallet([SESSION]), 'io.metamask', 'MetaMask'); });
     await until(() => (document.body.textContent ?? '').includes('Connect a mobile wallet'));
     expect(document.body.textContent).toContain('Connect a mobile wallet');
+  });
+});
+
+describe('ConnectModalHost', () => {
+  test('nothing while closed; the lazy modal on open', async () => {
+    const { openConnectModal, closeConnectModal } = await import('../src');
+    mount(<ConnectModalHost />);
+    expect(document.body.textContent).not.toContain('Connect wallet');
+    act(() => openConnectModal());
+    await until(() => (document.body.textContent ?? '').includes('Connect wallet'));
+    expect(document.body.textContent).toContain('Connect wallet');
+    act(() => closeConnectModal());
   });
 });
 

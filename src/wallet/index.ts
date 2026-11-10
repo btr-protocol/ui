@@ -4,6 +4,7 @@ export { useInjectedWallets, type WalletInfo } from './useInjectedWallets';
 export { WalletButton, type WalletChain } from './WalletButton';
 export { WalletModal, type WalletModalProps, type WalletModalLabels, type ConnectedWallet } from './WalletModal';
 export { WalletGlyph } from './WalletGlyph';
+export { ConnectModalHost } from './ConnectModalHost';
 export {
   ACCOUNT_LABELS,
   AccountList,

@@ -5,6 +5,7 @@
 - Account safety: `personalSign` re-reads `eth_accounts` and refuses (`WrongAccountError`) unless the wallet's ACTIVE account is the one asked for; `assertActiveAccount` does the same before any other signature. Store: `walletAccounts`, `restoreWallet`, `switchWalletAccount`, `pickWalletAccount`, `accountGate`.
 - `WalletButton`'s modal is the kit `ChainSelectModal` (same chain list as every picker) with an accounts section: every exposed account, one click to switch, "In wallet" / "Signed in" / "Signer" badges, and a wrong-account banner ("Switch wallet to …" / "Use … instead"). New props: `activeAddress`, `accounts`, `sessionAddress`, `signers`, `wallet`, `onSwitchAccount`, `onChooseAccount`; `chains` takes `ChainItem[]`.
 - `WalletGlyph` takes `id` / `name` / `announcedIcon` (bundled raster, then the announced icon, then the initial); `info` still works.
+- `ConnectModalHost`: mount once, the modal chunk loads on first open (off the entry).
 - Moved from the front: `walletLink` (deep links, `configureWalletLinks` for an app shell's native plugin), `useWalletConnection`, `connectError`, `useInjectedWallets`, the QR generator.
 
 ## 0.5.1
