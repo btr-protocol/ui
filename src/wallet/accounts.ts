@@ -58,3 +58,11 @@ export async function requestAccountSwitch(p: Eip1193Provider, target: string): 
   if (sameAddress((await readAccounts(p))[0], target)) return true;
   return sameAddress((await requestAccountPicker(p))[0], target);
 }
+
+/** Store-free core of `assertActiveAccount`: re-read the wallet and refuse unless its ACTIVE account is `expected`. Resolves the
+ *  live list (active first) so a caller with its own state can adopt it. */
+export async function requireActiveAccount(p: Eip1193Provider, expected: string): Promise<Address[]> {
+  const accounts = await readAccounts(p);
+  if (!accounts[0] || !sameAddress(accounts[0], expected)) throw new WrongAccountError(expected, accounts[0]);
+  return accounts;
+}

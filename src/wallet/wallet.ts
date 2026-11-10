@@ -3,7 +3,7 @@
 // legacy injected + WalletConnect) is `WalletModal`; an app that owns its own connection state passes `onConnect`.
 import { signal } from '@preact/signals';
 import type { Address, Hex } from '../lib/address';
-import { WrongAccountError, accountList, readAccounts, requestAccountPicker, sameAddress } from './accounts';
+import { WrongAccountError, accountList, readAccounts, requestAccountPicker, requireActiveAccount, sameAddress } from './accounts';
 
 export interface Eip1193Provider {
   request(args: { method: string; params?: unknown[] }): Promise<unknown>;
@@ -69,6 +69,7 @@ export {
   readAccounts,
   requestAccountPicker,
   requestAccountSwitch,
+  requireActiveAccount,
   sameAddress,
 } from './accounts';
 
@@ -78,11 +79,14 @@ export {
  * signature: a wrong-account signature is never produced. Syncs the store when `p` is the connected provider.
  */
 export async function assertActiveAccount(p: Eip1193Provider, expected: string): Promise<Address> {
-  const accounts = await readAccounts(p);
-  if (walletEntry.value?.provider === p) adoptAccounts(accounts);
-  const [active] = accounts;
-  if (!active || !sameAddress(active, expected)) throw new WrongAccountError(expected, active);
-  return active;
+  try {
+    const accounts = await requireActiveAccount(p, expected);
+    if (walletEntry.value?.provider === p) adoptAccounts(accounts);
+    return accounts[0] as Address;
+  } catch (e) {
+    if (e instanceof WrongAccountError && walletEntry.value?.provider === p) adoptAccounts(await readAccounts(p));
+    throw e;
+  }
 }
 
 /**
