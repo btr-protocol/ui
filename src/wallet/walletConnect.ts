@@ -415,6 +415,6 @@ export async function restoreWalletConnect(): Promise<WalletConnectResult | null
 /** WalletConnect URI -> QR SVG data URL. */
 export async function generateQrCode(uri: string): Promise<string> {
   const { createQr } = await import('./qrcode');
-  const svg = createQr(uri, { logo: true });
+  const svg = createQr(uri);
   return `data:image/svg+xml;base64,${btoa(svg)}`;
 }
