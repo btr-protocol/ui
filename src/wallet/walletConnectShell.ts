@@ -1,3 +1,5 @@
+// ONE WalletConnect session per origin: connecting or restoring ends every other session in sign-client's store, which is shared by
+// every tab of the origin, so a second tab's session is ended too (that tab sees `disconnect` and asks to reconnect).
 // Shell half of WalletConnect: config, the session flag and the peer name, everything an entry graph needs
 // without the session glue. The glue (`./walletConnect`) is reached ONLY through `loadWc`, so a build with a
 // project id weighs the same as one without until the user opens the pairing path.
