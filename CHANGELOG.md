@@ -9,6 +9,7 @@
 - `ConnectModalHost`: mount once, the modal chunk loads on first open (off the entry). The barrel no longer exports `WalletModal` / `AccountModal` (subpaths only); `WalletButton` lazy-loads its modal.
 - Breaking: `WalletChain` removed (use `ChainItem`); `WalletButton` / `AccountModal` `labels` = `Partial<AccountLabels>`. `labelsFrom(defaults, t)` + `WALLET_MODAL_LABELS` / `ACCOUNT_LABELS` translate by key.
 - `restoreWallet` never binds over a connect that landed while it awaited; a provider `disconnect` logs out only on 4900 / 4901 (else the wallet's accounts are re-read). Account rows: ↑↓ / Home / End, `aria-disabled` while busy.
+- QR generator rewritten (versions 1-10, level L, function patterns reserved before the data): the front copy never decoded and refused URIs over 134 bytes, i.e. every WalletConnect v2 URI. The logo overlay is gone. Round-trip test with jsQR (dev dependency).
 - Moved from the front: `walletLink` (deep links, `configureWalletLinks` for an app shell's native plugin), `useWalletConnection`, `connectError`, `useInjectedWallets`, the QR generator.
 
 ## 0.5.1
