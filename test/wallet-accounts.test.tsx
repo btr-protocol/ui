@@ -375,17 +375,57 @@ describe('WalletConnect restore by topic', () => {
     expect(readWcFlag('143')).toBeUndefined(); // a pre-topic flag restores nothing
   });
 
-  test('binding a different wallet ends the WalletConnect session on the relay', async () => {
-    const calls: string[] = [];
-    const wcLike = Object.assign(fakeWallet([SESSION]), { isWalletConnect: true });
+  // One fake sign-client for the module (the glue caches it): sessions are mutable, disconnects recorded.
+  const sessions: { topic: string; expiry: number; namespaces: { eip155: { accounts: string[] } } }[] = [];
+  const ended: string[] = [];
+  const fake = { on: () => {}, request: async () => '0x', disconnect: async ({ topic }: { topic: string }) => { ended.push(topic); }, session: { getAll: () => sessions }, core: { relayer: { restartTransport: async () => {} }, pairing: { disconnect: async () => {} } } };
+  const sess = (topic: string, expiry = 9e9) => ({ topic, expiry, namespaces: { eip155: { accounts: [`eip155:143:${SESSION}`] } } });
+  const setup = async () => {
     const wc = await import('../src/wallet/walletConnect');
-    await connectWallet({ info: { uuid: 'walletconnect', name: 'WalletConnect', id: 'walletconnect' }, provider: wcLike });
-    // a live session in the glue (the one the relay must see ended)
-    const client = { on: () => {}, request: async () => '0x', disconnect: async ({ topic }: { topic: string }) => void calls.push(topic), session: { getAll: () => [] }, core: { relayer: { restartTransport: async () => {} }, pairing: { disconnect: async () => {} } } };
-    wc.bindClientEvents(client as never);
-    wc.buildWcProvider(client as never, { topic: 'live', expiry: 9e9, namespaces: { eip155: { accounts: [`eip155:143:${SESSION}`] } } });
+    configureWalletConnect({ projectId: 'public-id', metadata: { name: 'x', description: 'x', url: 'https://x', icons: [] }, chains: () => [143], loadSignClient: async () => ({ default: { init: async () => fake } }) });
+    await wc.disconnectWalletConnect();
+    sessions.length = 0;
+    ended.length = 0;
+    return wc;
+  };
+
+  test('restore: the stored topic comes back, other sessions are ended as orphans', async () => {
+    const wc = await setup();
+    sessions.push(sess('mine'), sess('orphan'));
+    localStorage.setItem('btr-wc-session', wc.wcFlag('mine', 143));
+    const r = await wc.restoreWalletConnect();
+    expect(r?.address).toBe(SESSION);
+    expect(ended).toEqual(['orphan']);
+    await r?.disconnect();
+  });
+
+  test('restore: an expired or missing topic restores nothing and clears the flag', async () => {
+    const wc = await setup();
+    sessions.push(sess('mine', 1), sess('other'));
+    localStorage.setItem('btr-wc-session', wc.wcFlag('mine', 143));
+    expect(await wc.restoreWalletConnect()).toBeNull();
+    expect(localStorage.getItem('btr-wc-session')).toBeNull();
+    localStorage.setItem('btr-wc-session', '143'); // pre-topic flag
+    expect(await wc.restoreWalletConnect()).toBeNull();
+    expect(localStorage.getItem('btr-wc-session')).toBeNull();
+    localStorage.setItem('btr-wc-session', wc.wcFlag('gone', 143)); // topic no longer in the client
+    expect(await wc.restoreWalletConnect()).toBeNull();
+    expect(localStorage.getItem('btr-wc-session')).toBeNull();
+  });
+
+  test('switching to another wallet ends exactly that session and clears the flag; a newer session survives', async () => {
+    const wc = await setup();
+    sessions.push(sess('live'));
+    const built = wc.buildWcProvider(fake as never, sess('live'));
+    await connectWallet({ info: { uuid: 'walletconnect', name: 'WalletConnect', id: 'walletconnect' }, provider: built.provider });
+    expect(localStorage.getItem('btr-wc-session')).toContain('live');
     await connectWallet(entry(fakeWallet([OTHER])));
-    await until(() => calls.length > 0);
-    expect(calls).toEqual(['live']);
+    await until(() => ended.includes('live'));
+    expect(localStorage.getItem('btr-wc-session')).toBeNull();
+    // the old session's teardown never touches a newer one's flag (two tabs / a later session)
+    const older = wc.buildWcProvider(fake as never, sess('older'));
+    wc.buildWcProvider(fake as never, sess('newer'));
+    await older.disconnect();
+    expect(localStorage.getItem('btr-wc-session')).toContain('newer');
   });
 });

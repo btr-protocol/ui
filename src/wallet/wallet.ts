@@ -184,14 +184,17 @@ let detach: (() => void) | undefined;
 /** Bumped by every connect / disconnect: a `restoreWallet` that started before one never binds over it. */
 let generation = 0;
 
-const isWc = (p?: Eip1193Provider) => (p as { isWalletConnect?: boolean } | undefined)?.isWalletConnect === true;
+type WcLike = Eip1193Provider & { isWalletConnect?: boolean; wcDisconnect?: () => Promise<void> };
+const isWc = (p?: Eip1193Provider): p is WcLike => (p as WcLike | undefined)?.isWalletConnect === true;
+/** End exactly `p`'s session (bound to its topic), never "whatever is live now". */
+const endWc = (p: WcLike) => p.wcDisconnect?.().catch(() => {});
 
 function bind(entry: ProviderEntry, accounts: Address[]): void {
   // A different wallet replaces a WalletConnect one: end that session on the relay too (a new WalletConnect session already
   // replaced the old one in the glue, so only a non-WC provider triggers this; the live one must survive).
+  // The previous session's own disconnect, captured now: a WalletConnect session built since must survive.
   const prev = walletEntry.peek()?.provider;
-  if (prev && prev !== entry.provider && isWc(prev) && !isWc(entry.provider))
-    void import('./walletConnectShell').then((m) => m.loadWc()).then((m) => m.disconnectWalletConnect());
+  if (prev && prev !== entry.provider && isWc(prev) && !isWc(entry.provider)) void endWc(prev);
   detach?.();
   generation++;
   walletEntry.value = entry;
@@ -252,9 +255,11 @@ export async function restoreWallet(entries?: ProviderEntry[]): Promise<Address 
     const { loadWc, store, WC_FLAG } = await import('./walletConnectShell');
     if (!store.get(WC_FLAG)) return undefined;
     const wc = await (await loadWc()).restoreWalletConnect().catch(() => null);
-    if (!wc || stale()) return walletAddress.peek();
+    if (!wc) return walletAddress.peek();
+    // A manual connect won while this restored: the restored session is not adopted, so it is ended, not left on the relay.
+    if (stale()) return void (await wc.disconnect()), walletAddress.peek();
     const accounts = await readAccounts(wc.provider);
-    if (stale()) return walletAddress.peek();
+    if (stale()) return void (await wc.disconnect()), walletAddress.peek();
     bind({ info: { uuid: 'walletconnect', name: 'WalletConnect', id: 'walletconnect' }, provider: wc.provider }, accounts);
   } else {
     const list = entries ?? (await discoverProviders());
@@ -279,8 +284,7 @@ export function disconnectWallet(): void {
   walletAccounts.value = [];
   walletAddress.value = undefined;
   walletChainId.value = undefined;
-  if (isWc(p))
-    void import('./walletConnectShell').then((m) => m.loadWc()).then((m) => m.disconnectWalletConnect());
+  if (isWc(p)) void endWc(p);
 }
 
 /** Ask the wallet to switch chain; resolves false when it refuses or is not connected. */
