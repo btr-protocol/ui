@@ -28,7 +28,7 @@ export interface AccountModalProps {
   sessionAddress?: string;
   /** Owners of the Safe in view. */
   signers?: readonly string[];
-  wallet?: { id?: string; name: string; icon?: string };
+  wallet?: { id?: string; name: string; icon?: string; rdns?: string };
   explorerHref?: (address: string) => string | undefined;
   /** Replaces the default explorer button (an app with its own explorer resolution). */
   explorer?: ComponentChildren;
@@ -93,7 +93,7 @@ export function AccountModal({
         label={
           <div className="flex items-center gap-2 min-w-0">
             {wallet ? (
-              <WalletGlyph id={wallet.id} name={wallet.name} announcedIcon={wallet.icon} size={16} />
+              <WalletGlyph info={wallet} size={16} />
             ) : (
               <Icon name="wallet" className="w-4 h-4 text-fg-2 shrink-0" />
             )}
