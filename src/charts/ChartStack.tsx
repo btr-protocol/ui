@@ -1,7 +1,7 @@
 // ChartStack: time-series panes stacked in ONE frame on a shared x axis, the layout of the front's metrics page. Every pane is a MetricChart with
 // its own time axis and a compact title (no legend, no value tags over the plot); zoom / pan and the crosshair are linked across panes (one sync group),
-// the header reads the hovered timestamp, and the right pane is a table of every series' value in each pane at that timestamp, sorted live by value
-// (the front's metrics-page hover table). `table` is an optional left slot (series picker).
+// the header reads the hovered timestamp, and beside EACH pane sits its own small table of that pane series and their value at that timestamp, sorted live
+// (like the front metrics page stacked panes). `table` is an optional left slot (series picker).
 import type { ComponentChildren } from 'preact';
 import { useCallback, useId, useMemo, useRef, useState } from 'preact/hooks';
 import { cn } from '../lib/cn';
@@ -46,7 +46,7 @@ export interface ChartStackProps {
 
 const fmtDate = (ms: number) => new Date(ms).toISOString().slice(0, 10);
 
-export function ChartStack({ title, panes, controls, table, tableWidth = 'clamp(16rem, 28%, 22rem)', tableLabel, valuesWidth = '20rem', themeKey = '', className, emptyMessage }: ChartStackProps) {
+export function ChartStack({ title, panes, controls, table, tableWidth = 'clamp(16rem, 28%, 22rem)', tableLabel, valuesWidth = '15rem', themeKey = '', className, emptyMessage }: ChartStackProps) {
   const sync = useId();
   const dateRef = useRef<HTMLSpanElement>(null);
   const range = useMemo(() => {
@@ -79,50 +79,51 @@ export function ChartStack({ title, panes, controls, table, tableWidth = 'clamp(
     }
     return null;
   };
-  const cols = shown.filter((p) => p.values !== false && p.series.some((s) => !s.stack));
-  type Row = { s: MetricSeriesSpec; v: (MetricSeriesSpec | undefined)[] };
-  const rows: Row[] = (cols[0]?.series ?? []).filter((s) => !s.stack).map((s) => ({ s, v: cols.map((p) => p.series.find((x) => x.id === s.id)) }));
-  const valueTable = rows.length > 0 && (
-    <div role="region" aria-label="Values at the crosshair" className="min-w-0 overflow-x-auto border-border max-xl:border-t xl:border-l">
-      <Table
-        variant="compact"
-        frame={false}
-        searchable={false}
-        rowKey={(r) => r.s.id}
-        data={rows}
-        initialSort={{ key: cols[0].id, dir: 'desc' }}
-        columns={[
-          { ...textCol<Row>('n', 'series', (r) => r.s.label), render: (r: Row) => (<span className="flex min-w-0 items-center gap-1.5"><span aria-hidden="true" className="h-2 w-2 shrink-0 rounded-[2px]" style={{ background: r.s.color }} /><span className="block min-w-0 max-w-[3.25rem] break-words leading-tight text-fg-0" title={r.s.label}>{r.s.label}</span></span>) },
-          ...cols.map((p, i) => ({ ...numCol<Row>(p.id, p.short ?? p.title, (r) => (r.v[i] ? value(r.v[i]) : null), (v) => (v == null ? '' : formatter(p.format)(v))), className: 'px-0.5', sortable: i === 0 })),
-        ]}
-      />
-    </div>
-  );
-  // The panes re-render only when their data, theme or range change: a crosshair move (`hover`) re-renders the value table alone.
-  const paneViews = useMemo(
-    () => (
-      <>
-        {shown.map((p, i) => (
-            <div key={p.id} className={cn('flex min-w-0 flex-col', i > 0 && 'border-t border-border')} style={{ height: p.height ?? (i === 0 ? 260 : 190) }}>
-              <h4 className="shrink-0 px-3 pt-1 text-xs font-semibold text-fg-1">{p.title}</h4>
-              <MetricChart
-                key={`${themeKey}-${p.id}-${p.log ? 'log' : 'lin'}-${p.series.map((s) => s.id).join()}`}
-                title={p.title}
-                watermark={false}
-                series={p.series}
-                panes={[{ format: p.format, log: p.log, bounds: p.bounds }]}
-                range={range}
-                syncId={`${sync}`}
-                onHoverTime={onHover}
-                timeAxis
-                legend={false}
-                priceTags={false}
-                className="min-h-0 flex-1"
-              />
-            </div>
-        ))}
-      </>
-    ),
+  // One small value table PER pane, stacked beside its chart (like the metrics page's stacked panes): the pane's own series and their value at the crosshair (at rest: the latest), sorted live.
+  type Row = { s: MetricSeriesSpec };
+  const paneTable = (p: (typeof shown)[number]) => {
+    const rows: Row[] = p.series.filter((s) => !s.stack).map((s) => ({ s }));
+    if (p.values === false || rows.length === 0) return <div className="max-xl:hidden xl:border-l xl:border-border" />;
+    const fmt = formatter(p.format);
+    return (
+      <div role="region" aria-label={`Values at the crosshair: ${p.short ?? p.title}`} className="min-h-0 min-w-0 overflow-y-auto border-border max-xl:border-t xl:border-l">
+        <Table
+          variant="compact"
+          frame={false}
+          searchable={false}
+          rowKey={(r) => r.s.id}
+          data={rows}
+          initialSort={{ key: 'v', dir: 'desc' }}
+          columns={[
+            { ...textCol<Row>('n', p.short ?? p.title, (r) => r.s.label), render: (r: Row) => (<span className="flex min-w-0 items-center gap-1.5"><span aria-hidden="true" className="h-2 w-2 shrink-0 rounded-[2px]" style={{ background: r.s.color }} /><span className="block min-w-0 truncate text-fg-0" title={r.s.label}>{r.s.label}</span></span>) },
+            { ...numCol<Row>('v', 'value', (r) => value(r.s), (v) => (v == null ? '' : fmt(v))), sortable: true },
+          ]}
+        />
+      </div>
+    );
+  };
+  // The charts re-render only when their data, theme or range change: a crosshair move (`hover`) re-renders the value tables alone.
+  const charts = useMemo(
+    () =>
+      shown.map((p) => (
+          <div key={p.id} className="flex min-h-0 min-w-0 flex-col max-xl:h-[var(--ph)]">
+            <h4 className="shrink-0 px-3 pt-1 text-xs font-semibold text-fg-1">{p.title}</h4>
+            <MetricChart
+              key={`${themeKey}-${p.id}-${p.log ? 'log' : 'lin'}-${p.series.map((s) => s.id).join()}`}
+              title={p.title}
+              watermark={false}
+              series={p.series}
+              panes={[{ format: p.format, log: p.log, bounds: p.bounds }]}
+              range={range}
+              syncId={`${sync}`}
+              onHoverTime={onHover}
+              timeAxis
+              legend={false}
+              priceTags={false}
+              className="min-h-0 flex-1"
+            />
+          </div>
+      )),
     [shown, themeKey, sync, range, onHover],
   );
   return (
@@ -132,7 +133,7 @@ export function ChartStack({ title, panes, controls, table, tableWidth = 'clamp(
         <span ref={dateRef} className="font-numeric text-xs tabular-nums text-fg-2" aria-live="off" />
         {controls && <div className="flex flex-wrap items-center gap-2 [&>*]:shrink-0">{controls}</div>}
       </header>
-      <div className={cn('grid min-w-0', table ? 'xl:grid-cols-[var(--cs-w)_minmax(0,1fr)_var(--cs-v)]' : 'xl:grid-cols-[minmax(0,1fr)_var(--cs-v)]')} style={{ '--cs-w': tableWidth, '--cs-v': valuesWidth } as Record<string, string>}>
+      <div className={cn('grid min-w-0', table ? 'xl:grid-cols-[var(--cs-w)_minmax(0,1fr)]' : 'xl:grid-cols-[minmax(0,1fr)]')} style={{ '--cs-w': tableWidth, '--cs-v': valuesWidth } as Record<string, string>}>
         {table && (
           <div role="region" aria-label={tableLabel} className="min-w-0 border-border max-xl:order-last max-xl:border-t xl:border-r">
             {table}
@@ -140,9 +141,13 @@ export function ChartStack({ title, panes, controls, table, tableWidth = 'clamp(
         )}
         <div className="min-w-0">
           {shown.length === 0 && <div className="py-12 text-center text-sm text-fg-2">{emptyMessage ?? 'Select a strategy'}</div>}
-          {paneViews}
+          {shown.map((p, i) => (
+            <div key={p.id} className={cn('grid min-w-0 xl:h-[var(--ph)] xl:grid-cols-[minmax(0,1fr)_var(--cs-v)]', i > 0 && 'border-t border-border')} style={{ '--ph': `${p.height ?? (i === 0 ? 260 : 190)}px` } as Record<string, string>}>
+              {charts[i]}
+              {paneTable(p)}
+            </div>
+          ))}
         </div>
-        {valueTable}
       </div>
     </section>
   );
