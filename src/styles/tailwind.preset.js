@@ -1,5 +1,25 @@
 // BTR Tailwind preset (the btr.markets theme). No content globs: consumers add the kit sources to their own
 // `content`, e.g. './node_modules/@btr-protocol/ui/src/**/*.{ts,tsx}'.
+/** The z-index scale (numbers). Same values as `--z-index-*` in tokens.css and `Z` in lib/zIndex.ts (test/zIndex.test.ts keeps them equal). */
+export const zIndexScale = {
+  base: '0',
+  raised: '1',
+  overlay: '5',
+  label: '8',
+  sticky: '10',
+  rail: '30',
+  header: '40',
+  footer: '41',
+  fullscreen: '90',
+  modal: '100',
+  dropdown: '110',
+  tooltip: '120',
+  toast: '130',
+};
+
+/** Tailwind `theme.extend.zIndex`: each layer reads its `--z-index-*` token. A consumer whose config does not use this preset spreads it (and imports tokens.css), or spreads `zIndexScale` for the raw numbers. */
+export const zIndexTheme = Object.fromEntries(Object.keys(zIndexScale).map((k) => [k, `var(--z-index-${k})`]));
+
 /** @type {import('tailwindcss').Config} */
 export default {
   // `hover:` compiles under (hover: hover): a tap never leaves a sticky hover state.
@@ -17,21 +37,7 @@ export default {
         // Micro labels: 11px on desktop, 12px floor on touch (--fs-2xs in tokens.css). Scale: lib/design.ts TYPE_SIZES.
         '2xs': 'var(--fs-2xs)',
       },
-      zIndex: {
-        base: 'var(--z-index-base)',
-        raised: 'var(--z-index-raised)',
-        overlay: 'var(--z-index-overlay)',
-        label: 'var(--z-index-label)',
-        sticky: 'var(--z-index-sticky)',
-        rail: 'var(--z-index-rail)',
-        header: 'var(--z-index-header)',
-        footer: 'var(--z-index-footer)',
-        fullscreen: 'var(--z-index-fullscreen)',
-        modal: 'var(--z-index-modal)',
-        dropdown: 'var(--z-index-dropdown)',
-        tooltip: 'var(--z-index-tooltip)',
-        toast: 'var(--z-index-toast)',
-      },
+      zIndex: zIndexTheme,
       transitionDuration: { DEFAULT: 'var(--dur-2)' },
       transitionTimingFunction: { DEFAULT: 'var(--ease)' },
       borderWidth: {

@@ -20,6 +20,17 @@ describe('StateNotice', () => {
     expect(html).toContain('aria-live="polite"');
     expect(html).not.toContain('aria-busy');
   });
+  test('variant classes, layout and action', () => {
+    const a = { label: 'Retry', onClick: () => {} };
+    const err = renderToString(<StateNotice variant="error" action={a}>x</StateNotice>);
+    expect(err).toContain('text-error');
+    expect(err).toContain('flex-col items-center');
+    expect(renderToString(<StateNotice variant="warning">x</StateNotice>)).toContain('text-warning');
+    const inline = renderToString(<StateNotice variant="warning" layout="inline" action={a}>x</StateNotice>);
+    expect(inline).toContain('items-start');
+    expect(inline).not.toContain('flex-col');
+    expect(inline).toContain('Retry');
+  });
   test('action only on error / warning', () => {
     const a = { label: 'Retry', onClick: () => {} };
     expect(renderToString(<StateNotice variant="error" action={a} />)).toContain('Retry');
