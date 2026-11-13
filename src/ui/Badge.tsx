@@ -4,7 +4,7 @@ import type { ComponentChildren, JSX } from 'preact';
 
 export interface BadgeProps {
   children: ComponentChildren;
-  variant?: 'default' | 'primary' | 'positive' | 'negative' | 'code' | 'secondary' | 'chip';
+  variant?: 'default' | 'primary' | 'positive' | 'negative' | 'code' | 'secondary' | 'chip' | 'label';
   /** Renders an anchor, so a tag can be a filter link without a second component. */
   href?: string;
   className?: string;
@@ -38,6 +38,7 @@ export interface BadgeProps {
  *   secondary muted text, lower emphasis than default
  *   positive / negative  success / error state
  *   chip      primary-tinted, borderless - lean tag (blog + article tags)
+ *   label     no fill, no border, muted text: a status label next to a toolbar (same surface as a tooltip), never a dark box
  *   code      the only variant that changes the FACE, for kbd and code
  */
 const badgeVariants = cva(
@@ -53,6 +54,7 @@ const badgeVariants = cva(
         code: 'bg-bg-2 text-fg-1 border border-border font-mono',
         secondary: 'bg-bg-2 text-fg-2 border border-border',
         chip: 'bg-bg-primary text-primary border border-transparent',
+        label: 'bg-transparent text-fg-2 border border-transparent',
       },
     },
     defaultVariants: {

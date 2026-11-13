@@ -51,7 +51,7 @@ export function Panel({
 const PANEL_HEADER = 'px-3 py-2 flex items-center justify-between gap-3 flex-wrap';
 const PANEL_HEADER_RULE = 'border-b border-border';
 const PANEL_TITLE = 'text-sm font-semibold text-fg-0';
-const PANEL_BODY = 'px-3 py-3';
+export const PANEL_BODY = 'px-3 py-3';
 
 export function PanelHeader(
   props: Omit<HTMLAttributes<HTMLDivElement>, 'className'> & {
