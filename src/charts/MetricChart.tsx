@@ -86,7 +86,9 @@ function syncBus(id: string): Set<SyncListener> {
 }
 
 export {
+  axisDecimals,
   crosshairTimeMs,
+  formatter,
   latestActiveTime,
   legendValueNodes,
   restingValue,
@@ -166,6 +168,11 @@ export function MetricChart({
   const [chartEpoch, setChartEpoch] = useState(0);
   const seriesRef = useRef<Map<string, ISeriesApi<'Area' | 'Line' | 'Histogram'>>>(new Map());
   const legendRef = useRef<HTMLDivElement>(null);
+  // Height of each series' autoscaled axis range, written by its autoscaleInfoProvider on every
+  // scale pass. The tick / legend / crosshair formatters read it so their decimals follow the axis
+  // (`axisDecimals`): the custom formatter callback itself never learns the tick step.
+  const spanRef = useRef<Map<string, number>>(new Map());
+  const spanOf = (id: string) => spanRef.current.get(id);
   const fittedRef = useRef(false);
   const syncingRef = useRef(false);
   // Logical range as last applied by us (data push or peer sync). LWC fires its range event after
@@ -247,7 +254,7 @@ export function MetricChart({
         (spec.scale === 'left' ? pane.leftFormat : pane.format) ??
         pane.format ??
         'usd';
-      node.textContent = raw == null ? '' : formatter(fmt)(raw);
+      node.textContent = raw == null ? '' : formatter(fmt, spanOf(spec.id))(raw);
     }
   }, [dataKey, panes]);
 
@@ -455,12 +462,14 @@ export function MetricChart({
         const scaleId = spec.scale ?? 'right';
         // A per-series format wins: the crosshair label must agree with the legend
         // chip, which already reads spec.format.
-        const fmt = formatter(
+        const fmtKind =
           spec.format ??
-            (scaleId === 'left' ? pane.leftFormat : pane.format) ??
-            pane.format ??
-            'usd',
-        );
+          (scaleId === 'left' ? pane.leftFormat : pane.format) ??
+          pane.format ??
+          'usd';
+        // Built per call: the span is only known once the series has autoscaled, and it changes
+        // with every zoom.
+        const fmt = (v: number) => formatter(fmtKind, spanOf(spec.id))(v);
         // Last-value axis label plus a dashed rule at that value, the treatment the
         // swap chart gives last price and mid.
         //
@@ -500,28 +509,33 @@ export function MetricChart({
                   const floor = scaleId !== 'hidden' && live != null && nonNegative(live.points);
                   // An area opted out of the zero base reads its own min/max, padded (the fill still
                   // runs to the bottom of the plot).
-                  if (spec.type === 'area' && spec.zeroBase === false && scaleId !== 'hidden') {
-                    const pr = paddedRange(r.priceRange.minValue, r.priceRange.maxValue, floor);
-                    return {
-                      ...r,
-                      priceRange: {
-                        minValue: b ? Math.max(pr.min, b[0]) : pr.min,
-                        maxValue: b ? Math.min(pr.max, b[1]) : pr.max,
-                      },
-                    };
-                  }
-                  return {
-                    ...r,
-                    priceRange: {
-                      // A filled series is read against its baseline: zero-based (a 5% floor keeps the $0 tick off the time axis).
-                      minValue: floor
-                        ? spec.type === 'line' || spec.zeroBase === false
-                          ? Math.max(lo, 0)
-                          : -r.priceRange.maxValue * 0.05
-                        : lo,
-                      maxValue: b ? Math.min(r.priceRange.maxValue, b[1]) : r.priceRange.maxValue,
-                    },
-                  };
+                  const out =
+                    spec.type === 'area' && spec.zeroBase === false && scaleId !== 'hidden'
+                      ? (() => {
+                          const pr = paddedRange(r.priceRange.minValue, r.priceRange.maxValue, floor);
+                          return {
+                            ...r,
+                            priceRange: {
+                              minValue: b ? Math.max(pr.min, b[0]) : pr.min,
+                              maxValue: b ? Math.min(pr.max, b[1]) : pr.max,
+                            },
+                          };
+                        })()
+                      : {
+                          ...r,
+                          priceRange: {
+                            // A filled series is read against its baseline: zero-based (a 5% floor keeps the $0 tick off the time axis).
+                            minValue: floor
+                              ? spec.type === 'line' || spec.zeroBase === false
+                                ? Math.max(lo, 0)
+                                : -r.priceRange.maxValue * 0.05
+                              : lo,
+                            maxValue: b ? Math.min(r.priceRange.maxValue, b[1]) : r.priceRange.maxValue,
+                          },
+                        };
+                  // The range the axis will draw: its height sizes the tick decimals (`spanOf`).
+                  spanRef.current.set(spec.id, out.priceRange.maxValue - out.priceRange.minValue);
+                  return out;
                 },
               }
             : {};
@@ -695,7 +709,7 @@ export function MetricChart({
           const at = latestActiveTime(specs);
           raw = restingValue(spec, at);
         }
-        node.textContent = raw == null ? '' : formatter(fmt)(raw);
+        node.textContent = raw == null ? '' : formatter(fmt, spanOf(spec.id))(raw);
       }
       if (param.time == null) restCrosshair(chart);
       if (syncId && !syncingRef.current) {

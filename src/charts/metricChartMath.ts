@@ -78,18 +78,45 @@ const snap0 = (v: number) => (Math.abs(v) < 1e-9 ? 0 : v);
 export const trimZeros = (s: string): string =>
   s.replace(/(\.\d*?)0+(?=\D*$)/, '$1').replace(/\.(?=\D*$)/, '');
 
-export function formatter(format: MetricValueFormat): (v: number) => string {
-  const f = formatRaw(format);
+/** Decimals that tell two axis ticks apart when the scale spans `span`. lightweight-charts picks
+ *  its own tick step from the pixel height (one label every ~30px, so never more than ~50 ticks on
+ *  a pane), and its custom-formatter callback gets the value alone: the step is not available. The
+ *  decimals are read from a 1/50th of the span instead, one digit finer than any tick the library
+ *  draws, so no two ticks print the same label ("1.01 1.01 1.01 1 1 1 0.99" on a base-1 index that
+ *  moves 2%). `trimZeros` drops the surplus digits on the ticks that do not need them. */
+export function axisDecimals(span: number): number {
+  if (!Number.isFinite(span) || span <= 0) return 0;
+  return Math.min(8, Math.max(0, Math.ceil(-Math.log10(span / 50) - 1e-9)));
+}
+
+/** Value formatter of one metric format. `span` = the height of the axis the value sits on (max -
+ *  min of the autoscaled range): a format whose default decimals are too coarse for that span
+ *  prints more, never fewer (`axisDecimals`). Without it the format's fixed ladder applies. */
+export function formatter(format: MetricValueFormat, span?: number): (v: number) => string {
+  const f = formatRaw(format, span == null ? 0 : axisDecimals(span));
   return (v) => f(snap0(v));
 }
 
-function formatRaw(format: MetricValueFormat): (v: number) => string {
+/** `decimals`: the floor demanded by the axis span (0 = the format's own ladder). Only the formats
+ *  whose ladder is a fixed decimal count respond to it (a plain number, a percent); the compact $
+ *  ladder, a count and the significant-figure yield already read distinctly or are whole things. */
+function formatRaw(format: MetricValueFormat, decimals = 0): (v: number) => string {
   // Same compact $ ladder as AssetBars / StatTile (`usd()`): always 2 fraction digits
   // so axis ticks and the projected last-value label match ($280.00K, $400.00).
   if (format === 'usd') return (v) => formatCurrencyCompact(v);
   // Same ratio formatter the metric tiles use; a chart axis and the tile above it
-  // disagreeing about decimals is how "3.68%" ended up next to "3.7%".
-  if (format === 'pct') return (v) => fmtRatio(v, false, 2);
+  // disagreeing about decimals is how "3.68%" ended up next to "3.7%". A span too thin for its
+  // three significant figures (a 0.02% band around zero) prints the decimals the span needs.
+  if (format === 'pct')
+    return (v) => {
+      // Fixed decimals only where they beat the three significant figures of this value
+      // (50.001% vs 50.002% on a thin band); elsewhere the shared sig-fig law stands.
+      const x = v * 100;
+      const sig = x === 0 ? 2 : Math.max(0, 2 - Math.floor(Math.log10(Math.abs(x))));
+      return decimals - 2 > sig
+        ? `${x.toLocaleString('en-US', { minimumFractionDigits: decimals - 2, maximumFractionDigits: decimals - 2 })}%`
+        : fmtRatio(v, false, 2);
+    };
   // 'yield' is NOT 'pct': a coverage ratio wants a fixed 2dp, a yield wants significant figures,
   // and an APR axis reading "3.7%" under a table cell reading "3.68%" is the same disagreement
   // one line up, one level of precision out.
@@ -100,7 +127,12 @@ function formatRaw(format: MetricValueFormat): (v: number) => string {
   // is not a quantity that exists. Round, and drop decimals below the compact threshold.
   if (format === 'count')
     return (v) => (Math.abs(v) < 1000 ? String(Math.round(v)) : formatCompact(Math.round(v)));
-  return (v) => formatCompact(v);
+  // A plain number (a base-1 index, a ratio): the compact ladder's 2dp up to 1000, unless the
+  // axis span asks for more.
+  return (v) =>
+    decimals > 2 && Math.abs(v) < 1000
+      ? v.toLocaleString('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals })
+      : formatCompact(v);
 }
 
 /** #rrggbb + alpha ⇒ rgba(). TDLC will not take a CSS variable. */

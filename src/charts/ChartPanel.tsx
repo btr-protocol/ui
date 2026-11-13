@@ -27,6 +27,8 @@ export interface ChartPanelProps {
   controls?: ComponentChildren;
   /** Value table (the legend). Left of the chart on lg+, under it below xl. */
   table?: ComponentChildren;
+  /** Which side of the chart the table takes on xl+ (default left; the front metrics page reads chart then table). */
+  tableSide?: 'left' | 'right';
   /** Table column width on xl+ (CSS length). */
   tableWidth?: string;
   /** Accessible name of the table region. */
@@ -39,7 +41,7 @@ export interface ChartPanelProps {
   fullscreenLabels?: { open: string; close: string };
 }
 
-export function ChartPanel({ title, value, date, valueRef, dateRef, controls, table, tableWidth = 'clamp(20rem, 34%, 28rem)', tableLabel, children, className, fullscreenKey, fullscreenLabels = { open: 'Full size', close: 'Close full size' } }: ChartPanelProps) {
+export function ChartPanel({ title, value, date, valueRef, dateRef, controls, table, tableWidth = 'clamp(20rem, 34%, 28rem)', tableSide = 'left', tableLabel, children, className, fullscreenKey, fullscreenLabels = { open: 'Full size', close: 'Close full size' } }: ChartPanelProps) {
   const [full, setFull] = useModalRoute(fullscreenKey ?? '\0');
   const open = !!fullscreenKey && full;
   const titleId = useId();
@@ -90,11 +92,11 @@ export function ChartPanel({ title, value, date, valueRef, dateRef, controls, ta
         {controls && <div className="order-last flex w-full flex-wrap items-center gap-2 [&>*]:shrink-0 sm:order-2 sm:w-auto">{controls}</div>}
       </header>
       <div
-        className={cn('grid min-w-0', table && 'xl:grid-cols-[var(--cp-w)_minmax(0,1fr)]', open && 'min-h-0 flex-1 overflow-y-auto xl:grid-rows-[minmax(0,1fr)] xl:overflow-hidden')}
+        className={cn('grid min-w-0', table && (tableSide === 'right' ? 'xl:grid-cols-[minmax(0,1fr)_var(--cp-w)]' : 'xl:grid-cols-[var(--cp-w)_minmax(0,1fr)]'), open && 'min-h-0 flex-1 overflow-y-auto xl:grid-rows-[minmax(0,1fr)] xl:overflow-hidden')}
         style={table ? ({ '--cp-w': tableWidth } as Record<string, string>) : undefined}
       >
         {table && (
-          <div role="region" aria-label={tableLabel} className={cn('min-w-0 border-t border-border max-xl:order-last xl:border-r xl:border-t-0', open && 'xl:overflow-y-auto')}>
+          <div role="region" aria-label={tableLabel} className={cn('min-w-0 border-t border-border max-xl:order-last xl:border-t-0', tableSide === 'right' ? 'xl:order-last xl:border-l' : 'xl:border-r', open && 'xl:overflow-y-auto')}>
             {table}
           </div>
         )}

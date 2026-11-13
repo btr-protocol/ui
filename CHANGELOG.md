@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.7.1
+- Chart tick labels take their decimals from the axis span (`axisDecimals`; `formatter(format, span)` exported): a base-1 index that moves 2% no longer ticks "1.01 1.01 1 1 0.99". `MetricChart` reads each series' autoscaled range for its axis, legend and crosshair labels. `ChartPanel` `tableSide` (`'left'` | `'right'`) puts the value table on either side of the chart.
+
 ## 0.7.0
 - CONSUMER ACTION (pin bump): an app whose Tailwind config does not use this preset must add the new layers before bumping, or `z-base` / `z-raised` / `z-overlay` / `z-label` / `z-sticky` / `z-fullscreen` compile to nothing and badges and chart labels lose their layering. Either use the preset's `zIndex`, or `import { zIndexTheme } from '@btr-protocol/ui/tailwind.preset'` and spread it into `theme.extend.zIndex` (and import `tokens.css`, or mirror the `--z-index-*` vars; the footer is 41, not 40). `zIndexScale` in the same file is the raw numbers. Never copy the numbers by hand.
 - ONE z-index scale: `base raised overlay label sticky rail header footer fullscreen modal dropdown tooltip toast` as `--z-index-*` (tokens.css), Tailwind `z-*` (preset) and `Z` / `Z_LAYERS` / `ZLayer` (lib/zIndex.ts); a test keeps the three equal and strictly ordered. Every z literal in the kit is gone. Header / nav count badges are `z-raised` (they rendered behind the neighbouring button border); `ChartShell` / `ChartPanel` are `isolate` stacking contexts and the chart legend is `z-label`, so chart labels no longer float over sticky bars while scrolling. Footer is now 41 (was tied with the header at 40); the full-screen chart is `z-fullscreen` (90, was 1000).
