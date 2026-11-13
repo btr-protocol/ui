@@ -126,16 +126,22 @@ export function AccountList({ accounts, active, session, signers = [], onSelect,
       })}
       </div>
       {(onChooseInWallet || onConnectOther) && (
-        <div className={`${MODAL_PADDING} flex flex-wrap gap-2 py-3`}>
+        <div>
           {onChooseInWallet && (
-            <Button size="sm" disabled={busy !== undefined} onClick={onChooseInWallet}>
-              {l.chooseInWallet}
-            </Button>
+            <WalletItemButton
+              name={l.chooseInWallet}
+              disabled={busy !== undefined}
+              ariaDisabled
+              onClick={() => busy === undefined && onChooseInWallet()}
+            />
           )}
           {onConnectOther && (
-            <Button size="sm" variant="ghost" disabled={busy !== undefined} onClick={onConnectOther}>
-              {l.connectOther}
-            </Button>
+            <WalletItemButton
+              name={l.connectOther}
+              disabled={busy !== undefined}
+              ariaDisabled
+              onClick={() => busy === undefined && onConnectOther()}
+            />
           )}
         </div>
       )}
