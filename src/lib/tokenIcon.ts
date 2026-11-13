@@ -315,6 +315,7 @@ const TOKENS: Record<string, string> = {
   usd1: new URL('../assets/tokens/usd1.webp', import.meta.url).href,
   usda: new URL('../assets/tokens/usda.webp', import.meta.url).href,
   usdai: new URL('../assets/tokens/usdai.webp', import.meta.url).href,
+  usdat: new URL('../assets/tokens/usdat.webp', import.meta.url).href,
   usdb: new URL('../assets/tokens/usdb.webp', import.meta.url).href,
   usdbc: new URL('../assets/tokens/usdbc.webp', import.meta.url).href,
   usdc: new URL('../assets/tokens/usdc.webp', import.meta.url).href,
