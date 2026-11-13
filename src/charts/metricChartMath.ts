@@ -69,6 +69,15 @@ export interface MetricPaneSpec {
 
 /** Basis points to at most 2dp: '4 bps', '0.25 bps'. */
 export const fmtBps = (v: number) => `${Number(v.toFixed(2))} bps`;
+/** `fmtBps` with the decimals an axis span asks for (more than its 2dp only where the span needs them). */
+const fmtBpsAt = (v: number, decimals: number) =>
+  !Number.isFinite(v) || decimals <= 2
+    ? fmtBps(v)
+    : `${v.toLocaleString('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals })} bps`;
+
+/** Legend / readout trim: drops the surplus span digits but keeps the ladder's 2dp, so a flat
+ *  reading prints "1.00" and not "1.0000" (`trimZeros` would print "1"). */
+export const legendTrim = (s: string): string => s.replace(/(\.\d\d\d*?)0+(?=\D*$)/, '$1');
 
 /** A tick that is float noise around zero (a stacked pane's baseline lands on 1e-16) reads 0, not
  *  "0.0₁₄694%". */
@@ -93,17 +102,36 @@ export function axisDecimals(span: number): number {
  *  min of the autoscaled range): a format whose default decimals are too coarse for that span
  *  prints more, never fewer (`axisDecimals`). Without it the format's fixed ladder applies. */
 export function formatter(format: MetricValueFormat, span?: number): (v: number) => string {
-  const f = formatRaw(format, span == null ? 0 : axisDecimals(span));
+  const f = formatRaw(format, span ?? 0);
   return (v) => f(snap0(v));
 }
 
-/** `decimals`: the floor demanded by the axis span (0 = the format's own ladder). Only the formats
- *  whose ladder is a fixed decimal count respond to it (a plain number, a percent); the compact $
- *  ladder, a count and the significant-figure yield already read distinctly or are whole things. */
-function formatRaw(format: MetricValueFormat, decimals = 0): (v: number) => string {
+/** K/M/B/T divisor a value is printed in, and its suffix. */
+const compactUnit = (a: number): [number, string] =>
+  a >= 1e12 ? [1e12, 'T'] : a >= 1e9 ? [1e9, 'B'] : a >= 1e6 ? [1e6, 'M'] : a >= 1e3 ? [1e3, 'K'] : [1, ''];
+
+/** The compact ladder of one value, with the decimals the axis span asks for. The span is read in
+ *  the value's own K/M/B unit (a $20 span on $5,000 is 0.02K), so a tick on a thin axis is never
+ *  the same label as its neighbour at any magnitude. Within the ladder's 2dp it is the ladder. */
+function compactAt(v: number, span: number, usd: boolean): string {
+  // A non-finite reading prints as the ladder does for it ("$0" / "0"), never "NaN".
+  if (!Number.isFinite(v)) return usd ? formatCurrencyCompact(v) : formatCompact(v);
+  const [d, unit] = compactUnit(Math.abs(v));
+  const dp = axisDecimals(span / d);
+  if (dp <= 2) return usd ? formatCurrencyCompact(v) : formatCompact(v);
+  const body = (Math.abs(v) / d).toLocaleString('en-US', { minimumFractionDigits: dp, maximumFractionDigits: dp });
+  return `${v < 0 ? '-' : ''}${usd ? '$' : ''}${body}${unit}`;
+}
+
+/** `span`: the axis height; its `axisDecimals` is the floor the value's decimals must meet (0 = the
+ *  format's own ladder). Only the formats whose ladder is a fixed decimal count respond to it (a
+ *  plain number, a percent, the compact $ and plain ladders); a count and the significant-figure
+ *  yield already read distinctly or are whole things. */
+function formatRaw(format: MetricValueFormat, span = 0): (v: number) => string {
+  const decimals = axisDecimals(span);
   // Same compact $ ladder as AssetBars / StatTile (`usd()`): always 2 fraction digits
   // so axis ticks and the projected last-value label match ($280.00K, $400.00).
-  if (format === 'usd') return (v) => formatCurrencyCompact(v);
+  if (format === 'usd') return (v) => compactAt(v, span, true);
   // Same ratio formatter the metric tiles use; a chart axis and the tile above it
   // disagreeing about decimals is how "3.68%" ended up next to "3.7%". A span too thin for its
   // three significant figures (a 0.02% band around zero) prints the decimals the span needs.
@@ -119,20 +147,26 @@ function formatRaw(format: MetricValueFormat, decimals = 0): (v: number) => stri
     };
   // 'yield' is NOT 'pct': a coverage ratio wants a fixed 2dp, a yield wants significant figures,
   // and an APR axis reading "3.7%" under a table cell reading "3.68%" is the same disagreement
-  // one line up, one level of precision out.
-  if (format === 'yield') return (v) => fmtApr(v);
-  if (format === 'bps') return fmtBps;
+  // one line up, one level of precision out. A span too thin for those three figures (3.66-3.70%)
+  // prints the percent decimals it needs, the same rule as 'pct'.
+  if (format === 'yield')
+    return (v) => {
+      const x = v * 100;
+      if (!Number.isFinite(x)) return fmtApr(v);
+      const sig = x === 0 ? 2 : Math.max(0, 2 - Math.floor(Math.log10(Math.abs(x))));
+      return decimals - 2 > sig
+        ? `${x.toLocaleString('en-US', { minimumFractionDigits: decimals - 2, maximumFractionDigits: decimals - 2 })}%`
+        : fmtApr(v);
+    };
+  if (format === 'bps') return (v) => fmtBpsAt(v, decimals);
   // Counts are whole things - IPs, wallets, sessions. The compact ladder's 2dp is right for
   // magnitudes ("1.23M") but renders 5 as "5.00", and an axis tick reading "2.50 unique IPs"
   // is not a quantity that exists. Round, and drop decimals below the compact threshold.
   if (format === 'count')
     return (v) => (Math.abs(v) < 1000 ? String(Math.round(v)) : formatCompact(Math.round(v)));
-  // A plain number (a base-1 index, a ratio): the compact ladder's 2dp up to 1000, unless the
-  // axis span asks for more.
-  return (v) =>
-    decimals > 2 && Math.abs(v) < 1000
-      ? v.toLocaleString('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals })
-      : formatCompact(v);
+  // A plain number (a base-1 index, a ratio): the compact ladder's 2dp, unless the axis span asks
+  // for more at this value's magnitude.
+  return (v) => compactAt(v, span, false);
 }
 
 /** #rrggbb + alpha ⇒ rgba(). TDLC will not take a CSS variable. */
@@ -294,6 +328,22 @@ export function latestActiveTime(series: MetricSeriesSpec[]): number | null {
 export function restingValue(spec: MetricSeriesSpec, at: number | null): number | null {
   if (spec.resting !== undefined) return spec.resting;
   return at == null ? null : ownValueAt(spec, at);
+}
+
+/** Height of an axis from its visible range, or `fallback` when the axis has no range yet. `read`
+ *  throws while the scale is not attached (a legend can format before its series is), which reads as
+ *  "no range". */
+export function scaleSpan(
+  read: () => { from: number; to: number } | null | undefined,
+  fallback?: number,
+): number | undefined {
+  let r: { from: number; to: number } | null | undefined = null;
+  try {
+    r = read();
+  } catch {
+    /* not attached yet: the fallback */
+  }
+  return r ? r.to - r.from : fallback;
 }
 
 /** Time grid of one chart: the sorted, de-duplicated bucket times of all its series, in seconds.

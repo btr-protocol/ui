@@ -41,6 +41,7 @@ import {
   crosshairTimeMs,
   formatter,
   latestActiveTime,
+  legendTrim,
   legendValueNodes,
   logicalToSec,
   nonNegative,
@@ -48,6 +49,7 @@ import {
   ownValueAt,
   paintOrder,
   restingValue,
+  scaleSpan,
   secToLogical,
   seriesPaint,
   stackedPoints,
@@ -169,10 +171,15 @@ export function MetricChart({
   const seriesRef = useRef<Map<string, ISeriesApi<'Area' | 'Line' | 'Histogram'>>>(new Map());
   const legendRef = useRef<HTMLDivElement>(null);
   // Height of each series' autoscaled axis range, written by its autoscaleInfoProvider on every
-  // scale pass. The tick / legend / crosshair formatters read it so their decimals follow the axis
-  // (`axisDecimals`): the custom formatter callback itself never learns the tick step.
+  // scale pass. Fallback for `spanOf` until the price scale has a range of its own.
   const spanRef = useRef<Map<string, number>>(new Map());
-  const spanOf = (id: string) => spanRef.current.get(id);
+  // The span the tick / legend / crosshair decimals follow (`axisDecimals`): the height of the price
+  // scale the series is drawn on. That is the union of every series on a shared scale, so a flat
+  // series first on the axis cannot set the decimals for the ticks its neighbours share.
+  const spanOf = (spec: MetricSeriesSpec): number | undefined => {
+    const id = spec.scale === 'hidden' ? `hidden:${spec.id}` : (spec.scale ?? 'right');
+    return scaleSpan(() => chartRef.current?.priceScale(id, spec.pane ?? 0).getVisibleRange(), spanRef.current.get(spec.id));
+  };
   const fittedRef = useRef(false);
   const syncingRef = useRef(false);
   // Logical range as last applied by us (data push or peer sync). LWC fires its range event after
@@ -254,7 +261,7 @@ export function MetricChart({
         (spec.scale === 'left' ? pane.leftFormat : pane.format) ??
         pane.format ??
         'usd';
-      node.textContent = raw == null ? '' : formatter(fmt, spanOf(spec.id))(raw);
+      node.textContent = raw == null ? '' : legendTrim(formatter(fmt, spanOf(spec))(raw));
     }
   }, [dataKey, panes]);
 
@@ -469,7 +476,7 @@ export function MetricChart({
           'usd';
         // Built per call: the span is only known once the series has autoscaled, and it changes
         // with every zoom.
-        const fmt = (v: number) => formatter(fmtKind, spanOf(spec.id))(v);
+        const fmt = (v: number) => formatter(fmtKind, spanOf(spec))(v);
         // Last-value axis label plus a dashed rule at that value, the treatment the
         // swap chart gives last price and mid.
         //
@@ -709,7 +716,7 @@ export function MetricChart({
           const at = latestActiveTime(specs);
           raw = restingValue(spec, at);
         }
-        node.textContent = raw == null ? '' : formatter(fmt, spanOf(spec.id))(raw);
+        node.textContent = raw == null ? '' : legendTrim(formatter(fmt, spanOf(spec))(raw));
       }
       if (param.time == null) restCrosshair(chart);
       if (syncId && !syncingRef.current) {
