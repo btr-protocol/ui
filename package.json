@@ -1,6 +1,6 @@
 {
   "name": "@btr-protocol/ui",
-  "version": "0.6.2",
+  "version": "0.7.0",
   "license": "MIT",
   "type": "module",
   "description": "BTR shared UI kit: the btr.markets Preact components, layout shell, theme tokens and Tailwind preset. Source only, no build step.",
@@ -28,7 +28,9 @@
   ],
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "test": "bun test"
+    "test": "bun test",
+    "check:copy": "bash scripts/check-copy.sh",
+    "check": "bun run check:copy && bun run typecheck && bun test"
   },
   "peerDependencies": {
     "tailwindcss": "^3.4.0",

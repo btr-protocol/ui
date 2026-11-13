@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.7.0
+- ONE z-index scale: `base raised overlay label sticky rail header footer fullscreen modal dropdown tooltip toast` as `--z-index-*` (tokens.css), Tailwind `z-*` (preset) and `Z` / `Z_LAYERS` / `ZLayer` (lib/zIndex.ts); a test keeps the three equal and strictly ordered. Every z literal in the kit is gone. Header / nav count badges are `z-raised` (they rendered behind the neighbouring button border); `ChartShell` / `ChartPanel` are `isolate` stacking contexts and the chart legend is `z-label`, so chart labels no longer float over sticky bars while scrolling. Footer is now 41 (was tied with the header at 40); the full-screen chart is `z-fullscreen` (90, was 1000).
+- `StateNotice`: the one in-panel error / warning / info / loading / empty block (panel-body side padding, `alert` role on error, optional retry action, `fill` or `inline` layout). `PANEL_BODY` is exported.
+- `PriceWithWarning`: a tabular-nums price with a warning icon in a reserved slot pinned to one edge (`anchor`), icon 1.1em, so the icon never shifts as the figure changes width.
+- `Badge` variant `label`: no fill, no border, muted text; the single look for a status label beside a toolbar (a dark `bg-bg-0` box is not a variant).
+- Copy: no em dashes in the kit. `formatQtyStr` returns `DASH` (`-`) for a non-decimal instead of an em dash. `scripts/check-copy.sh` (`bun run check:copy`, part of `bun run check`) fails on U+2014 in `src`, README and CHANGELOG.
+
 ## 0.6.2
 - A restore that lost the race to a manual connect ends its session without throwing on a relay error. Documented: one WalletConnect session per origin (other tabs' sessions are ended).
 
