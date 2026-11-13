@@ -1,5 +1,5 @@
 import type { ComponentChildren } from 'preact';
-import { SEVERITY_COLOR, SEVERITY_ICON } from '../lib/severity';
+import { SEVERITY_ICON } from '../lib/severity';
 import { cn } from '../lib/cn';
 import { Button } from './Button';
 import { Icon } from './Icon';
@@ -27,12 +27,12 @@ export interface StateNoticeProps {
  * Errors announce as `alert`, everything else as `status`.
  */
 export function StateNotice({ variant = 'info', title, children, action, layout = 'fill', className }: StateNoticeProps) {
-  const color = variant === 'error' || variant === 'warning' ? SEVERITY_COLOR[variant] : undefined;
   const glyph = variant === 'error' || variant === 'warning' || variant === 'info' ? SEVERITY_ICON[variant] : null;
   const fill = layout === 'fill';
   return (
     <div
       role={variant === 'error' ? 'alert' : 'status'}
+      aria-live={variant === 'loading' ? 'polite' : undefined}
       data-state={variant}
       className={cn(
         PANEL_BODY,
@@ -43,7 +43,8 @@ export function StateNotice({ variant = 'info', title, children, action, layout 
       )}
     >
       {variant === 'loading' && <Spinner className="shrink-0" />}
-      {glyph && <Icon name={glyph} className="mt-0.5 h-4 w-4 shrink-0" style={color ? { color } : undefined} />}
+      {variant === 'loading' && !title && (children == null || children === false) && <span className="sr-only">Loading</span>}
+      {glyph && <Icon name={glyph} className={cn('mt-0.5 h-4 w-4 shrink-0', variant === 'error' && 'text-error', variant === 'warning' && 'text-warning')} />}
       <div className="min-w-0 break-words">
         {title && <div className="font-medium text-fg-0">{title}</div>}
         {children != null && children !== false && <div>{children}</div>}

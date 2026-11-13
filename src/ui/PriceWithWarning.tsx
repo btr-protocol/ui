@@ -2,17 +2,16 @@ import type { ComponentChildren } from 'preact';
 import { cn } from '../lib/cn';
 import { Icon } from './Icon';
 
-export interface PriceWithWarningProps {
+interface PriceBase {
   /** The dynamic-width figure. */
   children: ComponentChildren;
-  /** Show the warning icon (stale, indicative, ...). The slot stays reserved either way. */
-  warn?: boolean;
-  /** Spoken reason; also the icon's native tooltip. Required whenever `warn` is set. */
-  label?: string;
   /** Which box edge the icon slot is pinned to: `start` (icon before the figure) or `end` (after it). Pick the edge the parent keeps fixed (right-aligned column: `end`). */
   anchor?: 'start' | 'end';
   className?: string;
 }
+
+/** `warn` shows the icon (stale, indicative, ...) and then needs `label`: the spoken reason. The slot stays reserved either way. */
+export type PriceWithWarningProps = PriceBase & ({ warn?: false; label?: string } | { warn: true; label: string });
 
 /**
  * A price with a warning icon that never moves. The icon sits in a fixed slot (1.25em wide, always
@@ -29,7 +28,7 @@ export function PriceWithWarning({ children, warn = false, label, anchor = 'star
             name="warning"
             role="img"
             aria-label={label}
-            style={{ width: '1.1em', height: '1.1em', color: 'var(--fg-warning)' }}
+            className="h-[1.1em] w-[1.1em] text-warning"
           />
         )}
       </span>

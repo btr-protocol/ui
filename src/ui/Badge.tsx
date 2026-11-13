@@ -38,7 +38,7 @@ export interface BadgeProps {
  *   secondary muted text, lower emphasis than default
  *   positive / negative  success / error state
  *   chip      primary-tinted, borderless - lean tag (blog + article tags)
- *   label     no fill, no border, muted text: a status label next to a toolbar (same surface as a tooltip), never a dark box
+ *   label     no fill, no border, muted text: a status label next to a toolbar, never a dark box
  *   code      the only variant that changes the FACE, for kbd and code
  */
 const badgeVariants = cva(

@@ -14,6 +14,12 @@ describe('StateNotice', () => {
     expect(html).toContain('role="status"');
     expect(html).toContain(`data-state="${variant}"`);
   });
+  test('loading without text has an sr-only default and aria-live polite', () => {
+    const html = renderToString(<StateNotice variant="loading" />);
+    expect(html).toContain('sr-only');
+    expect(html).toContain('aria-live="polite"');
+    expect(html).not.toContain('aria-busy');
+  });
   test('action only on error / warning', () => {
     const a = { label: 'Retry', onClick: () => {} };
     expect(renderToString(<StateNotice variant="error" action={a} />)).toContain('Retry');

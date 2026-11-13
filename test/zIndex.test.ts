@@ -23,7 +23,7 @@ test('z scale: tokens.css, the Tailwind preset and Z agree', () => {
 
 test('kit src has no z-index literal', async () => {
   const bad: string[] = [];
-  for (const f of new Bun.Glob('src/**/*.{ts,tsx,css}').scanSync('.')) {
+  for (const f of new Bun.Glob('src/**/*.{ts,tsx,css,js}').scanSync('.')) {
     if (f.endsWith('zIndex.ts')) continue;
     const t = await Bun.file(f).text();
     t.split('\n').forEach((l, i) => {
