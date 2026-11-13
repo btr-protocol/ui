@@ -9,7 +9,8 @@ for t in src test docs scripts *.md; do [ -e "$t" ] && targets+=("$t"); done
 [ ${#targets[@]} -gt 0 ] || { echo "check-copy: nothing to scan in $root" >&2; exit 2; }
 # Patterns are assembled from pieces so this file does not match itself.
 n=2014
-pats=(-e $'\xe2\x80\x94' -e "\\u$n" -e "\\u{$n" -e "0x$n" -e "&md${n:0:0}ash;" -e "&#$n;" -e "&#x$n;")
+d=8212
+pats=(-e $'\xe2\x80\x94' -e "\\u$n" -e "\\u{$n" -e "0x$n" -e "&md${n:0:0}ash;" -e "&#$d;" -e "&#$n;" -e "&#x$n;")
 hits=$(LC_ALL=C grep -rnIiF "${pats[@]}" "${targets[@]}")
 rc=$?
 if [ "$rc" -gt 1 ]; then echo "check-copy: grep failed (rc=$rc)" >&2; exit 2; fi

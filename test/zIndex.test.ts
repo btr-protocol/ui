@@ -42,10 +42,10 @@ test('kit src has no z-index literal', async () => {
 test('every z-<name> class in src is a layer of the scale (typos fail)', async () => {
   const known = new Set<string>(Z_LAYERS);
   const bad: string[] = [];
-  for (const f of new Bun.Glob('src/**/*.{ts,tsx}').scanSync('.')) {
+  for (const f of new Bun.Glob('src/**/*.{ts,tsx,css,js}').scanSync('.')) {
     // Comments mention "z-scale" / "z-index" in prose; only code is checked.
-    const t = (await Bun.file(f).text()).replace(/\/\*[\s\S]*?\*\/|^\s*\/\/.*$/gm, '');
-    for (const m of t.matchAll(/(?<![\w-])(?:[a-z-]+:)*-?z-([a-z][a-z-]*)(?![\w-])/g)) {
+    const t = (await Bun.file(f).text()).replace(/(^|\s)\/\*[\s\S]*?\*\/|^\s*\/\/.*$/gm, '$1');
+    for (const m of t.matchAll(/(?<![\w-])(?:[a-z-]+:)*-?z-(?!index['"]?\s*:)([a-z][a-z-]*)(?![\w-])/g)) {
       if (!known.has(m[1]!)) bad.push(`${f}: ${m[0]}`);
     }
   }

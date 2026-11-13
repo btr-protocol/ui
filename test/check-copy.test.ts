@@ -5,6 +5,7 @@ import { join } from 'node:path';
 
 const EM = String.fromCharCode(8212);
 const ESC = ['\\u', '2014'].join('');
+const DEC = ['&#', '8212;'].join('');
 const HEX = ['0', 'x2014'].join('');
 const run = (root: string) => Bun.spawnSync(['bash', 'scripts/check-copy.sh', root], { stdout: 'pipe', stderr: 'pipe' });
 
@@ -26,7 +27,7 @@ test('check-copy fails on an em dash in src, README and CHANGELOG', () => {
 test('check-copy also scans test, docs, scripts, root markdown and svg, and rejects escapes', () => {
   for (const [f, body] of [
     ['test/a.test.ts', `x ${EM}`], ['docs/a.md', `x ${EM}`], ['scripts/a.sh', `x ${EM}`], ['NOTES.md', `x ${EM}`],
-    ['src/a.svg', `<text>${EM}</text>`], ['src/b.ts', `'${ESC}'`], ['src/c.ts', `const c = ${HEX}`],
+    ['src/a.svg', `<text>${EM}</text>`], ['src/b.ts', `'${ESC}'`], ['src/c.ts', `const c = ${HEX}`], ['src/d.html', `a ${DEC} b`],
   ] as const) {
     const root = fixture('ok\n');
     for (const d of ['test', 'docs', 'scripts']) mkdirSync(join(root, d), { recursive: true });
