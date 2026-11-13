@@ -1,5 +1,7 @@
 import { extendTailwindMerge } from 'tailwind-merge';
 
+import { Z_LAYERS } from './zIndex';
+
 import type { Signal } from '@preact/signals';
 
 export type ClassValue =
@@ -14,11 +16,11 @@ export type ClassValue =
   | Signal<string | number | bigint | boolean | undefined | null>
   | Signal<ClassValue>;
 
-/** z-scale names tailwind-merge cannot infer (`z-modal` has no group otherwise); mirrors `zIndex` in tailwind.config.js. */
+/** z-scale names tailwind-merge cannot infer (`z-modal` has no group otherwise); the list is `Z_LAYERS` (lib/zIndex.ts). */
 const merge = extendTailwindMerge({
   extend: {
     classGroups: {
-      z: [{ z: ['rail', 'header', 'footer', 'dropdown', 'modal', 'tooltip', 'toast'] }],
+      z: [{ z: [...Z_LAYERS] }],
     },
   },
 });

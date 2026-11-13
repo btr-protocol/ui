@@ -73,7 +73,7 @@ export function ChartPanel({ title, value, date, valueRef, dateRef, controls, ta
   ) : null;
   const panel = (
     <section
-      className={cn('surface overflow-hidden border border-border bg-bg-1', open ? 'fixed inset-0 z-[1000] flex flex-col rounded-none' : 'rounded-lg', className)}
+      className={cn('surface isolate overflow-hidden border border-border bg-bg-1', open ? 'fixed inset-0 z-fullscreen flex flex-col rounded-none' : 'rounded-lg', className)}
       {...(open ? { role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': titleId } : {})}
     >
       <header className="flex shrink-0 flex-wrap items-center gap-x-4 gap-y-1.5 border-b border-border px-3 py-2 sm:gap-y-2 sm:py-2.5">

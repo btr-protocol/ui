@@ -216,12 +216,18 @@
   --border-color-primary: color-mix(in srgb, var(--primary) 50%, var(--border-color)); /* Primary border for hover states */
   --border: 1px solid var(--border-color);
 
-  /* Z-indexes. Chrome (header/footer) sits BELOW the modal layer: both used to be a
-       hardcoded z-50, tying with the dialog overlay, so the header painted over the
-       backdrop that was supposed to cover it. */
+  /* ONE z-index scale (mirrored by lib/zIndex.ts and the preset's `zIndex`; a test keeps the three equal).
+     In-content layers (raised .. sticky) are below the fixed chrome, chrome is below the modal layer,
+     overlays that must beat a modal (dropdown, tooltip, toast) are above it. Never write a z literal. */
+  --z-index-base: 0;
+  --z-index-raised: 1;
+  --z-index-overlay: 5;
+  --z-index-label: 8;
+  --z-index-sticky: 10;
   --z-index-rail: 30;
   --z-index-header: 40;
-  --z-index-footer: 40;
+  --z-index-footer: 41;
+  --z-index-fullscreen: 90;
   --z-index-modal: 100;
   --z-index-dropdown: 110;
   --z-index-tooltip: 120;

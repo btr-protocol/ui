@@ -816,7 +816,7 @@ export function MetricChart({
           pointer-events passes through to the crosshair except on actions. */}
       <div
         ref={hostRef}
-        className="absolute inset-0 z-[1]"
+        className="absolute inset-0 z-raised"
         onWheel={(e) => {
           if (e.ctrlKey || e.metaKey) userTouchedRef.current = true;
         }}
@@ -831,7 +831,7 @@ export function MetricChart({
           strip pans instead of growing. The 72px right inset is the price scale
           (`minimumWidth: 44` below, plus its label padding): without it the last legend entry
           printed on top of the top axis label. */}
-      <div className="absolute inset-x-0 top-0 z-10 flex items-start justify-between gap-3 pl-3 pr-[52px] py-1.5 flex-nowrap pointer-events-none">
+      <div className="absolute inset-x-0 top-0 z-label flex items-start justify-between gap-3 pl-3 pr-[52px] py-1.5 flex-nowrap pointer-events-none">
         <div
           // Below `sm` this stays ONE panning line: at 320px a wrapped legend put its second and
           // third rows on top of the series. From `sm` up it wraps instead of clipping a label

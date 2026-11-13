@@ -124,7 +124,7 @@ export function Slider({
               className={cn(
                 // Border, not fill, carries the thumb: --white on the compressed light track is
                 // only 1.21:1, so the disc alone would dissolve into it.
-                'absolute top-1/2 w-3 h-3 coarse:w-5 coarse:h-5 bg-white border border-border rounded-full transform -translate-y-1/2 -translate-x-1/2 transition-all duration-75 z-10 shadow-lg',
+                'absolute top-1/2 w-3 h-3 coarse:w-5 coarse:h-5 bg-white border border-border rounded-full transform -translate-y-1/2 -translate-x-1/2 transition-all duration-75 z-raised shadow-lg',
                 isDragging && 'scale-110',
                 !disabled && 'hover:scale-105',
                 disabled && 'cursor-not-allowed',

@@ -50,7 +50,7 @@ const COMPACT_ROW_H = 28;
  * virtual and non-virtual bodies, or between desktop and the mobile stack.
  */
 /** Header cell: sticky so a scrolled body keeps its labels. */
-const TABLE_HEAD_CELL = 'px-3 py-1.5 coarse:py-3 font-medium bg-bg-3 sticky top-0 z-[1]';
+const TABLE_HEAD_CELL = 'px-3 py-1.5 coarse:py-3 font-medium bg-bg-3 sticky top-0 z-raised';
 /** A sortable header is a click target and must not select its own label on double-click. */
 const TABLE_HEAD_SORTABLE = 'cursor-pointer select-none hover:text-fg-1';
 /** Body cell. Vertical padding is added per body: the virtual one pays its rhythm with a fixed

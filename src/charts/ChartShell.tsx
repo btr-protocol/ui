@@ -48,7 +48,7 @@ export function ChartShell({
   const gesture = useRef<{ x: number; y: number; page?: boolean } | null>(null);
   return (
     <div
-      className={cn('relative min-h-0 h-full touch-pan-y', className)}
+      className={cn('relative isolate min-h-0 h-full touch-pan-y', className)}
       style={{
         containerType: 'inline-size',
         ...(height ? { height: `min(${height}px, calc(100vw - 2rem), 85vh)` } : {}),
@@ -73,7 +73,7 @@ export function ChartShell({
       {title && (
         <div
           // Hidden on phones: the title is already the legend heading there, and the watermark ran under it.
-          className="absolute inset-0 z-0 flex max-sm:hidden items-center justify-center pointer-events-none"
+          className="absolute inset-0 z-base flex max-sm:hidden items-center justify-center pointer-events-none"
           style={watermarkBoxStyle}
         >
           <div
@@ -85,12 +85,12 @@ export function ChartShell({
         </div>
       )}
       {loading && (
-        <div className="absolute inset-0 z-[5] flex items-center justify-center bg-bg-0/80">
+        <div className="absolute inset-0 z-overlay flex items-center justify-center bg-bg-0/80">
           <PageState kind="loading" title={loadingTitle} />
         </div>
       )}
       {empty && !loading && (
-        <div className="absolute inset-0 z-[5] flex items-center justify-center">
+        <div className="absolute inset-0 z-overlay flex items-center justify-center">
           {emptyTitle ? (
             <PageState kind="empty" title={emptyTitle} />
           ) : (

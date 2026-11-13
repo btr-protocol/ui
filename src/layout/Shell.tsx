@@ -37,7 +37,7 @@ export function Shell({ header, footer, tabBar, children, layout = 'flow', overl
         <div className="absolute top-0 bottom-0 right-0 w-px bg-border" />
       </div>
       <main
-        className={`flex-1 relative z-10 pt-[var(--chrome-t)] w-full overflow-x-hidden scroll-pb-[var(--chrome-b)] ${
+        className={`flex-1 relative z-sticky pt-[var(--chrome-t)] w-full overflow-x-hidden scroll-pb-[var(--chrome-b)] ${
           layout === 'own' ? 'overflow-hidden' : 'overflow-y-auto'
         }`}
       >

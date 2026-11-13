@@ -18,11 +18,18 @@ export default {
         '2xs': 'var(--fs-2xs)',
       },
       zIndex: {
+        base: 'var(--z-index-base)',
+        raised: 'var(--z-index-raised)',
+        overlay: 'var(--z-index-overlay)',
+        label: 'var(--z-index-label)',
+        sticky: 'var(--z-index-sticky)',
         rail: 'var(--z-index-rail)',
         header: 'var(--z-index-header)',
         footer: 'var(--z-index-footer)',
-        dropdown: 'var(--z-index-dropdown)',
+        fullscreen: 'var(--z-index-fullscreen)',
         modal: 'var(--z-index-modal)',
+        dropdown: 'var(--z-index-dropdown)',
+        tooltip: 'var(--z-index-tooltip)',
         toast: 'var(--z-index-toast)',
       },
       transitionDuration: { DEFAULT: 'var(--dur-2)' },
@@ -121,7 +128,7 @@ export default {
       // Touch scale gate (matches tokens.css): coarse pointer OR a window narrower than lg.
       addVariant('touch', '@media (pointer: coarse), (max-width: 1023.98px)');
       const customUtilities = {
-        // Horizontal scroll region (toolbars, wide rows) — keeps content reachable
+        // Horizontal scroll region (toolbars, wide rows): keeps content reachable
         // on narrow viewports without a scrollbar eating the row's height.
         '.scroll-x': {
           'overflow-x': 'auto',

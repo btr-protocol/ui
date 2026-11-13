@@ -402,12 +402,12 @@ export function Dropdown<T = string>({
                   handleSelect(item.value, disabled);
                 }}
                 className={cn(
-                  'absolute inset-0 z-0',
+                  'absolute inset-0 z-base',
                   disabled ? 'cursor-not-allowed' : 'cursor-pointer',
                   item.href && 'no-underline',
                 )}
               />
-              <div className="relative z-[1] flex min-w-0 flex-1 items-center gap-1.5 pointer-events-none">
+              <div className="relative z-raised flex min-w-0 flex-1 items-center gap-1.5 pointer-events-none">
                 {!!item.icon && (
                   <span
                     className={cn('shrink-0', selected && !disabled ? 'text-primary' : 'text-fg-2')}
@@ -441,7 +441,7 @@ export function Dropdown<T = string>({
                 <Icon
                   name="check"
                   className={cn(
-                    'relative z-[1] shrink-0 text-primary pointer-events-none',
+                    'relative z-raised shrink-0 text-primary pointer-events-none',
                     itemSizeClasses.check,
                   )}
                 />

@@ -64,7 +64,7 @@ export function HeaderTool({
       <Icon name={icon} className="w-4 h-4" />
       {children}
       {badge > 0 && (
-        <span className="absolute top-0 right-0 -translate-y-1/3 translate-x-1/3 inline-flex items-center justify-center min-w-[14px] h-3.5 px-1 rounded-full bg-primary text-black text-2xs font-semibold leading-none ring-1 ring-bg-1">
+        <span className="absolute top-0 right-0 z-raised -translate-y-1/3 translate-x-1/3 inline-flex items-center justify-center min-w-[14px] h-3.5 px-1 rounded-full bg-primary text-black text-2xs font-semibold leading-none ring-1 ring-bg-1">
           {badge > 99 ? '99+' : badge}
         </span>
       )}

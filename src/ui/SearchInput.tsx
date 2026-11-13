@@ -51,7 +51,7 @@ export function SearchInput({
       <Icon
         name="magnifying-glass"
         className={`w-4 h-4 text-fg-2 shrink-0 ${
-          variant === 'boxed' ? 'absolute left-3 pointer-events-none z-10' : ''
+          variant === 'boxed' ? 'absolute left-3 pointer-events-none z-raised' : ''
         }`}
       />
       <div className="relative flex-1 min-w-0">

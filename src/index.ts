@@ -14,6 +14,7 @@ export {
 } from './lib/notifications';
 export { SEVERITIES, SEVERITY_COLOR, SEVERITY_ICON, isCritical, type Severity } from './lib/severity';
 export { cn, type ClassValue } from './lib/cn';
+export { Z, Z_LAYERS, type ZLayer } from './lib/zIndex';
 export { cva } from './lib/cva';
 export { configureNav } from './lib/nav';
 export { ROUTE_EVENT, useModalRoute, useOpen } from './lib/modalRoute';

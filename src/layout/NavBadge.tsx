@@ -21,7 +21,7 @@ export function NavBadge({ count, label, inline }: NavBadgeProps) {
         aria-hidden="true"
         className={cn(
           'inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-2xs font-semibold leading-none text-black',
-          inline ? 'ml-1.5' : 'absolute -right-2 -top-1 ring-1 ring-bg-1',
+          inline ? 'ml-1.5' : 'absolute -right-2 -top-1 z-raised ring-1 ring-bg-1',
         )}
       >
         {text}
