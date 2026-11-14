@@ -77,6 +77,8 @@ export interface BaseModalProps {
   onSearchKeyDown?: (e: JSX.TargetedKeyboardEvent<HTMLInputElement>) => void;
   /** Keys that reach the card (a list without a search field roves its rows with the arrows). */
   onBodyKeyDown?: (e: KeyboardEvent) => void;
+  /** The card is mounted and has taken its initial focus: move focus on (this card's own element, so stacked modals stay apart). */
+  onOpened?: (card: HTMLElement) => void;
   /** For headerType='input': extra attributes (combobox ARIA) spread on the input. */
   inputProps?: JSX.IntrinsicElements['input'];
   /** For headerType='input': content rendered left of the input (scope chip). */
@@ -111,6 +113,7 @@ export function BaseModal({
   onSearchChange,
   onSearchKeyDown,
   onBodyKeyDown,
+  onOpened,
   inputProps,
   inputPrefix,
   contrastHeader = true,
@@ -135,6 +138,8 @@ export function BaseModal({
   }, [isOpen, mounted]);
 
   const cardRef = useRef<HTMLDivElement>(null);
+  const openedRef = useRef(onOpened);
+  openedRef.current = onOpened;
 
   // Focus goes back to whatever opened the dialog.
   useEffect(() => {
@@ -158,13 +163,11 @@ export function BaseModal({
     // Focus the first element only while focus is still outside: refocusing would yank the caret
     // out of a search input mid-typing. Touch: never open the keyboard unasked; the card takes it.
     const first = focusables()[0];
-    if (first && !card.contains(document.activeElement)) {
-      const target =
-        first.matches('input,textarea') && matchMedia('(pointer:coarse)').matches ? card : first;
-      setTimeout(() => {
-        if (!card.contains(document.activeElement)) target.focus();
-      }, 0);
-    }
+    const target = first && first.matches('input,textarea') && matchMedia('(pointer:coarse)').matches ? card : first;
+    const focusTimer = setTimeout(() => {
+      if (target && !card.contains(document.activeElement)) target.focus();
+      openedRef.current?.(card);
+    }, 0);
 
     // Capture: the search field stops keydown propagation, which would let Shift+Tab leave.
     const onTab = (e: KeyboardEvent) => {
@@ -190,6 +193,7 @@ export function BaseModal({
     }
     return () => {
       if (--scrollLocks === 0) document.body.style.overflow = preLockOverflow;
+      clearTimeout(focusTimer);
       card.removeEventListener('keydown', onTab, true);
       document.removeEventListener('keydown', onEscape, true);
     };

@@ -173,10 +173,10 @@ t('ClickMenu: a highlighted row touches both panel edges; the focus ring stays i
     expect(Math.abs(g.bottom)).toBeLessThan(0.5);
     // Keyboard focus on the first and the last row: the ring (outline) lies inside the panel, nothing of it is clipped.
     for (const idx of [0, 2]) {
-      await page.keyboard.press('Tab').catch(() => {});
+      await page.keyboard.press(idx === 0 ? 'Home' : 'End'); // the menu's own roving: keyboard modality, so :focus-visible matches
       const ring = await page.evaluate((i) => {
         const el = document.querySelectorAll<HTMLElement>('[role^=menuitem]')[i]!;
-        el.focus({ focusVisible: true } as FocusOptions);
+        if (document.activeElement !== el) throw new Error('focus is not on the expected row');
         const cs = getComputedStyle(el);
         const panel = document.querySelector('.floating-panel') as HTMLElement;
         const r = el.getBoundingClientRect(), pr = panel.getBoundingClientRect();
@@ -208,7 +208,7 @@ t('SelectedCheck: the same 16 px trailing mark in SelectModal, ClickMenu and Dro
   marks.push(await read(page, '[role=dialog] button[aria-current=true]'));
   page = await open('dropdown');
   await page.getByRole('button').first().click();
-  marks.push(await read(page, '[role=option][aria-selected=true] >> xpath=..'));
+  marks.push(await read(page, '[data-dropdown-id] div:has(> [data-selected-check])'));
   expect(marks.length).toBe(3);
   for (const m of marks) { expect(m.w).toBe(16); expect(m.h).toBe(16); expect(m.trailing).toBe(true); expect(m).toEqual(marks[0]!); }
 });
@@ -266,11 +266,11 @@ t('SelectModal without search: focus starts on the picked row, arrows move it, E
   expect(await label()).toBe('Browser only');
   await page.keyboard.press('Enter');
   await page.waitForFunction(() => !document.querySelector('[role=dialog]'));
-  expect((await page.getByRole('button', { name: /Simulated/ }).textContent())!.replace(/\s+/g, '')).toBe('Simulated·Server'); // value is controlled by the fixture: still Server
+  expect(await page.evaluate(() => (window as unknown as { __picked?: string[] }).__picked)).toEqual(['c']); // onChange fired once with the row Enter was on
 });
 
-t('renders for review (SHOT_DIR)', async () => {
-  if (!process.env.SHOT_DIR) { console.log('rules.browser.test.tsx: SHOT_DIR unset, skipping the review renders'); return; }
+test.skipIf(!process.env.SHOT_DIR)('renders for review (SHOT_DIR)', async () => {
+  if (!browser) throw new Error('Chromium not found');
   for (const [width, touch] of [[1440, false], [390, true]] as const) {
     const tag = `${width}-dark`;
     let p = await open('group', { width, touch });

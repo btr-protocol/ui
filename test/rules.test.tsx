@@ -1,7 +1,7 @@
 import { expect, test } from 'bun:test';
 import { render } from 'preact-render-to-string';
 import { Button, ClickMenu, Icon, MultiSelectModal, SelectedCheck, SelectModal } from '../src';
-import { click, mount, useDom } from './dom';
+import { click, mount, until, useDom } from './dom';
 
 useDom();
 
@@ -72,4 +72,19 @@ test('one search rule: every select modal hides search at 6 options or fewer, un
     expect(!!searchBox()).toBe(shown);
     m.unmount();
   }
+});
+
+test('no search: focus lands on the picked row of the card that opened, also with two modals stacked', async () => {
+  const x = [{ value: 'x1', label: 'X one' }, { value: 'x2', label: 'X two' }];
+  const y = [{ value: 'y1', label: 'Y one' }, { value: 'y2', label: 'Y two' }];
+  const m = mount(<><SelectModal routeKey="f-x" label="X" items={x} value="x2" onChange={() => {}} /><SelectModal routeKey="f-y" label="Y" items={y} value="y2" onChange={() => {}} /></>);
+  const [bx, by] = [...m.host.querySelectorAll('button')];
+  const onRow = (text: string) => until(() => document.activeElement?.hasAttribute('data-sel-row') === true && document.activeElement.textContent?.includes(text) === true);
+  click(bx!);
+  await onRow('X two');
+  click(by!);
+  await onRow('Y two');
+  expect(document.activeElement!.closest('[role=dialog]')!.textContent).toContain('Y one');
+  expect(document.activeElement!.closest('[role=dialog]')!.textContent).not.toContain('X one');
+  m.unmount();
 });

@@ -361,7 +361,7 @@ export function Dropdown<T = string>({
 
   const panelContent = (
     <>
-      <div className="max-h-64 overflow-y-auto" role="listbox" aria-multiselectable={mode === 'multi' || undefined}>
+      <div className="max-h-64 overflow-y-auto">
         {items.map((item) => {
           const selectableItems = items.filter((i) => !i.disabled);
           const selectableIdx = selectableItems.findIndex((i) => i.value === item.value);
@@ -392,8 +392,6 @@ export function Dropdown<T = string>({
                 {...(item.href
                   ? { href: item.href, target: '_blank', rel: 'noopener noreferrer' }
                   : { type: 'button', disabled })}
-                role="option"
-                aria-selected={selected}
                 aria-label={typeof item.label === 'string' ? item.label : undefined}
                 onClick={(e: MouseEvent) => {
                   if (item.href) {
@@ -673,15 +671,10 @@ export function SelectionModal({
     const at = rows.indexOf(document.activeElement as HTMLElement);
     rows[(at + (e.key === 'ArrowDown' ? 1 : -1) + rows.length) % rows.length]!.focus();
   };
-  useEffect(() => {
-    if (!isOpen || searchable) return;
-    const t = setTimeout(() => {
-      const card = document.querySelector<HTMLElement>('[role=dialog]:last-of-type');
-      const rows = card ? rowEls(card) : [];
-      (rows.find((r) => r.getAttribute('aria-current') === 'true' || r.getAttribute('aria-pressed') === 'true') ?? rows[0])?.focus();
-    }, 50);
-    return () => clearTimeout(t);
-  }, [isOpen, searchable]);
+  const focusRow = (card: HTMLElement) => {
+    const rows = rowEls(card);
+    (rows.find((r) => r.getAttribute('aria-current') === 'true' || r.getAttribute('aria-pressed') === 'true') ?? rows[0])?.focus();
+  };
 
   // One block ABOVE the scroller, not a sticky pinned inside it: whatever the surface put above
   // the list - identity row, sort header, or both stacked - is a sibling of the rows, so the
@@ -719,6 +712,7 @@ export function SelectionModal({
       onSearchChange={setSearch}
       onSearchKeyDown={view.keyDown}
       onBodyKeyDown={searchable ? undefined : rowKeys}
+      onOpened={searchable ? undefined : focusRow}
       size={size}
       headerRight={headerRight}
       bodyHeader={pinnedHeader}

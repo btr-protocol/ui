@@ -88,12 +88,12 @@ const buttonVariants = cva(
 const hasText = (c: ComponentChildren): boolean =>
   Array.isArray(c) ? c.some(hasText) : typeof c === 'string' || typeof c === 'number' || (typeof c === 'object' && c !== null && (c as { type?: unknown }).type === Fragment && hasText((c as { props: { children?: ComponentChildren } }).props.children));
 
-/** `title` only while the label is cut: measured on hover / focus, never set on a label that fits. */
+/** `title` only while the pointer is over a label that is cut: measured on every hover, dropped on leave (never on focus: screen readers announce it), so it never goes stale. */
 const titleIfCut = (e: Event) => {
   const btn = e.currentTarget as HTMLElement;
+  if (btn.dataset.ownTitle) return;
   const label = btn.querySelector<HTMLElement>(':scope > [data-label]');
-  if (!label || btn.dataset.ownTitle) return;
-  if (label.scrollWidth > label.clientWidth) btn.title = label.textContent ?? '';
+  if (e.type === 'mouseenter' && label && label.scrollWidth > label.clientWidth) btn.title = label.textContent ?? '';
   else btn.removeAttribute('title');
 };
 
@@ -160,7 +160,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     const groupAttrs = {
       'data-own-title': props.title ? 'true' : undefined,
       onMouseEnter: fit(props.onMouseEnter as never),
-      onFocus: fit(props.onFocus as never), 'data-icon-only': isIconOnly || undefined, 'data-primary': variant === 'primary' || undefined };
+      onMouseLeave: fit(props.onMouseLeave as never), 'data-icon-only': isIconOnly || undefined, 'data-primary': variant === 'primary' || undefined };
 
     const content = (
       <>
