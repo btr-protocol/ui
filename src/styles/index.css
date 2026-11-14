@@ -235,6 +235,9 @@ select[aria-invalid="true"]:focus {
   color: var(--fg-primary);
 }
 @media (hover: none) {
+  .row-x > .row-x-btn {
+    opacity: 1;
+  }
   .wallet-rows > :not(.row-x),
   .wallet-rows > .row-x > :not(.row-x-btn) {
     padding-inline-end: 2.75rem;

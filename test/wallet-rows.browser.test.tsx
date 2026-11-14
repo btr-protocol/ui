@@ -43,11 +43,23 @@ beforeAll(async () => {
   launching = setup();
   browser = await launching;
 }, 120000);
-afterAll(async () => { await (await launching?.catch(() => undefined))?.close(); }, 30000);
+// The browser close is bounded and reported (console.error with the file name) when it stalls: every test has already run by then.
+afterAll(async () => {
+  const b = await launching?.catch(() => undefined);
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const stalled = new Promise<void>((done) => { timer = setTimeout(() => { console.error('wallet-rows.browser.test.tsx: browser close stalled for 25 s'); done(); }, 25000); });
+  try { await Promise.race([b?.close().catch(() => {}), stalled]); } finally { clearTimeout(timer); }
+}, 40000);
 
 const contexts: import('playwright-core').BrowserContext[] = [];
-// A context close that stalls on a loaded machine must not fail the next test: bounded, then the browser's own close in afterAll reaps it.
-afterEach(async () => { for (const c of contexts.splice(0)) await Promise.race([c.close().catch(() => {}), new Promise((r) => setTimeout(r, 20000))]); }, 30000);
+// A context close that stalls on a loaded machine is reported (and fails the hook), never swallowed; afterAll's browser close reaps it.
+afterEach(async () => {
+  for (const c of contexts.splice(0)) {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const stalled = new Promise<never>((_, fail) => { timer = setTimeout(() => fail(new Error('context close stalled for 20 s')), 20000); });
+    try { await Promise.race([c.close().catch(() => {}), stalled]); } finally { clearTimeout(timer); }
+  }
+}, 30000);
 
 async function open(o: { touch?: boolean; light?: boolean; width?: number; icon?: 'ok' | 'broken'; pending?: boolean; reducedMotion?: boolean } = {}) {
   const ctx = await browser!.newContext({ viewport: { width: o.width ?? 1440, height: 900 }, ...(o.touch ? { hasTouch: true, isMobile: true } : {}), colorScheme: o.light ? 'light' : 'dark', ...(o.reducedMotion ? { reducedMotion: 'reduce' as const } : {}) });
@@ -209,7 +221,7 @@ t('touch 390: every row shares one trailing edge, the x is 44 px and available',
   const xb = await box(remove(page, 'Ambire'));
   expect(xb.width).toBeGreaterThanOrEqual(44);
   expect(xb.height).toBeGreaterThanOrEqual(44);
-  expect(Number(await remove(page, 'Ambire').evaluate((e) => getComputedStyle(e).opacity))).toBeGreaterThan(0.5);
+  expect(await remove(page, 'Ambire').evaluate((e) => getComputedStyle(e).opacity)).toBe('1'); // full strength, not CloseButton's 70%
   await remove(page, 'Ambire').tap();
   await page.waitForFunction(() => document.querySelectorAll('[aria-label^="Remove"]').length === 1);
 });
@@ -221,7 +233,7 @@ for (const light of [false, true])
   t(`an announced icon with transparent areas: fixed light opaque tile, no generic glyph under it (${light ? 'light' : 'dark'})`, async () => {
     const page = await open({ light });
     const tile = tileOf(page, 'Ambire');
-    await tile.locator('img').evaluate((i: HTMLImageElement) => new Promise<void>((done) => (i.complete && i.naturalWidth > 0 ? done() : i.addEventListener('load', () => done())))); // Ambire's own image has loaded
+    await tile.locator('img').evaluate((i: HTMLImageElement) => new Promise<void>((done) => (i.complete ? done() : i.addEventListener('load', () => done())))); // Ambire's own image has loaded (an SVG may report naturalWidth 0)
     expect(await tile.locator('svg').count()).toBe(0); // the generic glyph is not under the loaded image
     expect(await tile.locator('img').count()).toBe(1);
     const bg = await tile.evaluate((el) => getComputedStyle(el).backgroundColor);
