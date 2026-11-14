@@ -47,3 +47,9 @@ test('check-copy passes on clean copy', () => {
 test('the kit itself is clean', () => {
   expect(Bun.spawnSync(['bash', 'scripts/check-copy.sh']).exitCode).toBe(0);
 });
+
+test('check-copy self-test (boundaries, entities, css and en dash forms)', () => {
+  const r = Bun.spawnSync(['bash', 'scripts/check-copy.sh', '--self-test'], { stdout: 'pipe', stderr: 'pipe' });
+  expect(r.stderr.toString()).toBe('');
+  expect(r.exitCode).toBe(0);
+});
