@@ -46,6 +46,7 @@ export function tabKeyTarget(key: string, i: number, n: number): number | null {
 
 /** Closable, pinnable, drag-reorderable tab strip (a comparison set, open documents). Selected tab = the navbar-active look.
  *  Roving tabindex: the active tab (else the first) is the strip's one tab stop, arrows / Home / End move focus, Enter / Space select.
+ *  Delete / Backspace closes the focused tab and P toggles its pin (so a non-active tab needs no extra tab stops).
  *  Pin and close are sibling buttons of the tab (never inside role=tab) and are tab stops only on the roving tab. */
 export function TabStrip({ tabs, active, onSelect, onClose, onPin, onReorder, className, label = 'Tabs' }: TabStripProps) {
   const [drag, setDrag] = useState<string | null>(null);
@@ -81,10 +82,23 @@ export function TabStrip({ tabs, active, onSelect, onClose, onPin, onReorder, cl
               title={t.title}
               onClick={() => onSelect(t.id)}
               onKeyDown={(e) => {
+                const tabEls = list.current?.querySelectorAll<HTMLElement>('[role=tab]');
+                // Delete / Backspace closes the focused tab, P toggles its pin: the pin / close buttons are tab stops of the roving tab only.
+                if ((e.key === 'Delete' || e.key === 'Backspace') && onClose && !t.pinned && t.closable !== false) {
+                  e.preventDefault();
+                  (tabEls?.[i + 1] ?? tabEls?.[i - 1])?.focus();
+                  onClose(t.id);
+                  return;
+                }
+                if ((e.key === 'p' || e.key === 'P') && onPin && t.closable !== false && !e.ctrlKey && !e.metaKey && !e.altKey) {
+                  e.preventDefault();
+                  onPin(t.id);
+                  return;
+                }
                 const to = tabKeyTarget(e.key, i, ordered.length);
                 if (to == null) return;
                 e.preventDefault();
-                list.current?.querySelectorAll<HTMLElement>('[role=tab]')[to]?.focus();
+                tabEls?.[to]?.focus();
               }}
               className="h-full max-w-[12rem] cursor-pointer truncate rounded-sm pl-2.5 pr-1 outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
