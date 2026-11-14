@@ -458,7 +458,7 @@ export function ModalActions({
   );
   return (
     <div className={cn('flex justify-end', className)}>
-      <ButtonGroup>{reverseOrder ? [confirmButton, cancelButton] : [cancelButton, confirmButton]}</ButtonGroup>
+      <ButtonGroup aria-label="Actions">{reverseOrder ? [confirmButton, cancelButton] : [cancelButton, confirmButton]}</ButtonGroup>
     </div>
   );
 }

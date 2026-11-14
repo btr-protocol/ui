@@ -131,7 +131,7 @@ export function ConfirmSheet({
       headerIcon={<Icon name="warning" className="h-4 w-4 text-warning" />}
       size="md"
       footerControls={
-        <ButtonGroup className="flex w-full [&>*]:flex-1">
+        <ButtonGroup aria-label="Actions" className="flex w-full [&>*]:flex-1">
           <Button onClick={onClose}>Cancel</Button>
           <HoldButton
             variant="primary"

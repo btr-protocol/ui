@@ -147,3 +147,12 @@ describe('atSpan', () => {
     expect(atSpan('1.0000', 1.00002, undefined)).toBe('1.0000');
   });
 });
+
+describe('compact ladder at tiny spans', () => {
+  test('digits past the 2dp lose trailing zeros', () => {
+    const f = formatter('usd', 0.0004);
+    expect(f(400)).toBe('$400.00');
+    expect(f(400.0001)).toBe('$400.0001');
+    expect(f(400.01)).toBe('$400.01');
+  });
+});

@@ -1,3 +1,4 @@
+import { useMedia } from '../lib/useMedia';
 import type { ComponentChildren } from 'preact';
 import { LOGO_URL } from '../lib/assets';
 import { cn } from '../lib/cn';
@@ -51,6 +52,9 @@ export function HeaderTool({
   desktopOnly,
   children,
 }: HeaderToolProps) {
+  // Rendered only when shown: a CSS-hidden child would leave a stray divider or square corner.
+  const wide = useMedia('(min-width: 1024px)');
+  if (desktopOnly && !wide) return null;
   return (
     <button
       type="button"
@@ -59,7 +63,6 @@ export function HeaderTool({
       title={title ?? label}
       className={cn(
         'tap-min relative min-w-[var(--ctl-m)] px-2 coarse:px-3 flex items-center justify-center gap-1.5 text-fg-2 hover:bg-bg-3 hover:text-fg-0 transition-colors',
-        desktopOnly && 'max-lg:hidden',
       )}
     >
       <Icon name={icon} className="w-4 h-4" />
@@ -162,7 +165,7 @@ export function Header({
 
         <div className="flex items-center gap-2">
           {tools && (
-            <ButtonGroup className="min-h-[var(--ctl-m)]">{tools}</ButtonGroup>
+            <ButtonGroup aria-label="Tools" className="min-h-[var(--ctl-m)]">{tools}</ButtonGroup>
           )}
           {right}
         </div>

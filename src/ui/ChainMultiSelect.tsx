@@ -34,7 +34,7 @@ export function ChainMultiSelect({
   routeKey,
 }: ChainMultiSelectProps) {
   const [open, setOpen] = useOpen(routeKey);
-  const items = useMemo(() => chainSelectItems(chains), [chains]);
+  const items = useMemo(() => chainSelectItems(chains, { includeTestnets: true }), [chains]);
   const picked = chains.filter((c) => value.includes(c.id));
   const all = items.length > 0 && picked.length >= items.length;
   return (

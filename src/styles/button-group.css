@@ -6,8 +6,10 @@
   align-items: stretch;
   max-width: 100%;
   isolation: isolate;
+  /* `--radius-sm` is the app's nested-radius scale; the kit tokens only carry the base `--r`. */
+  --btn-group-r: var(--radius-sm, calc(var(--r, 16px) * 0.5));
   border: var(--border);
-  border-radius: var(--radius-sm);
+  border-radius: var(--btn-group-r);
   background: var(--bg-1);
 }
 .btn-group > * {
@@ -18,7 +20,7 @@
   border-width: 0;
   border-radius: 0;
 }
-.btn-group > :not(:first-child) { /* after the reset above: equal specificity, this one wins */
+.btn-group > :not([hidden]) ~ :not([hidden]) { /* after the reset above: equal specificity, this one wins; a [hidden] child never leaves a divider */
   border-left: var(--border);
 }
 .btn-group :is(button, a, [role='button']):hover {
@@ -26,13 +28,13 @@
 }
 .btn-group > :first-child,
 .btn-group > :first-child :is(button, a, [role='button']) {
-  border-start-start-radius: calc(var(--radius-sm) - 1px);
-  border-end-start-radius: calc(var(--radius-sm) - 1px);
+  border-start-start-radius: calc(var(--btn-group-r) - 1px);
+  border-end-start-radius: calc(var(--btn-group-r) - 1px);
 }
 .btn-group > :last-child,
 .btn-group > :last-child :is(button, a, [role='button']) {
-  border-start-end-radius: calc(var(--radius-sm) - 1px);
-  border-end-end-radius: calc(var(--radius-sm) - 1px);
+  border-start-end-radius: calc(var(--btn-group-r) - 1px);
+  border-end-end-radius: calc(var(--btn-group-r) - 1px);
 }
 /* The ring sits inside the control and above its neighbours, so no sibling paints over it. */
 .btn-group :focus-visible {
@@ -40,4 +42,27 @@
 }
 .btn-group > :focus-within {
   z-index: var(--z-index-raised);
+}
+
+/* `wrap`: a group that cannot fit breaks into rows. Cells fill the row and are separated by
+   shadows the group clips at its own edge, so a wrapped row never doubles the outer border. */
+.btn-group-wrap {
+  flex-wrap: wrap;
+  overflow: hidden;
+}
+.btn-group-wrap > * {
+  flex: 1 1 auto;
+}
+.btn-group-wrap > :not([hidden]) ~ :not([hidden]),
+.btn-group-wrap > :first-child {
+  border-left-width: 0;
+}
+.btn-group-wrap > *,
+.btn-group-wrap > * :is(button, a, [role='button']) {
+  border-radius: 0;
+}
+.btn-group-wrap > * {
+  box-shadow:
+    -1px 0 0 var(--border-color),
+    0 -1px 0 var(--border-color);
 }

@@ -16,6 +16,15 @@ test('modal header, body and footer take their gutter from MODAL_PADDING; nothin
   expect(d).not.toBeNull();
   const gutters = [...d.querySelectorAll('*')].filter((e) => e.classList.contains(MODAL_PADDING));
   expect(gutters.length).toBeGreaterThanOrEqual(2); // header row + footer
+  const title = [...d.querySelectorAll('*')].filter((e) => e.children.length === 0 && e.textContent === 'Core').pop()!;
+  const header = title.closest(`.${MODAL_PADDING}`);
+  const foot = [...d.querySelectorAll('span')].find((e) => e.textContent === 'foot')!.closest(`.${MODAL_PADDING}`);
+  const body = [...d.querySelectorAll('p')].find((e) => e.textContent === 'body')!;
+  expect(header).not.toBeNull();
+  expect(foot).not.toBeNull();
+  expect(foot).not.toBe(header);
+  // The body owns no gutter (each section takes MODAL_PADDING itself): no ancestor up to the dialog adds a horizontal one.
+  for (let e: Element | null = body; e && e !== d; e = e.parentElement) expect(hz(e).filter((c) => c !== MODAL_PADDING)).toEqual([]);
   for (const e of d.querySelectorAll('*')) expect(bad.test(e.getAttribute('class') ?? '')).toBe(false);
   expect(MODAL_PADDING).toBe('px-3');
   expect(hz(d)).toEqual([]);
