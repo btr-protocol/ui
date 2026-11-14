@@ -257,7 +257,7 @@ describe('WalletModal', () => {
     await until(() => (document.body.textContent ?? '').includes('Mobile wallet'));
     expect(document.body.textContent).toContain('WalletConnect');
     const tile = document.body.querySelector('button[aria-expanded]') as HTMLElement;
-    expect(tile.textContent).toContain('Scan a QR code with your phone');
+    expect(tile.getAttribute('aria-label')).toContain('Scan a QR code with your phone');
     expect(tile.querySelectorAll('img').length).toBe(WC_TILE_IDS.length);
     expect(WC_TILE_IDS.every((id) => walletIcon(id))).toBe(true);
   });
@@ -288,6 +288,109 @@ describe('WalletModal sections', () => {
     act(() => { announce(fakeWallet([SESSION]), 'io.rabby', 'Rabby Wallet'); });
     await until(() => headings().includes('Recent'));
     expect(headings()).toEqual(['Recent', 'WalletConnect', 'Other']);
+  });
+});
+
+describe('WalletConnect tile', () => {
+  const hang = () => configureWalletConnect({ projectId: 'public-id', metadata: { name: 'x', description: 'x', url: 'https://x', icons: [] }, chains: () => [143], loadSignClient: async () => ({ default: { init: () => new Promise(() => {}) } }) });
+  const tile = () => document.body.querySelector('button[aria-expanded]') as HTMLButtonElement | null;
+  const withUa = async (ua: string, f: () => Promise<void>) => {
+    const old = Object.getOwnPropertyDescriptor(navigator, 'userAgent');
+    Object.defineProperty(navigator, 'userAgent', { configurable: true, get: () => ua });
+    try {
+      await f();
+    } finally {
+      if (old) Object.defineProperty(navigator, 'userAgent', old);
+      else delete (navigator as unknown as { userAgent?: string }).userAgent;
+    }
+  };
+  const DESKTOP = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15';
+  const PHONE = 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)';
+
+  test('desktop: one button named by label and caption, decorative marks hidden, click toggles the pairing', async () => {
+    localStorage.clear();
+    await withUa(DESKTOP, async () => {
+      hang();
+      mount(<WalletModal isOpen onClose={() => {}} onConnect={async () => {}} />);
+      await until(() => tile() !== null);
+      const t = tile() as HTMLButtonElement;
+      expect(t.getAttribute('aria-label')).toBe('Mobile wallet. Scan a QR code with your phone');
+      expect(t.querySelectorAll('[title]').length).toBe(0);
+      expect(t.querySelector('.grid')?.getAttribute('aria-hidden')).toBe('true');
+      expect(t.querySelectorAll('img').length).toBe(WC_TILE_IDS.length);
+      expect(t.querySelector('svg.h-14')).not.toBeNull();
+      // bare marks: no backing tile and no generic glyph behind the image
+      expect(t.querySelectorAll('.bg-bg-3').length).toBe(0);
+      expect(t.querySelectorAll('.ring-1').length).toBe(0);
+      expect(t.getAttribute('aria-expanded')).toBe('false');
+      expect(t.hasAttribute('aria-controls')).toBe(false);
+      click(t);
+      await until(() => tile()?.getAttribute('aria-expanded') === 'true');
+      const id = (tile() as HTMLButtonElement).getAttribute('aria-controls') as string;
+      expect(document.getElementById(id)?.getAttribute('role')).toBe('group');
+      expect(tile()?.getAttribute('aria-busy')).toBe('true');
+      click(tile() as HTMLButtonElement);
+      await until(() => tile()?.getAttribute('aria-expanded') === 'false');
+      expect(tile()?.getAttribute('aria-busy')).toBe('false');
+    });
+  });
+
+  test('Enter and Space on the focused tile activate it', async () => {
+    localStorage.clear();
+    await withUa(DESKTOP, async () => {
+      hang();
+      mount(<WalletModal isOpen onClose={() => {}} onConnect={async () => {}} />);
+      await until(() => tile() !== null);
+      const t = tile() as HTMLButtonElement;
+      t.focus();
+      expect(document.activeElement).toBe(t);
+      for (const k of ['Enter', ' ']) {
+        const before = t.getAttribute('aria-expanded');
+        // a real button turns Enter (keydown) and Space (keyup) into a click; this DOM does not, so the key events are followed by the click they produce
+        act(() => { t.dispatchEvent(new KeyboardEvent('keydown', { key: k, bubbles: true, cancelable: true })); t.dispatchEvent(new KeyboardEvent('keyup', { key: k, bubbles: true, cancelable: true })); });
+        click(t);
+        await until(() => t.getAttribute('aria-expanded') !== before);
+      }
+      expect(t.tagName).toBe('BUTTON');
+      expect(t.type).toBe('button');
+    });
+  });
+
+  test('phone UA keeps the compact row, never the tile; a narrow desktop gets the tile', async () => {
+    localStorage.clear();
+    await withUa(PHONE, async () => {
+      hang();
+      const m = mount(<WalletModal isOpen onClose={() => {}} onConnect={async () => {}} />);
+      act(() => { window.dispatchEvent(new CustomEvent('eip6963:announceProvider', { detail: { info: { uuid: 'io.rabby', name: 'Rabby Wallet', icon: '', rdns: 'io.rabby' }, provider: fakeWallet([SESSION]) } })); });
+      // an injected wallet (wallet's own browser): the pairing is not open, so the 0.11.0 row is the entry
+      await until(() => (document.body.textContent ?? '').includes('Wallet apps'));
+      expect(tile()).toBeNull();
+      expect(document.body.querySelectorAll('img').length).toBeLessThan(WC_TILE_IDS.length);
+      m.unmount();
+    });
+    await withUa(DESKTOP, async () => {
+      hang();
+      Object.defineProperty(window, 'innerWidth', { configurable: true, value: 390 });
+      try {
+        mount(<WalletModal isOpen onClose={() => {}} onConnect={async () => {}} />);
+        await until(() => tile() !== null);
+      } finally {
+        Object.defineProperty(window, 'innerWidth', { configurable: true, value: 1024 });
+      }
+    });
+  });
+
+  test('QR placeholder has the outer size of the QR card', async () => {
+    localStorage.clear();
+    await withUa(DESKTOP, async () => {
+      hang();
+      mount(<WalletModal isOpen onClose={() => {}} onConnect={async () => {}} />);
+      await until(() => tile() !== null);
+      click(tile() as HTMLButtonElement);
+      const qr = () => document.getElementById((tile() as HTMLButtonElement).getAttribute('aria-controls') ?? '-')?.querySelector('.aspect-square');
+      await until(() => !!qr());
+      expect(qr()?.className).toContain('w-[296px]');
+    });
   });
 });
 

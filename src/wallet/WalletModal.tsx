@@ -5,7 +5,7 @@
 import type { WalletDef } from '@btr-protocol/sdk/eth/wallets';
 import { WALLETS, getDownloadUrl, isKnownWallet, isMobile } from '@btr-protocol/sdk/eth/wallets';
 import type { ComponentChildren } from 'preact';
-import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
+import { useEffect, useId, useMemo, useRef, useState } from 'preact/hooks';
 import { copyText } from '../lib/clipboard';
 import { addNotification } from '../lib/notifications';
 import { useKeyboardNav } from '../lib/useKeyboardNav';
@@ -118,6 +118,7 @@ export function WalletModal({
   const [detected, setDetected] = useState<string[]>([]);
   const [recents, setRecents] = useState(readRecent);
   const qrRef = useRef<HTMLDivElement>(null);
+  const qrId = useId();
 
   const keepLast = (id: string) => {
     if (onLastWallet) return onLastWallet(id);
@@ -359,15 +360,27 @@ export function WalletModal({
         {wcOn && (
           <ModalSection title={l.walletConnect} groupId="wm-wc">
             {wcRowShown && (
-              <WalletConnectTile
-                name={mobile ? l.otherWallets : l.connectMobile}
-                caption={mobile ? l.appsCaption : l.qrCaption}
-                expanded={pairing}
-                loading={pairing && !uri && !pairError}
-                loadingLabel={l.preparing}
-                highlighted={hl('wc')}
-                onClick={() => setMore(!more)}
-              />
+              mobile ? (
+                <WalletItemButton
+                  name={l.otherWallets}
+                  icon={<WalletTile icon="link" />}
+                  caption={l.appsCaption}
+                  isSelected={pairing}
+                  isHighlighted={hl('wc')}
+                  onClick={() => setMore(!more)}
+                />
+              ) : (
+                <WalletConnectTile
+                  name={l.connectMobile}
+                  caption={l.qrCaption}
+                  expanded={pairing}
+                  controls={qrId}
+                  loading={pairing && !uri && !pairError}
+                  loadingLabel={l.preparing}
+                  highlighted={hl('wc')}
+                  onClick={() => setMore(!more)}
+                />
+              )
             )}
 
             {pairing && mobile && !waiting && (
@@ -413,19 +426,19 @@ export function WalletModal({
             )}
 
             {showQr && (
-              <div ref={qrRef} tabIndex={-1} role="group" aria-label={l.qrAlt} className={`flex flex-col gap-4 items-center ${MODAL_PADDING} py-4 outline-none`}>
+              <div id={qrId} ref={qrRef} tabIndex={-1} role="group" aria-label={l.qrAlt} className={`flex flex-col gap-4 items-center ${MODAL_PADDING} py-4 outline-none`}>
                 {qr ? (
-                  <div className="bg-white p-2 rounded-lg">
+                  <div className="bg-white p-2 rounded-lg w-[296px] max-w-full">
                     <img src={qr} alt={l.qrAlt} className="w-full max-w-[280px] aspect-square" />
                   </div>
                 ) : qr === '' || pairError ? (
                   <PageState kind="error" message={l.qrFailed} className="py-0" />
                 ) : (
-                  <div className="flex items-center justify-center w-[280px] max-w-full aspect-square bg-bg-2 rounded-lg">
+                  <div className="bg-bg-2 p-2 rounded-lg w-[296px] max-w-full aspect-square flex items-center justify-center">
                     <PageState kind="loading" message={l.qrLoading} className="py-0" />
                   </div>
                 )}
-                {qr && <p className="text-sm text-fg-2 text-center max-w-[280px]">{l.qrScan}</p>}
+                {qr !== '' && !pairError && <p className="text-sm text-fg-2 text-center max-w-[280px]">{l.qrScan}</p>}
                 <Button disabled={!uri} onClick={copy} leftIcon={copyGlyph}>
                   {copied ? l.copied : l.copyLink}
                 </Button>

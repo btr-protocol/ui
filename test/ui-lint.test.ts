@@ -107,7 +107,7 @@ const RAW_BUTTON_OK: Record<string, string> = {
   'src/ui/SearchInput.tsx': 'inline clear (x) glyph inside the input',
   'src/ui/AddressField.tsx': 'inline paste/clear glyphs inside the input',
   'src/ui/WalletItemButton.tsx': 'wallet picker row',
-  'src/wallet/WalletConnectTile.tsx': 'wallet picker tile, a row at its own height',
+  'src/wallet/WalletConnectTile.tsx': 'WalletConnect tile: a tall picker row with a mark grid, not an action button',
   'src/wallet/AccountModal.tsx': 'identity row disconnect glyph (icon-only, inline with copy / explorer)',
 };
 test('raw <button> with ad-hoc sizing must be a <Button>, unless the file is allowlisted with a reason', async () => {
