@@ -278,7 +278,9 @@ export async function restoreWallet(entries?: ProviderEntry[]): Promise<Address 
     bind({ info: { uuid: 'walletconnect', name: 'WalletConnect', id: 'walletconnect' }, provider: wc.provider }, accounts);
   } else {
     const list = entries ?? (await discoverProviders());
-    const entry = list.find((e) => e.info.rdns === last || e.info.id === last);
+    const hits = list.filter((e) => e.info.rdns === last || e.info.id === last);
+    // Two announcements claiming one rdns: nothing says which the user used, so nothing is bound silently.
+    const entry = hits.length === 1 ? hits[0] : undefined;
     if (!entry || stale()) return walletAddress.peek();
     const accounts = await readAccounts(entry.provider).catch((): Address[] => []);
     if (!accounts.length || stale()) return walletAddress.peek();
