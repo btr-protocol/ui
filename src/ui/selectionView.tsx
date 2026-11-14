@@ -180,7 +180,7 @@ export function useSelectionView(p: SelectionViewProps) {
     const off = !!item.disabled;
     const click = () => (mark && onOpen ? onOpen(item.id) : onToggle(item.id));
     const cls = cn(
-          `flex w-full cursor-pointer items-center py-2 text-left transition-colors focus-visible:-outline-offset-2 coarse:min-h-14 ${mark ? 'gap-2 px-3' : `gap-3 ${MODAL_PADDING}`}`,
+          `flex w-full cursor-pointer items-center py-2 text-left transition-colors focus-visible:-outline-offset-2 coarse:min-h-[var(--ctl-l)] ${mark ? 'gap-2 px-3' : `gap-3 ${MODAL_PADDING}`}`,
           off ? 'cursor-not-allowed opacity-60' : idx === selectedIndex ? 'bg-bg-2' : 'hover:bg-bg-2',
           open ? 'bg-bg-primary text-primary' : on && (mark ? 'bg-bg-3' : 'bg-bg-primary'),
         );

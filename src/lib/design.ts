@@ -22,7 +22,7 @@ export const BORDER_RADIUS = 'rounded-sm' as const;
 // Size Scales
 // ============================================================================
 
-/** Heights ride --ctl-s/m/l (styles/constants.css): 24/32/40 on desktop and mobile. */
+/** Heights ride --ctl-s/m/l (styles/constants.css): 24/32/40 on desktop, 28/36/44 on touch (tokens.css). */
 export const SIZE_HEIGHTS = {
   xs: 'h-[var(--ctl-s)]',
   sm: 'h-[var(--ctl-m)]',
@@ -78,11 +78,11 @@ export const DROPDOWN_ITEM_SIZES = {
     icon: 'w-3 h-3',
   },
   sm: {
-    item: 'px-2 py-1.5 text-xs gap-2 coarse:min-h-[var(--ctl-m)]',
+    item: 'px-2 py-1.5 text-xs gap-2 coarse:min-h-[var(--ctl-l)]',
     icon: 'w-3.5 h-3.5',
   },
   default: {
-    item: 'px-3 py-2 text-sm gap-2.5 coarse:min-h-[var(--ctl-m)]',
+    item: 'px-3 py-2 text-sm gap-2.5 coarse:min-h-[var(--ctl-l)]',
     icon: 'w-4 h-4',
   },
 } as const;

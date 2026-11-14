@@ -109,7 +109,7 @@ export function MasterDetail({
           <button
             type="button"
             onClick={onBack}
-            className="flex min-h-[var(--ctl-m)] w-full items-center gap-1.5 border-b border-border px-3 text-sm font-medium text-fg-1 hover:bg-bg-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring lg:hidden"
+            className="flex min-h-[var(--ctl-l)] w-full items-center gap-1.5 border-b border-border px-3 text-sm font-medium text-fg-1 hover:bg-bg-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring lg:hidden"
           >
             <Icon name="caret-left" className="h-4 w-4" />
             {backLabel}

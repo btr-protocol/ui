@@ -162,12 +162,12 @@ export default {
           '.toolbar-btn:hover': { color: 'var(--fg-1)', 'background-color': 'var(--bg-2)' },
           '.toolbar-item:hover': { 'background-color': 'var(--bg-2)' },
         },
-        // A finger needs the 44px (--ctl-m) target; the glyphs keep their desktop size.
+        // A finger needs the 44px (--ctl-l) target; the glyphs keep their desktop size.
         '@media (pointer: coarse)': {
-          // `.tap-min` is the opt-in floor for any control smaller than --ctl-m on touch (glyphs keep size).
+          // `.tap-min` is the opt-in floor for any control smaller than --ctl-l on touch (glyphs keep size).
           '.toolbar-btn, .toolbar-item, .tap-min': {
-            'min-height': 'var(--ctl-m)',
-            'min-width': 'var(--ctl-m)',
+            'min-height': 'var(--ctl-l)',
+            'min-width': 'var(--ctl-l)',
             'justify-content': 'center',
           },
         },

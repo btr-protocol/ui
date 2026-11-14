@@ -52,20 +52,22 @@
   }
 }
 
-/* Touch scale (pointer: coarse, or any window narrower than lg): same proportions as desktop,
-   standard control (--ctl-m) at the 44px AAA target, primary (--ctl-l) 48px. The ::after hit-area
-   in index.css stays as the safety net for icon-only and dense rows. */
+/* Touch scale (pointer: coarse, or any window narrower than lg): desktop + 4px (28 / 36 / 44).
+   Only --ctl-l (and every list row, see --ctl-l) is a full 44px box; --ctl-s and --ctl-m reach the
+   44px tap target through the ::after hit-area in index.css (buttons, links, .tap-target). A tab
+   strip carries its own floor (button-group.css). */
 @media (pointer: coarse), (max-width: 1023.98px) {
   :root {
-    --ctl-s: 2rem;
-    --ctl-m: 2.75rem;
-    --ctl-l: 3rem;
+    --ctl-s: 1.75rem;
+    --ctl-m: 2.25rem;
+    --ctl-l: 2.75rem;
     --chrome-t: calc(3.5rem + var(--sat));
   }
 }
 
 @media (pointer: coarse) {
   :root {
+    --tab-touch: 2.375rem; /* tab strip floor (height and width), button-group.css */
     --fs-2xs: 0.75rem;
   }
 }
