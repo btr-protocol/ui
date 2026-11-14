@@ -3,7 +3,7 @@
 // expects; "signer" = an owner of the Safe in view. The wallet only ever signs as its active account, so a switch is
 // made IN the wallet (its account picker) and the app follows its `accountsChanged`.
 import { shortAddr } from '../lib/address';
-import { MODAL_PADDING, ModalSection } from '../ui/BaseModal';
+import { ModalSection } from '../ui/BaseModal';
 import { Badge } from '../ui/Badge';
 import { Button } from '../ui/Button';
 import { Notice } from '../ui/Feedback';
