@@ -84,13 +84,13 @@ export function TabStrip({ tabs, active, onSelect, onClose, onPin, onReorder, cl
               onKeyDown={(e) => {
                 const tabEls = list.current?.querySelectorAll<HTMLElement>('[role=tab]');
                 // Delete / Backspace closes the focused tab, P toggles its pin: the pin / close buttons are tab stops of the roving tab only.
-                if ((e.key === 'Delete' || e.key === 'Backspace') && onClose && !t.pinned && t.closable !== false) {
+                if ((e.key === 'Delete' || e.key === 'Backspace') && onClose && !t.pinned) {
                   e.preventDefault();
                   (tabEls?.[i + 1] ?? tabEls?.[i - 1])?.focus();
                   onClose(t.id);
                   return;
                 }
-                if ((e.key === 'p' || e.key === 'P') && onPin && t.closable !== false && !e.ctrlKey && !e.metaKey && !e.altKey) {
+                if ((e.key === 'p' || e.key === 'P') && onPin && !e.ctrlKey && !e.metaKey && !e.altKey) {
                   e.preventDefault();
                   onPin(t.id);
                   return;
