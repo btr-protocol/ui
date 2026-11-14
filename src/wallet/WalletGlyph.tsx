@@ -24,11 +24,8 @@ export function WalletGlyph({
 }) {
   const raster = id ? walletIcon(id) : undefined;
   const [stage, setStage] = useState(0);
-  const [loaded, setLoaded] = useState(false);
-  useEffect(() => {
-    setStage(0);
-    setLoaded(false);
-  }, [id, announcedIcon]);
+  const [loadedSrc, setLoadedSrc] = useState<string>();
+  useEffect(() => setStage(0), [id, announcedIcon]);
   const src = stage === 0 && raster ? raster[0] : stage <= 1 && announcedIcon ? announcedIcon : undefined;
   // The tile (generic wallet glyph) is always there: a slow, missing or blocked image never leaves an empty square.
   return (
@@ -43,12 +40,13 @@ export function WalletGlyph({
           src={src}
           srcSet={stage === 0 && raster ? `${raster[0]} 1x, ${raster[1]} 2x` : undefined}
           alt=""
-          className={`absolute inset-0 h-full w-full rounded-xs ${loaded ? '' : 'opacity-0'}`}
-          onLoad={() => setLoaded(true)}
-          onError={() => {
-            setLoaded(false);
-            setStage(stage === 0 && raster ? 1 : 2);
+          className={`absolute inset-0 h-full w-full rounded-xs ${loadedSrc === src ? '' : 'opacity-0'}`}
+          // A cached or data: image can finish before the handler is attached: check on mount too.
+          ref={(el) => {
+            if (el?.complete && el.naturalWidth > 0) setLoadedSrc(src);
           }}
+          onLoad={() => setLoadedSrc(src)}
+          onError={() => setStage(stage === 0 && raster ? 1 : 2)}
         />
       )}
     </span>
