@@ -38,6 +38,8 @@ interface WalletItemButtonProps {
   /** Unavailable via `aria-disabled` instead of `disabled`: the row keeps focus (and arrow-key order) while busy; the
    *  caller ignores clicks. */
   ariaDisabled?: boolean;
+  /** Nothing to do on this row (the current account): same surface, but a plain element with no hover, pointer or focus stop. */
+  inert?: boolean;
 }
 
 export function WalletItemButton({
@@ -56,18 +58,15 @@ export function WalletItemButton({
   caption,
   ariaLabel,
   ariaDisabled = false,
+  inert = false,
 }: WalletItemButtonProps) {
   const unavailable = disabled || isConnecting;
   const off = !ariaDisabled && unavailable;
   // Only a row that can start a connection reserves the loader slot; a text-only row (disconnect, copy) or one with its own right icon does not.
   const canConnect = !!icon && !rightIcon;
   const cls = `w-full flex items-center gap-3 h-12 px-3 border-b border-border disabled:opacity-50 disabled:cursor-not-allowed aria-disabled:opacity-50 aria-disabled:cursor-not-allowed font-title transition-colors ${
-    isSelected
-      ? 'bg-bg-primary hover-primary'
-      : isHighlighted
-        ? 'bg-bg-3 hover-primary'
-        : 'bg-bg-2 hover-primary'
-  }`;
+    isSelected ? 'bg-bg-primary' : isHighlighted ? 'bg-bg-3' : 'bg-bg-2'
+  } ${inert ? 'cursor-default' : 'hover-primary'}`;
   const content = (
     <>
       {icon}
@@ -103,8 +102,11 @@ export function WalletItemButton({
       />
     </>
   );
-  const button =
-    href && !off ? (
+  const button = inert ? (
+    <div className={cls} aria-current={isSelected || undefined}>
+      {content}
+    </div>
+  ) : href && !off ? (
       <a href={href} className={cls} onClick={onClick} aria-label={ariaLabel} {...(external && { target: '_blank', rel: 'noopener noreferrer' })}>
         {content}
       </a>

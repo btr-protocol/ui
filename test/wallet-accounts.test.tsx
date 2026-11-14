@@ -204,11 +204,9 @@ describe('WalletButton account modal', () => {
     expect(text()).toContain('In wallet');
     expect(text()).toContain('Signed in');
     expect((text().match(/Signer(?!s)/g) ?? []).length).toBeGreaterThanOrEqual(2);
-    // the current account's row is selected, full contrast, and not a switch target
-    const current = buttons().find((b) => b.textContent?.includes('0xaB7B…0760')) as HTMLButtonElement;
-    expect(current.disabled).toBe(false);
-    click(current);
-    await act(async () => { await new Promise((r) => setTimeout(r, 20)); });
+    // the current account's row is selected, full contrast, and not a switch target: a plain row, not a button
+    expect(buttons().find((b) => b.textContent?.includes('0xaB7B…0760'))).toBeUndefined();
+    expect(document.body.querySelector('[aria-current=true]')?.textContent).toContain('0xaB7B…0760');
     expect(switched).toEqual([]);
     const row = buttons().find((b) => b.textContent?.includes('0x0b83…1111')) as HTMLButtonElement;
     click(row);
@@ -715,7 +713,7 @@ describe('review fixes', () => {
 
   test('account rows: arrow keys move focus; a busy list keeps focus (aria-disabled, not disabled)', async () => {
     const { AccountList } = await import('../src');
-    const { host } = mount(<AccountList accounts={[SESSION, OTHER, THIRD]} active={SESSION} busy={OTHER} onSelect={() => {}} />);
+    const { host } = mount(<AccountList accounts={[SESSION, OTHER, THIRD]} busy={OTHER} onSelect={() => {}} />);
     const rows = [...host.querySelectorAll('button')].filter((b) => /0x/.test(b.textContent ?? ''));
     expect(rows.every((b) => !b.disabled && b.getAttribute('aria-disabled') === 'true')).toBe(true);
     rows[0]!.focus();

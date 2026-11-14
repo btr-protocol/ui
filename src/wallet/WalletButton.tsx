@@ -13,7 +13,6 @@ import { WalletGlyph } from './WalletGlyph';
 import {
   disconnectWallet,
   openConnectModal,
-  switchWalletAccount,
   switchWalletChain,
   walletAccounts,
   walletAddress,
@@ -47,8 +46,8 @@ interface WalletButtonProps {
   onConnectOther?: () => void;
   onDisconnect?: () => void;
   onSwitchChain?: (chainId: number) => boolean | Promise<boolean>;
-  /** One click on an account row. Default: make it the wallet's active account (the wallet's picker when needed).
-   *  An app with a session re-auths here when the account is not the session's. Resolve false to keep the modal open. */
+  /** One click on an account row, AFTER the kit made it the connected wallet's active account (searching every installed wallet; a miss
+   *  shows as a row and this is not called). An app with a session re-auths here when the account is not the session's. Resolve false to keep the modal open. */
   onSwitchAccount?: (address: string) => boolean | Promise<boolean>;
   labels?: Partial<AccountLabels>;
 }
@@ -69,10 +68,8 @@ function useAccountModal(open: boolean): ComponentType<AccountModalProps> | null
   return Modal;
 }
 
-const storeSwitch = async (a: string) => {
-  const p = walletEntry.value?.provider;
-  return !!p && (await switchWalletAccount(p, a));
-};
+// The modal already made the clicked account the connected wallet's (kit `activateAccount`); nothing more to do for an app with no session.
+const storeSwitch = () => true;
 
 export function WalletButton({
   className,

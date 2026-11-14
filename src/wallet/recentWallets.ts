@@ -89,3 +89,37 @@ export const recentEntry = (w: { id: string; name: string; rdns?: string }, via:
   name: w.name,
   via,
 });
+
+// Which wallet exposed which account to this site: lets a click on an account that lives in ANOTHER wallet find it. Per browser only
+// (localStorage), exactly what the wallets already told this page via eth_accounts: address <-> wallet id, newest first, capped.
+export const WALLET_ACCOUNTS_KEY = 'btr-wallet-accounts';
+const ACCOUNTS_KEPT = 32;
+const ADDR_RE = /^0x[0-9a-f]{40}$/;
+type AccountOwner = [address: string, id: string];
+
+const readOwners = (): AccountOwner[] => {
+  try {
+    const raw = JSON.parse(localStorage.getItem(WALLET_ACCOUNTS_KEY) ?? '[]') as unknown;
+    return Array.isArray(raw)
+      ? raw.filter((r): r is AccountOwner => Array.isArray(r) && typeof r[0] === 'string' && ADDR_RE.test(r[0]) && typeof r[1] === 'string' && ID_RE.test(r[1])).slice(0, ACCOUNTS_KEPT)
+      : [];
+  } catch {
+    return [];
+  }
+};
+
+/** Remember that wallet `id` (its rdns / catalog id) exposed `accounts`; a newer answer for an address replaces the older one. */
+export function rememberAccounts(id: string | undefined, accounts: readonly string[]): void {
+  const w = id?.toLowerCase();
+  if (!w || !ID_RE.test(w)) return;
+  const mine = accounts.map((a) => a.toLowerCase()).filter((a) => ADDR_RE.test(a));
+  if (!mine.length) return;
+  try {
+    const next: AccountOwner[] = [...mine.map((a): AccountOwner => [a, w]), ...readOwners().filter(([a]) => !mine.includes(a))].slice(0, ACCOUNTS_KEPT);
+    localStorage.setItem(WALLET_ACCOUNTS_KEY, JSON.stringify(next));
+  } catch {}
+}
+
+/** The id of the wallet that last exposed `address`, if this browser saw one. */
+export const walletOf = (address?: string | null): string | undefined =>
+  address ? readOwners().find(([a]) => a === address.toLowerCase())?.[1] : undefined;

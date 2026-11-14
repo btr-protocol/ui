@@ -4,6 +4,7 @@
 import { signal } from '@preact/signals';
 import type { Address, Hex } from '../lib/address';
 import { WrongAccountError, accountList, readAccounts, requestAccountPicker, requireActiveAccount, sameAddress } from './accounts';
+import { rememberAccounts } from './recentWallets';
 
 export interface Eip1193Provider {
   request(args: { method: string; params?: unknown[] }): Promise<unknown>;
@@ -100,8 +101,10 @@ export async function pickWalletAccount(p: Eip1193Provider): Promise<Address[]> 
   return accounts;
 }
 
-/** Make `target` the wallet's active account: already active -> true; else the wallet's picker, then re-check. */
+/** Make `target` the wallet's active account: already active -> true; else the wallet's picker, then re-check. For the CONNECTED
+ *  provider the account may live in another installed wallet: that wallet becomes the connected one (`activateAccount`). */
 export async function switchWalletAccount(p: Eip1193Provider, target: string): Promise<boolean> {
+  if (walletEntry.peek()?.provider === p) return (await (await import('./accountSwitch')).activateAccount(target)).ok;
   if (sameAddress((await readAccounts(p))[0], target)) return true;
   return sameAddress((await pickWalletAccount(p))[0], target);
 }
@@ -193,6 +196,8 @@ export const lastWallet = (): string | undefined => {
 function adoptAccounts(accounts: Address[]): void {
   walletAccounts.value = accounts;
   walletAddress.value = accounts[0];
+  const e = walletEntry.peek();
+  if (e) rememberAccounts(e.info.rdns ?? e.info.id, accounts);
 }
 
 let detach: (() => void) | undefined;
@@ -244,6 +249,13 @@ function bind(entry: ProviderEntry, accounts: Address[]): void {
     entry.provider.removeListener?.('chainChanged', onChain);
     entry.provider.removeListener?.('disconnect', onEnd);
   };
+}
+
+/** Make an already-authorised provider THE connected wallet (no prompt): the account switch that lands in another wallet. */
+export async function adoptWallet(entry: ProviderEntry, accounts: Address[]): Promise<void> {
+  bind(entry, accounts);
+  walletChainId.value = await chainIdOf(entry.provider);
+  remember(entry.info.rdns ?? entry.info.id);
 }
 
 /** Connect an EIP-1193 provider and keep the store in sync with its account / chain events. */

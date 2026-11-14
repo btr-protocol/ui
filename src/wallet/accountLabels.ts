@@ -19,6 +19,10 @@ export interface AccountLabels {
   useInstead: string;
   /** Row caption of an account the wallet does not expose to this site. */
   notExposed: string;
+  /** Row hints after a click on an account that could not be activated. `{addr}` = short address, `{wallet}` = wallet name. */
+  hintRejected: string;
+  hintNotShared: string;
+  hintNone: string;
 }
 
 export const ACCOUNT_LABELS: AccountLabels = {
@@ -33,6 +37,9 @@ export const ACCOUNT_LABELS: AccountLabels = {
   mismatch: 'Your wallet is on {active}, but you are signed in as {session}. Signing now would fail.',
   switchTo: 'Switch wallet to {addr}',
   useInstead: 'Use {addr} instead',
-  notExposed: 'Not shared with this site: pick it in the wallet',
+  notExposed: 'Not in the connected wallet: select it to look for it',
+  hintRejected: 'Request cancelled in {wallet}. Open it, select {addr} and share it with this site, then try again.',
+  hintNotShared: '{addr} is not shared with this site. Open {wallet}, share it here, then try again.',
+  hintNone: '{addr} is not available in any connected wallet. Open the wallet that holds it and connect it here.',
 };
 
