@@ -88,13 +88,19 @@ export function SegmentedControl<T extends string>({
   useEffect(() => {
     const c = scroller.current;
     if (!c) return;
+    // `data-l` / `data-r` = the start / end edge (physical in LTR, mirrored in RTL: scrollLeft is negative there, hence abs).
+    // A strip that lacks <= 2 px is fitted, not scrolled: that is its own two 1px borders (a container 1-2 px short of a
+    // shrink-wrapped group, or sub-pixel rounding of scrollWidth / clientWidth), and no label is hidden by it.
+    const slack = 2;
+    const overflows = () => c.scrollWidth - c.clientWidth > slack;
     const edges = () => {
-      c.toggleAttribute('data-l', c.scrollLeft > 1);
-      c.toggleAttribute('data-r', c.scrollLeft + c.clientWidth < c.scrollWidth - 1);
+      const x = Math.abs(c.scrollLeft), over = overflows();
+      c.toggleAttribute('data-l', over && x > 1);
+      c.toggleAttribute('data-r', over && x + c.clientWidth < c.scrollWidth - 1);
     };
     const t = c.querySelector<HTMLElement>('[aria-selected="true"]');
-    // Measured from the rects, not offsetLeft: no dependence on which ancestor is the offsetParent.
-    if (t) c.scrollLeft += t.getBoundingClientRect().left - c.getBoundingClientRect().left - (c.clientWidth - t.offsetWidth) / 2;
+    // Measured from the rects, not offsetLeft: no dependence on which ancestor is the offsetParent. Nothing to centre when it fits.
+    if (t && overflows()) c.scrollLeft += t.getBoundingClientRect().left - c.getBoundingClientRect().left - (c.clientWidth - t.offsetWidth) / 2;
     edges();
     c.addEventListener('scroll', edges, { passive: true });
     const ro = new ResizeObserver(edges);

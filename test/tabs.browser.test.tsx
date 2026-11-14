@@ -44,7 +44,7 @@ beforeAll(async () => {
   launching = setup();
   browser = await launching;
 }, 120000);
-afterAll(async () => { await (await launching?.catch(() => undefined))?.close(); }, 30000);
+afterAll(async () => { await (await launching?.catch(() => undefined))?.close(); }, 120000);
 
 // Every page `open()` hands out is closed here, also when its test throws.
 const pages: import('playwright-core').Page[] = [];
@@ -52,11 +52,15 @@ afterEach(async () => { for (const p of pages.splice(0)) await p.close().catch((
 
 // The edge effect and its ResizeObserver run after mount: wait until they have measured. A one-shot observer on every
 // fade scroller is delivered after the component's own (created first, same frame), then two frames of slack.
+// Every wait fails as an assertion after 5 s, never as the 30 s test timeout.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const until = (page: import('playwright-core').Page, fn: (a: any) => unknown, arg?: unknown) => page.waitForFunction(fn, arg, { timeout: 5000 });
+
 async function settled(page: import('playwright-core').Page) {
   await page.evaluate(() => new Promise<void>((done, fail) => {
-    setTimeout(() => fail(new Error('settled(): no resize notification within 5 s')), 5000);
+    const timer = setTimeout(() => fail(new Error('settled(): no resize notification within 5 s')), 5000);
     const els = [...document.querySelectorAll('.seg-fade')];
-    const frames = () => requestAnimationFrame(() => requestAnimationFrame(() => done()));
+    const frames = () => requestAnimationFrame(() => requestAnimationFrame(() => { clearTimeout(timer); done(); }));
     if (!els.length) return frames();
     const ro = new ResizeObserver(() => { ro.disconnect(); frames(); });
     els.forEach((e) => ro.observe(e));
@@ -107,7 +111,7 @@ t('xs tabs are exactly an xs ButtonGroup', async () => {
 for (const w of [360, 390])
   t(`${w}px: 7 group tabs scroll and the active tab is centred (or clamped at the end)`, async () => {
     const page = await open(w);
-    await page.waitForFunction(() => document.querySelector('#over [role=tablist]')!.hasAttribute('data-l')); // the effect centred the active tab: content is hidden on the left
+    await until(page, () => document.querySelector('#over [role=tablist]')!.hasAttribute('data-l')); // the effect centred the active tab: content is hidden on the left
     const m = await page.evaluate(() => {
       const c = document.querySelector('#over [role=tablist]') as HTMLElement;
       const a = c.querySelector('[aria-selected=true]') as HTMLElement;
@@ -124,10 +128,10 @@ for (const w of [360, 390])
 t('selecting a tab re-centres it', async () => {
   const page = await open(360);
   await page.click('#over [role=tab]:has-text("Overview")');
-  await page.waitForFunction(() => document.querySelector('#over [role=tablist]')!.scrollLeft < 2);
+  await until(page, () => document.querySelector('#over [role=tablist]')!.scrollLeft < 2);
   await page.click('#over [role=tab]:has-text("Orders")');
-  await page.waitForFunction(() => document.querySelector('#over [role=tablist]')!.scrollLeft > 2);
-  await page.waitForFunction(() => {
+  await until(page, () => document.querySelector('#over [role=tablist]')!.scrollLeft > 2);
+  await until(page, () => {
     const c = document.querySelector('#over [role=tablist]')!, a = c.querySelector('[aria-selected=true]')!;
     const cr = c.getBoundingClientRect(), ar = a.getBoundingClientRect();
     return a.textContent === 'Orders' && Math.abs(ar.left + ar.width / 2 - (cr.left + cr.width / 2)) < 2;
@@ -160,6 +164,7 @@ for (const w of [360, 390])
 t('attached: the active tab covers the card edge (no rule under it), inactive tabs keep it', async () => {
   const page = await open(1440);
   const px = await page.evaluate(() => {
+    document.querySelector('#att6')!.scrollIntoView(); // the fixture is taller than the viewport: the screenshot clip must be on screen
     const strip = document.querySelector('#att6 [role=tablist]')!.getBoundingClientRect();
     const a = document.querySelector('#att6 [aria-selected=true]')!.getBoundingClientRect();
     const o = document.querySelector('#att6 [role=tab][aria-selected=false]')!.getBoundingClientRect();
@@ -253,10 +258,142 @@ for (const id of ['over', 'att7'])
   t(`${id}: real overflow still sets data-r, then data-l after scrolling`, async () => {
     const page = await open(360);
     const sc = `#${id} ${id === 'over' ? '[role=tablist]' : '.tabs-attached-bar'}`;
-    const has = (a: string, v: boolean) => page.waitForFunction(([s, a, v]) => document.querySelector(s as string)!.hasAttribute(a as string) === v, [sc, a, v] as const);
+    const has = (a: string, v: boolean) => until(page, ([s, a, v]) => document.querySelector(s as string)!.hasAttribute(a as string) === v, [sc, a, v] as const);
     await page.evaluate((s) => { (document.querySelector(s) as HTMLElement).scrollLeft = 0; }, sc); // the scroll event is the component's own trigger
     await has('data-r', true);
     await has('data-l', false);
     await page.evaluate((s) => { (document.querySelector(s) as HTMLElement).scrollLeft = 40; }, sc);
     await has('data-l', true);
   });
+
+// ── 0.12.2 ─────────────────────────────────────────────────────────────────────────────────────
+// Touch: every tab in a strip is as tall as the kit's touch control token (--ctl-m), also at xs; desktop xs stays compact.
+const tokenPx = (page: import('playwright-core').Page, v: string) =>
+  page.evaluate((v) => { const d = document.createElement('div'); d.style.cssText = `position:absolute;height:var(${v})`; document.body.append(d); const h = d.getBoundingClientRect().height; d.remove(); return h; }, v);
+const tabBoxes = (page: import('playwright-core').Page, z: string) =>
+  page.evaluate((z) => [...document.querySelectorAll(`#fit-${z} [role=tab]`)].map((e) => { const r = e.getBoundingClientRect(); return { w: r.width, h: r.height }; }), z);
+for (const z of ['xs', 'sm', 'md'])
+  t(`touch: ${z} tabs (group and attached) are at least the touch floor tall and wide`, () =>
+    withMode(390, true, async (page) => {
+      const floor = await tokenPx(page, '--ctl-m');
+      expect(floor).toBeGreaterThanOrEqual(44);
+      const boxes = await tabBoxes(page, z);
+      expect(boxes.length).toBe(4);
+      for (const b of boxes) {
+        expect(b.h).toBeGreaterThanOrEqual(floor);
+        expect(b.w).toBeGreaterThanOrEqual(floor); // "$" included
+      }
+      const strip = await page.evaluate((z) => [...document.querySelectorAll(`#fit-${z} [role=tablist]`)].map((e) => e.getBoundingClientRect().height), z);
+      for (const h of strip) expect(h).toBe(floor + 2); // floor + the group's two 1px borders
+    }));
+t('desktop: xs tabs stay compact, below the touch floor', () =>
+  withMode(1440, false, async (page) => {
+    const floor = await tokenPx(page, '--ctl-m');
+    const boxes = await tabBoxes(page, 'xs');
+    for (const b of boxes) expect(b.h).toBeLessThan(floor);
+    expect(await page.evaluate(() => document.querySelector('#fit-xs [role=tablist]')!.getBoundingClientRect().height)).toBe(26);
+  }));
+t('touch: plain xs ButtonGroup is unchanged (token height, not the touch floor)', () =>
+  withMode(390, true, async (page) => {
+    const s = await tokenPx(page, '--ctl-s');
+    expect(await page.evaluate(() => document.querySelector('#fit-xs [role=group]')!.getBoundingClientRect().height)).toBe(s + 2);
+  }));
+
+// Hover on an unselected tab is the --bg-3 token (never the selected fill), in both themes; a hovered selected tab stays
+// selected; a hovered disabled tab does not change at all. Each wait polls the computed value, so a lagging transition cannot flake.
+const SEL = { group: '#fit-sm [role=tablist]:not(.btn-group-attached)', attached: '#fit-sm .btn-group-attached' };
+const DIS = { group: '#dis [role=tablist]:not(.btn-group-attached)', attached: '#dis .btn-group-attached' };
+for (const theme of ['dark', 'light'])
+  for (const kind of ['group', 'attached'] as const) {
+    const bgOf = (page: import('playwright-core').Page, el: string) => page.evaluate((s) => getComputedStyle(document.querySelector(s)!).backgroundColor, el);
+    const reaches = (page: import('playwright-core').Page, el: string, want: string) => until(page, ([s, w]) => getComputedStyle(document.querySelector(s)!).backgroundColor === w, [el, want] as [string, string]);
+    t(`hover: unselected tab is --bg-3, selected stays selected (${theme}, ${kind})`, async () => {
+      const page = await open(1440, theme);
+      await until(page, () => document.getAnimations().length === 0); // the theme switch itself transitions colours
+      const token = await page.evaluate(() => { const d = document.createElement('div'); d.style.background = 'var(--bg-3)'; document.body.append(d); const c = getComputedStyle(d).backgroundColor; d.remove(); return c; });
+      const idle = `${SEL[kind]} [role=tab][aria-selected=false]`, on = `${SEL[kind]} [role=tab][aria-selected=true]`;
+      const selected = await bgOf(page, on);
+      expect(token).not.toBe(selected);
+      await page.hover(idle);
+      await reaches(page, idle, token);
+      await page.hover(on);
+      await reaches(page, on, selected);
+    });
+    t(`hover: a disabled tab does not change (${theme}, ${kind})`, async () => {
+      const page = await open(1440, theme);
+      await until(page, () => document.getAnimations().length === 0);
+      const off = `${DIS[kind]} [role=tab][aria-disabled=true]`;
+      const idle = await bgOf(page, off);
+      await page.hover(off);
+      // let a hover transition start (two frames) and finish before comparing: reading at once would pass with no pin
+      await page.evaluate(() => new Promise<void>((r) => requestAnimationFrame(() => requestAnimationFrame(() => r()))));
+      await until(page, () => document.getAnimations().length === 0);
+      expect(await bgOf(page, off)).toBe(idle);
+    });
+  }
+
+// Touch: equal strips keep equal tabs (each at the floor), links and disabled tabs meet the floor too, a ButtonGroup in a panel is untouched.
+t('touch: equal xs strip has equal tabs of at least the floor and still fits', () =>
+  withMode(390, true, async (page) => {
+    const floor = await tokenPx(page, '--ctl-m');
+    const m = await page.evaluate(() => { const tl = document.querySelector('#eq [role=tablist]') as HTMLElement; return { w: [...tl.children].map((k) => k.getBoundingClientRect().width), sw: tl.scrollWidth, cw: tl.clientWidth, l: tl.hasAttribute('data-l'), r: tl.hasAttribute('data-r') }; });
+    expect(m.w.length).toBe(2);
+    expect(Math.abs(m.w[0] - m.w[1])).toBeLessThan(0.5);
+    for (const w of m.w) expect(w).toBeGreaterThanOrEqual(floor);
+    expect(m.sw).toBeLessThanOrEqual(m.cw);
+    expect(m.l || m.r).toBe(false);
+  }));
+t('touch: link and disabled tabs meet the floor, group and attached', () =>
+  withMode(390, true, async (page) => {
+    const floor = await tokenPx(page, '--ctl-m');
+    const m = await page.evaluate(() => [...document.querySelectorAll('#dis [role=tab]')].map((e) => { const r = e.getBoundingClientRect(); return { tag: e.tagName, dis: e.hasAttribute('aria-disabled'), w: r.width, h: r.height }; }));
+    expect(m.length).toBe(6);
+    expect(m.some((x) => x.tag === 'A')).toBe(true);
+    expect(m.some((x) => x.dis)).toBe(true);
+    for (const x of m) { expect(x.h).toBeGreaterThanOrEqual(floor); expect(x.w).toBeGreaterThanOrEqual(floor); }
+  }));
+t('touch: a ButtonGroup inside an attached panel keeps the plain xs height', () =>
+  withMode(390, true, async (page) => {
+    const s = await tokenPx(page, '--ctl-s');
+    expect(await page.evaluate(() => document.querySelector('#panelgrp [role=tabpanel] [role=group]')!.getBoundingClientRect().height)).toBe(s + 2);
+  }));
+
+// A fitting strip is not scrolled by the centring step: no fade, scrollLeft 0 (4 short tabs, last one active).
+for (const att of [false, true])
+  t(`range: 4 short sm tabs, last active, fit at 390 touch (${att ? 'attached' : 'group'})`, () =>
+    withMode(390, true, async (page) => {
+      const id = att ? '#rangeatt' : '#range';
+      const sc = `${id} ${att ? '.tabs-attached-bar' : '[role=tablist]'}`;
+      const read = () => page.evaluate((s) => { const c = document.querySelector(s) as HTMLElement; return { sl: c.scrollLeft, l: c.hasAttribute('data-l'), r: c.hasAttribute('data-r') }; }, sc);
+      expect(await read()).toEqual({ sl: 0, l: false, r: false });
+      // The same strip in a container 1 and 2 px short of it (a flex row, a rounded parent): still fitted, never centred or faded.
+      for (const short of [1, 2]) {
+        await page.evaluate(([id, short]) => { const h = document.querySelector(id as string) as HTMLElement, w = h.querySelector('[role=tablist]')!.getBoundingClientRect().width; h.style.display = 'flex'; h.style.width = `${w - (short as number)}px`; }, [id, short] as const);
+        // el.click(), not page.click: Playwright scrolls a partly hidden target into view, which is not the component's doing.
+        for (const n of ['first', 'last']) await page.evaluate(([id, n]) => (document.querySelector(`${id} [role=tab]:${n}-child`) as HTMLElement).click(), [id, n]);
+        await settled(page);
+        expect(await read()).toEqual({ sl: 0, l: false, r: false });
+        await page.evaluate((id) => { const h = document.querySelector(id) as HTMLElement; h.style.width = ''; h.style.display = ''; }, id);
+      }
+    }));
+
+// RTL: the start edge is the right one; scrollLeft is negative there.
+t('rtl: real overflow fades the end edge first, then the start edge once scrolled; the mask mirrors', async () => {
+  const page = await open(360);
+  const sc = '#over [role=tablist]';
+  const ltrMask = await page.evaluate((s) => getComputedStyle(document.querySelector(s)!).maskImage, sc);
+  await page.evaluate(() => { document.documentElement.dir = 'rtl'; });
+  const click = (n: string) => page.evaluate((n) => (document.querySelector(`#over [role=tab]:${n}-child`) as HTMLElement).click(), n); // el.click(): Playwright would scroll
+  await click('first'); // first tab = start edge (right in RTL): re-centres, clamped at the start
+  const has = (a: string, v: boolean) => until(page, ([s, a, v]) => document.querySelector(s as string)!.hasAttribute(a as string) === v, [sc, a, v] as const);
+  await has('data-r', true);
+  await has('data-l', false);
+  expect(await page.evaluate((s) => document.querySelector(s)!.scrollLeft, sc)).toBeGreaterThanOrEqual(-1);
+  await click('last');
+  await has('data-l', true);
+  await has('data-r', false);
+  expect(await page.evaluate((s) => document.querySelector(s)!.scrollLeft, sc)).toBeLessThan(-2);
+  const rtlMask = await page.evaluate((s) => getComputedStyle(document.querySelector(s)!).maskImage, sc);
+  expect(ltrMask).toMatch(/90deg|to right/);
+  expect(rtlMask).toMatch(/270deg|to left/);
+});

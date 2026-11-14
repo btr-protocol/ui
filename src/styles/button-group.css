@@ -90,15 +90,26 @@
   flex: none;
   white-space: nowrap; /* tabs stay one line each; a plain ButtonGroup keeps wrapping its text as before */
 }
-/* The touch hit-area `::after` (index.css, 44 px floor) is absolutely positioned, so inside a scroller it
-   counts as scrollable overflow: two short xs tabs measured scrollWidth 66 over clientWidth 64 and the edge
-   fade masked the last label. The scroller clips that pseudo anyway (its box is the hit area), so it takes
-   the tab's own box here: nothing beyond the strip is reachable, nothing in the strip is lost. Both rules
-   name the strip itself (a direct child of the bar), so a ButtonGroup inside an attached panel is a plain one. */
+/* The touch hit-area `::after` (index.css) is absolutely positioned, so inside a scroller it counts as scrollable overflow. Even
+   with the 44 px floor below it overflows: it is sized against the tab's PADDING box, 1 px narrower than the tab for every tab after
+   the first (the `border-inline-start` divider), and its own 44 px minimum then pokes out by half that px at the floor (measured: scrollWidth 89 over
+   clientWidth 88 on an equal xs strip, a range strip scrolled 3 px). The scroller clips that pseudo anyway, so inside a strip it takes the
+   tab's own box. Both rules name the strip itself (a direct child of the bar), so a ButtonGroup inside an attached panel is a plain one. */
 .btn-group-scroll > *::after,
 .tabs-attached-bar > .btn-group > *::after {
   min-width: 0;
   min-height: 0;
+}
+
+/* Touch: every tab in a strip is a full touch target (the kit's touch control floor, --ctl-m = 44 px), also at xs (--ctl-s is 32 there).
+   A standalone button gets its 44 px through the hit-area `::after` (index.css); a tab inside the scroller cannot (the scroller clips it,
+   and the pseudo is zeroed above), so the tab's own box carries the floor. Width: the same floor, for 1-character tabs. */
+@media (pointer: coarse) {
+  .btn-group-scroll > *,
+  .tabs-attached-bar > .btn-group > * {
+    min-height: var(--ctl-m);
+    min-width: var(--ctl-m);
+  }
 }
 
 /* attached: the strip sits on the top edge of the card it controls (the `.tabs-panel`). The bar
@@ -153,9 +164,19 @@
 .btn-group.btn-group-accent > [role='tab'][aria-selected='true'] {
   box-shadow: inset 0 2px 0 var(--fg-primary); /* --fg-primary, not --primary: 3:1 on the raised light surface too */
 }
-.btn-group.btn-group-attached > [role='tab']:not([aria-selected='true']):not([aria-disabled]):hover {
-  background: var(--bg-3);
-  color: var(--fg-0);
+/* Hover on an unselected tab must not look selected: Button's own hover fill (`bg-bg-primary`) IS the selected fill. */
+@media (hover: hover) {
+  .btn-group > [role='tab']:not([aria-selected='true']):not([aria-disabled]):hover {
+    background: var(--bg-3);
+    color: var(--fg-0);
+  }
+}
+/* A disabled tab does not react to hover: pin its idle fill, ahead of Button's own `hover:bg-bg-primary` (the selected fill) and the `hover:bg-glass` of the dim class. */
+.btn-group:not(.btn-group-attached) > [role='tab'][aria-disabled]:not([aria-selected='true']):hover {
+  background: var(--glass);
+}
+.btn-group-attached > [role='tab'][aria-disabled]:not([aria-selected='true']):hover {
+  background: var(--bg-2);
 }
 .tabs-panel {
   border: var(--border);
