@@ -29,13 +29,15 @@ import { cva } from '../lib/cva';
  *            secondary and ghost button sits here (swap submit, wallet, page CTAs).
  *   default  ctl-l text-base - modal footer pairs only (confirm/cancel share it).
  *
+ * A label is ONE line, always (nowrap): when the space runs out it truncates with an ellipsis and the icons stay.
+ *
  * Rules: one primary height per context (sm, unless modal footer or hero); a
  * secondary button matches its primary neighbour's size; padding, gap, icon
  * offset, radius and typography all come from the SIZE_ tokens and BORDER_RADIUS -
  * never override padding or text-size classes on a call site; tune width with
  * min-w only.
  */
-import type { ComponentChildren } from 'preact';
+import { type ComponentChildren, Fragment } from 'preact';
 import type { HTMLAttributes, Ref } from 'preact/compat';
 import { forwardRef } from 'preact/compat';
 
@@ -62,7 +64,7 @@ export interface ButtonProps extends Omit<HTMLAttributes<HTMLButtonElement>, 'cl
 }
 
 const buttonVariants = cva(
-  'inline-flex items-center justify-center font-medium font-title transition-colors disabled:pointer-events-none disabled:opacity-50',
+  'inline-flex min-w-0 max-w-full items-center justify-center whitespace-nowrap font-medium font-title transition-colors disabled:pointer-events-none disabled:opacity-50',
   {
     variants: {
       variant: {
@@ -81,6 +83,19 @@ const buttonVariants = cva(
     },
   },
 );
+
+/** Does a label mix text into its children (`{n} items`, text + an element, a fragment of those)? Then it is wrapped to truncate. */
+const hasText = (c: ComponentChildren): boolean =>
+  Array.isArray(c) ? c.some(hasText) : typeof c === 'string' || typeof c === 'number' || (typeof c === 'object' && c !== null && (c as { type?: unknown }).type === Fragment && hasText((c as { props: { children?: ComponentChildren } }).props.children));
+
+/** `title` only while the pointer is over a label that is cut: measured on every hover, dropped on leave (never on focus: screen readers announce it), so it never goes stale. */
+const titleIfCut = (e: Event) => {
+  const btn = e.currentTarget as HTMLElement;
+  if (btn.dataset.ownTitle) return;
+  const label = btn.querySelector<HTMLElement>(':scope > [data-label]');
+  if (e.type === 'mouseenter' && label && label.scrollWidth > label.clientWidth) btn.title = label.textContent ?? '';
+  else btn.removeAttribute('title');
+};
 
 const PADDING_X = {
   xs: { base: 'px-2', left: 'pl-1.5', right: 'pr-1.5' },
@@ -140,6 +155,13 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       className: cn(BORDER_RADIUS, dynamicClasses, className),
     });
 
+    // Hooks for the group rules (button-group.css): icon cells stay compact squares, the primary takes the spare width.
+    const fit = (h?: (e: never) => void) => (e: Event) => { titleIfCut(e); (h as ((e: Event) => void) | undefined)?.(e); };
+    const groupAttrs = {
+      'data-own-title': props.title ? 'true' : undefined,
+      onMouseEnter: fit(props.onMouseEnter as never),
+      onMouseLeave: fit(props.onMouseLeave as never), 'data-icon-only': isIconOnly || undefined, 'data-primary': variant === 'primary' || undefined };
+
     const content = (
       <>
         {leftIcon && (
@@ -147,7 +169,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
             {leftIcon}
           </span>
         )}
-        {children}
+        {hasText(children) ? <span data-label="" className="min-w-0 truncate">{children}</span> : children}
         {rightIcon && <span className="shrink-0 text-fg-3">{rightIcon}</span>}
       </>
     );
@@ -159,6 +181,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
           href={href}
           className={classes}
           {...rest}
+          {...groupAttrs}
           onClick={(e) => {
             onClick?.(e);
             // Same-origin paths route in-app (no reload); modified clicks and external URLs stay native anchors.
@@ -182,7 +205,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     }
 
     return (
-      <button ref={ref} className={classes} {...props}>
+      <button ref={ref} className={classes} {...props} {...groupAttrs}>
         {content}
       </button>
     );

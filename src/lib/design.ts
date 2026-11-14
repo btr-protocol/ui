@@ -76,17 +76,14 @@ export const DROPDOWN_ITEM_SIZES = {
   xs: {
     item: 'px-2 py-1 text-xs gap-1.5 coarse:min-h-[var(--ctl-s)]',
     icon: 'w-3 h-3',
-    check: 'w-3 h-3',
   },
   sm: {
     item: 'px-2 py-1.5 text-xs gap-2 coarse:min-h-[var(--ctl-m)]',
     icon: 'w-3.5 h-3.5',
-    check: 'w-3.5 h-3.5',
   },
   default: {
     item: 'px-3 py-2 text-sm gap-2.5 coarse:min-h-[var(--ctl-m)]',
     icon: 'w-4 h-4',
-    check: 'w-4 h-4',
   },
 } as const;
 

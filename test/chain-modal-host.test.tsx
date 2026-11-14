@@ -21,7 +21,7 @@ test('a rejecting chunk is retried once, then an inline error with Retry shows (
   ok = true;
   const retry = [...document.querySelectorAll<HTMLElement>('[role=dialog] button')].find((b) => b.textContent?.trim() === 'Retry')!;
   click(retry);
-  await until(() => !!dialog()?.textContent?.includes('Search networks') || !!document.querySelector('[placeholder="Search networks…"]'));
+  await until(() => !!dialog()?.textContent?.includes('Monad')); // the loaded list (one chain: the kit shows no search field for a short list)
   expect(document.querySelector('[role=alert]')).toBeNull();
   act(() => unmount());
 });

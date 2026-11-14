@@ -41,6 +41,7 @@ export * from './SegmentedControl';
 export * from './Select';
 export * from './SelectionList';
 export * from './SelectModal';
+export * from './SelectedCheck';
 export * from './PercentLadderSlider';
 export * from './SettingRow';
 export * from './Slider';
