@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.12.2
+- SIZE CHANGE (touch): on `pointer: coarse` every tab in a strip (group and attached, xs, sm and md) is at least `--ctl-m` (44 px) tall and wide. `xs` tabs were 32 px tall there (0.12.1 had zeroed their 44 px hit-area pseudo), so an xs strip is now 46 px (44 plus the group's border), the same as sm and md. Widths: a 1-character tab ("$") grows from about 23 to 44 px, so a short strip is wider on touch (`$ | APR` at xs 66 to 90 px, a 4-option range strip +4 px); strips that scroll (6 or 7 tabs) and `equal` strips keep their layout. Desktop is unchanged (xs 26 px). Plain `ButtonGroup` is unchanged.
+- Hover no longer reads as selected: an unselected tab in a group presentation filled `bg-primary` on hover, the selected fill. It now takes `--bg-3` and `--fg-0` (as attached tabs already did), only where hover exists (`hover: hover`). A selected tab keeps its look on hover.
+- False start-edge fade: the centring step no longer runs, and `data-l` / `data-r` are not set, when a strip lacks 2 px or less of its content (a shrink-wrapped group whose container is 1 to 2 px short, which centring scrolled by 1 to 2 px and dimmed the first tab). Real overflow is unchanged.
+- RTL: `data-l` / `data-r` are the start / end edges (scrollLeft is negative in RTL) and the fade mask mirrors with `:dir(rtl)`.
+- Fade width kept at 1.25rem: 0.75rem was compared at 390 px with the next tab mostly under the fade and did not read clearly better.
+
 ## 0.12.1
 - Tabs: a group that fits no longer fades its last label. On touch (`pointer: coarse`) the 44 px hit-area `::after` of each tab counted as scrollable overflow of the tab scroller (two xs tabs, `$` and `APR`: scrollWidth 66 over clientWidth 64), so `data-r` was set and the edge fade masked the end of the strip. Inside a tab strip that pseudo now takes the tab's own box (`min-width` / `min-height` 0; the scroller clipped it already), which also ends a vertical scroll of about 6 px the xs strip had on touch. Real overflow is unchanged.
 - SCOPE CHANGE: the strip rules (`flex: none; white-space: nowrap`, and the hit-area above) now name the strip itself (`.tabs-attached-bar > .btn-group`). In 0.12.0 they also matched a plain `ButtonGroup` placed inside an attached tab's panel: its buttons did not wrap. They now behave like any plain `ButtonGroup`, so such a group may wrap its text where it did not. Standalone `ButtonGroup`s are unchanged (same width and height).

@@ -10,6 +10,7 @@ const T3 = L(['Volume & Fees', 'Risk', 'Flow']);
 const T7 = L(['Overview', 'Positions', 'Orders', 'History', 'Fees', 'Signers', 'Settings']);
 const T6 = T7.slice(0, 6);
 const FIT = L(['$', 'APR']);
+const RANGE = L(['1D', '1W', '1M', '1Y']);
 const LONG = L(['Cross-chain settlement and reconciliation report', 'Risk', 'Flow']);
 
 function Tabs({ opts, start, panel, ...p }: { opts: { value: string; label: string }[]; start: string; panel?: ComponentChildren } & Record<string, unknown>) {
@@ -36,6 +37,9 @@ render(
         </div>
       ))}
     </div>
+    <div id="range" style={{ marginTop: 12 }}><Tabs opts={RANGE} start="1y" size="sm" /></div>
+    <div id="rangeatt" style={{ marginTop: 12 }}><Tabs opts={RANGE} start="1y" size="sm" presentation="attached" /></div>
+    <div id="eq" style={{ marginTop: 12 }}><Tabs opts={FIT} start="apr" size="xs" equal /></div>
     <div id="panelgrp" style={{ marginTop: 12 }}>
       <Tabs opts={FIT} start="apr" presentation="attached" panel={<ButtonGroup aria-label="pg"><Button size="xs">One</Button><Button size="xs">Two words here</Button></ButtonGroup>} />
     </div>

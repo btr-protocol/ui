@@ -326,7 +326,7 @@ select,
   }
 }
 
-/* Scrollable SegmentedControl: fade whichever edge still has content (data-l / data-r). */
+/* Scrollable SegmentedControl: fade whichever edge still has content (data-l = start edge, data-r = end edge; mirrored in RTL). */
 .seg-fade {
   mask-image: linear-gradient(
     90deg,
@@ -335,6 +335,9 @@ select,
     #000 calc(100% - var(--fr, 0px)),
     transparent
   );
+}
+.seg-fade:dir(rtl) {
+  mask-image: linear-gradient(270deg, transparent, #000 var(--fl, 0px), #000 calc(100% - var(--fr, 0px)), transparent);
 }
 .seg-fade[data-l] {
   --fl: 1.25rem;
