@@ -1,13 +1,12 @@
 import { DROPDOWN_ITEM_SIZES, SIZE_CHECK, type Size } from '../lib/design';
-import { useDebounce } from '../lib/useDebounce';
 import type { DropdownItem, SelectionItem } from '../lib/uiTypes';
 import { BaseModal, MODAL_PADDING, type ModalSize } from './BaseModal';
 import { Button, type ButtonProps } from './Button';
 import { PageState } from './Feedback';
 import { KeyboardShortcutGroup } from './KeyboardShortcut';
 import { MaskIcon } from './MaskIcon';
-import { DATA_TABLE_HEADER, type SortDir, SortHeader, compareSorted } from './Table';
-import { useKeyboardNav } from '../lib/useKeyboardNav';
+import { SELECTION_LABELS, type SelectionGroup, type SelectionLabels, type SelectionSortColumn, useSelectionView } from './selectionView';
+import type { SortDir } from './Table';
 import { addNotification } from '../lib/notifications';
 import { cn } from '../lib/cn';
 import { isStringIcon, isSvgPath, renderIcon } from '../lib/iconHelpers';
@@ -22,6 +21,7 @@ import { FormRow } from './Primitives';
 import { useDismiss } from './useDismiss';
 
 export type { DropdownItem, SelectionItem } from '../lib/uiTypes';
+export type { SelectionGroup, SelectionLabels, SelectionSortColumn } from './selectionView';
 
 /** The two Input variants a picker can wear: prose (`default`) or hex/id (`address`, mono). */
 export type SelectVariant = 'default' | 'address';
@@ -509,61 +509,12 @@ export function Dropdown<T = string>({
   );
 }
 
-/** Width of ONE right-aligned data column, shared by the sort header and the `badge` a caller
- *  renders into the row: they must match or every numeric column sits off its heading. */
-export const SELECTION_DATA_COL = 'w-[4.5rem]';
-
-export interface SelectionSortColumn {
-  key: string;
-  label: string;
-  /** Extra header classes, e.g. the phone-hide a matching row cell wears. */
-  className?: string;
-}
-
-/** A section of the list (`SelectionItem.group`): e.g. a chain heading its pools. */
-export interface SelectionGroup {
-  id: string;
-  label: string;
-  icon?: ComponentChildren;
-  /** Why the section is empty or off ("DEX not deployed"): shown on the heading, the section takes no picks. */
-  note?: string;
-}
 /** A quick pick above the list (multi): toggles its ids in the pending selection. */
 export interface SelectionPreset {
   id: string;
   label: string;
   ids: readonly string[];
 }
-
-/** Every fixed string of the modal, so a host can translate it. */
-export interface SelectionLabels {
-  navigate: string;
-  select: string;
-  toggle: string;
-  close: string;
-  selected: (n: number) => string;
-  selectAll: string;
-  unselectAll: string;
-  unselectAllBut: (n: number) => string;
-  reset: string;
-  /** Name of the presets bar. */
-  quickPicks: string;
-  /** Between a section's label and its note ("Ethereum · DEX not deployed"). */
-  noteSep: string;
-}
-const SELECTION_LABELS: SelectionLabels = {
-  navigate: 'Navigate',
-  select: 'Select',
-  toggle: 'Toggle',
-  close: 'Close',
-  selected: (n) => `${n} selected`,
-  selectAll: 'Select All',
-  unselectAll: 'Unselect All',
-  unselectAllBut: (n) => `Unselect all but ${n}`,
-  reset: 'Reset',
-  quickPicks: 'Quick picks',
-  noteSep: '· ',
-};
 
 interface SelectionModalProps {
   isOpen: boolean;
@@ -606,17 +557,6 @@ interface SelectionModalProps {
   presets?: readonly SelectionPreset[];
 }
 
-/** Same cycle as `useTableSort`: new key → asc → desc → off. */
-function nextSort(
-  prev: { key: string | null; dir: SortDir },
-  key: string,
-): { key: string | null; dir: SortDir } {
-  if (prev.key !== key) return { key, dir: 'asc' };
-  if (prev.dir === 'asc') return { key, dir: 'desc' };
-  if (prev.dir === 'desc') return { key: null, dir: null };
-  return { key, dir: 'asc' };
-}
-
 export function SelectionModal({
   isOpen,
   onClose,
@@ -647,67 +587,15 @@ export function SelectionModal({
   const L = { ...SELECTION_LABELS, ...labels };
   const [search, setSearch] = useState('');
   const [tempSelected, setTempSelected] = useState<string[]>(selectedIds);
-  const [sort, setSort] = useState<{ key: string | null; dir: SortDir }>({
-    key: initialSort?.key ?? null,
-    dir: initialSort?.dir ?? null,
-  });
-  const debounced = useDebounce(search, 300);
-  // A short list filters in one frame: the 300 ms lag only pays for itself on a long one.
-  const debouncedSearch = items.length <= 50 ? search : debounced;
-
-  const isMulti = multiSelect || (maxSelect !== undefined && maxSelect !== 1);
-  const minSelections = minSelect ?? (isMulti ? 1 : 0);
-  const maxSelections = maxSelect ?? (isMulti ? Infinity : 1);
-
   useEffect(() => {
     if (!isOpen) return;
     setTempSelected(selectedIds);
     setSearch('');
-    setSort({
-      key: initialSort?.key ?? null,
-      dir: initialSort?.dir ?? null,
-    });
   }, [isOpen]);
 
-  const defaultFilterFn = (item: SelectionItem, searchQuery: string): boolean => {
-    const query = searchQuery.toLowerCase().trim();
-    if (!query) return true;
-    return (
-      item.label.toLowerCase().includes(query) ||
-      (item.caption?.toLowerCase().includes(query) ?? false)
-    );
-  };
-  const filterFunction = filterFn || defaultFilterFn;
-
-  const filteredItems = useMemo(() => {
-    return items.filter((item) => filterFunction(item, debouncedSearch));
-  }, [items, debouncedSearch, filterFunction]);
-
-  const displayedItems = useMemo(() => {
-    if (!sortColumns?.length || !sort.key || !sort.dir) return filteredItems;
-    const pin = filteredItems.filter((i) => i.pinned);
-    return [...pin, ...compareSorted(
-      filteredItems.filter((i) => !i.pinned),
-      (item) => {
-        if (sort.key === 'asset') return item.label;
-        const data = item.data as Record<string, number | string | null | undefined> | undefined;
-        return data?.[sort.key!] ?? null;
-      },
-      sort.dir,
-    )];
-  }, [filteredItems, sortColumns, sort.key, sort.dir]);
-  // Sections keep their order; the sort applies inside each. Rows of no known section go last.
-  const ordered = useMemo(() => {
-    if (!groups?.length) return displayedItems;
-    const known = new Set(groups.map((g) => g.id));
-    return [...groups.flatMap((g) => displayedItems.filter((i) => i.group === g.id)), ...displayedItems.filter((i) => !i.group || !known.has(i.group))];
-  }, [displayedItems, groups]);
-
-  const { selectedIndex, handleKeyDown } = useKeyboardNav({
-    items: ordered,
-    onSelect: (item) => handleToggle(item.id),
-    isEnabled: isOpen,
-  });
+  const isMulti = multiSelect || (maxSelect !== undefined && maxSelect !== 1);
+  const minSelections = minSelect ?? (isMulti ? 1 : 0);
+  const maxSelections = maxSelect ?? (isMulti ? Infinity : 1);
 
   const handleToggle = (id: string) => {
     const item = items.find((i) => i.id === id);
@@ -751,24 +639,20 @@ export function SelectionModal({
   };
   const allOn = (ids: readonly string[]) => { const on = live(ids); return on.length > 0 && on.every((id) => tempSelected.includes(id)); };
 
-  const handleSelectAll = () => {
-    // only what the search leaves visible (and enabled); rows already chosen outside the filter stay chosen
-    const visible = filteredItems.filter((item) => !item.disabled).map((item) => item.id);
-    setTempSelected((prev) => [...new Set([...prev, ...visible])]);
-  };
-
-  const handleDeselectAll = () => {
-    // clears only the visible rows
-    const next = tempSelected.filter((id) => !selectableIds.includes(id));
-    if (next.length >= minSelections) setTempSelected(next);
-    else setTempSelected(tempSelected.slice(0, minSelections));
-  };
+  const view = useSelectionView({
+    items, search, selected: tempSelected, onToggle: handleToggle, onToggleMany: isMulti ? toggleMany : undefined, filterFn, sortColumns, primaryColumnLabel, initialSort, resetKey: isOpen, groups, enabled: isOpen, emptyMessage,
+    onResetFilters: onResetFilters || (() => setSearch('')), hasActiveFilters, labels,
+  });
 
   // Counted over what Select All can actually reach: disabled rows are skipped there, so
   // comparing against `items.length` left the label stuck on 'Select All' forever.
-  const selectableIds = filteredItems.filter((item) => !item.disabled).map((item) => item.id);
+  const selectableIds = view.filtered.filter((item) => !item.disabled).map((item) => item.id);
   const allSelected = selectableIds.length > 0 && selectableIds.every((id) => tempSelected.includes(id));
-
+  const handleSelectAll = () => setTempSelected((prev) => [...new Set([...prev, ...selectableIds])]); // only what the search leaves visible
+  const handleDeselectAll = () => {
+    const next = tempSelected.filter((id) => !selectableIds.includes(id));
+    setTempSelected(next.length >= minSelections ? next : tempSelected.slice(0, minSelections));
+  };
   const handleApply = () => {
     if (tempSelected.length < minSelections) {
       addNotification('error', `Select at least ${minSelections}`);
@@ -777,52 +661,6 @@ export function SelectionModal({
     onSelect(tempSelected);
     onClose();
   };
-
-  const sortHeader = sortColumns?.length ? (
-    <div
-      className={cn(DATA_TABLE_HEADER, MODAL_PADDING, 'flex items-center gap-3 py-2')}
-      role="row"
-    >
-      {/* No icon-width spacer: the primary heading starts at the ICON's left edge, not the
-          label's. Aligning it to the label left the heading floating in the middle of the
-          column with the glyphs hanging outside it. */}
-      <div
-        className="flex flex-1 min-w-0 items-center gap-3"
-        role="columnheader"
-        aria-sort={
-          sort.key === 'asset' ? (sort.dir === 'asc' ? 'ascending' : 'descending') : 'none'
-        }
-      >
-        <SortHeader
-          label={primaryColumnLabel}
-          sortKey="asset"
-          active={sort.key === 'asset'}
-          dir={sort.dir}
-          onToggle={(k) => setSort((s) => nextSort(s, k))}
-          align="left"
-        />
-      </div>
-      {sortColumns.map((col) => (
-        <div
-          key={col.key}
-          className={cn(SELECTION_DATA_COL, 'shrink-0 flex justify-end', col.className)}
-          role="columnheader"
-          aria-sort={
-            sort.key === col.key ? (sort.dir === 'asc' ? 'ascending' : 'descending') : 'none'
-          }
-        >
-          <SortHeader
-            label={col.label}
-            sortKey={col.key}
-            active={sort.key === col.key}
-            dir={sort.dir}
-            onToggle={(k) => setSort((s) => nextSort(s, k))}
-            align="right"
-          />
-        </div>
-      ))}
-    </div>
-  ) : null;
 
   // One block ABOVE the scroller, not a sticky pinned inside it: whatever the surface put above
   // the list - identity row, sort header, or both stacked - is a sibling of the rows, so the
@@ -841,109 +679,13 @@ export function SelectionModal({
       </div>
     ) : null;
   const pinnedHeader =
-    listHeader || sortHeader || presetBar ? (
+    listHeader || view.header || presetBar ? (
       <>
         {listHeader}
         {presetBar}
-        {sortHeader}
+        {view.header}
       </>
     ) : null;
-
-  const renderRow = (item: SelectionItem, idx: number) => {
-    const isSelected = tempSelected.includes(item.id);
-    const isHighlighted = idx === selectedIndex;
-    const isDisabled = !!item.disabled;
-    return (
-      <button
-        key={item.id}
-        type="button"
-        disabled={isDisabled}
-        onClick={() => handleToggle(item.id)}
-        className={cn(
-          `w-full flex items-center gap-3 ${MODAL_PADDING} py-2 coarse:min-h-14 transition-colors`,
-          isDisabled
-            ? 'opacity-60 cursor-not-allowed'
-            : isHighlighted
-              ? 'bg-bg-2'
-              : 'hover:bg-bg-2',
-          isSelected && !isDisabled ? 'bg-bg-primary' : '',
-        )}
-      >
-        {item.icon &&
-          (isStringIcon(item.icon) && isSvgPath(item.icon) ? (
-            <img src={item.icon} alt={item.label} className="w-8 h-8 rounded-xs" />
-          ) : (
-            <div
-              className={`w-8 h-8 flex items-center justify-center ${isSelected ? 'text-primary' : 'text-fg-2'}`}
-            >
-              {renderIcon(item.icon, 'w-5 h-5')}
-            </div>
-          ))}
-        <div className="flex-1 text-left min-w-0">
-          <div
-            className={`font-title text-sm truncate mt-0.5 ${isSelected ? 'text-primary font-medium' : ''}`}
-          >
-            {item.label}
-          </div>
-          {item.caption && (
-            <div className="text-xs text-fg-3 truncate -mt-1">{item.caption}</div>
-          )}
-          {item.note && <div className="text-xs text-red whitespace-normal break-words">{item.note}</div>}
-        </div>
-        {item.badge}
-        {/* No trailing check mark: it shoved the right-aligned amount block (wallet balance /
-            USD) left on the selected row. Selection already reads from bg-bg-primary plus
-            the primary label colour. */}
-      </button>
-    );
-  };
-
-  /** Section heading: icon + label + picked/total (+ the note of an empty section). Multi: a button toggling the section. */
-  const renderGroup = (g: SelectionGroup, rows: SelectionItem[]) => {
-    const ids = rows.map((r) => r.id);
-    const live = g.note ? [] : rows.filter((r) => !r.disabled); // a noted section ("DEX not deployed") takes no picks
-    const n = live.filter((r) => tempSelected.includes(r.id)).length;
-    const inner = (
-      <>
-        {g.icon && <span className="flex h-5 w-5 shrink-0 items-center justify-center">{g.icon}</span>}
-        <span className="min-w-0 truncate font-medium text-fg-1">{g.label}</span>
-        {g.note ? <span className="min-w-0 truncate text-fg-3">{L.noteSep}{g.note}</span> : live.length > 0 && <span className="ml-auto shrink-0 tabular-nums text-fg-3">{n}/{live.length}</span>}
-      </>
-    );
-    const cls = cn(MODAL_PADDING, 'flex w-full items-center gap-2 bg-bg-2 py-1.5 text-left text-xs');
-    return isMulti && live.length > 0 ? (
-      <button type="button" id={headId(g.id)} data-group={g.id} aria-label={g.label} aria-pressed={allOn(ids)} onClick={() => toggleMany(ids)} className={cn(cls, 'hover:bg-bg-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring')}>
-        {inner}
-      </button>
-    ) : (
-      <div id={headId(g.id)} data-group={g.id} className={cn(cls, !live.length && 'opacity-60')}>
-        {inner}
-      </div>
-    );
-  };
-  const uid = useId();
-  const headId = (g: string) => `${uid}-sec-${g.replace(/[^\w-]/g, '_')}`;
-  const searching = !!debouncedSearch.trim();
-  const body = groups?.length
-    ? (() => {
-        let idx = 0;
-        const known = new Set(groups.map((g) => g.id));
-        const out: ComponentChildren[] = [];
-        for (const g of groups) {
-          const rows = ordered.filter((i) => i.group === g.id);
-          if (!rows.length && searching) continue;
-          // a section is a labelled group: screen readers announce "Monad, group" before its rows
-          out.push(
-            <div key={`g-${g.id}`} role="group" aria-labelledby={headId(g.id)} className="divide-y divide-border">
-              {renderGroup(g, rows)}
-              {rows.map((r) => renderRow(r, idx++))}
-            </div>,
-          );
-        }
-        for (const r of ordered.filter((i) => !i.group || !known.has(i.group))) out.push(renderRow(r, idx++));
-        return out;
-      })()
-    : ordered.map((item, idx) => renderRow(item, idx));
 
   return (
     <BaseModal
@@ -954,7 +696,7 @@ export function SelectionModal({
       placeholder={searchPlaceholder}
       searchValue={search}
       onSearchChange={setSearch}
-      onSearchKeyDown={handleKeyDown}
+      onSearchKeyDown={view.keyDown}
       size={size}
       headerRight={headerRight}
       bodyHeader={pinnedHeader}
@@ -994,26 +736,11 @@ export function SelectionModal({
         ) : undefined
       }
     >
-      <div className="divide-y divide-border">
-        {body}
-        {ordered.length === 0 && !(groups?.length && !searching) && (
-          <PageState
-            kind="empty"
-            message={search ? `${emptyMessage} for "${search}"` : emptyMessage}
-            action={
-              hasActiveFilters || !!search
-                ? {
-                    label: L.reset,
-                    onClick: onResetFilters || (() => setSearch('')),
-                  }
-                : undefined
-            }
-          />
-        )}
-      </div>
+      {view.body}
     </BaseModal>
   );
 }
+
 
 interface FilterButtonProps {
   label: string;

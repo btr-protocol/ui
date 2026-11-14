@@ -10,5 +10,4 @@ export { ChartStack, type ChartStackProps, type StackPane } from './ChartStack';
 export { Histogram, type HistogramProps, type HistogramMarker } from './Histogram';
 export { Radar, type RadarProps, type RadarAxis, type RadarSeries } from './Radar';
 export { mean, std, quantile, returns, rolling, rollingReturn, rollingVol, rollingSharpe, histogram, normalPdf, resample, type Bins, type Period } from './seriesMath';
-export { SeriesSelector, type SeriesItem } from './SeriesSelector';
 export { MonthHeatmap } from './MonthHeatmap';

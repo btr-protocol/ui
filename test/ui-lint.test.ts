@@ -96,6 +96,8 @@ const RAW_BUTTON_OK: Record<string, string> = {
   'src/layout/TabBar.tsx': 'tab items',
   'src/layout/Footer.tsx': 'footer text links rendered as buttons',
   'src/layout/Header.tsx': 'nav items / icon chrome',
+  'src/ui/selectionView.tsx': 'list rows, section headings and the +/check mark of a row',
+  'src/ui/SelectionList.tsx': 'filter chip remove and funnel glyph buttons in the search field',
   'src/ui/Select.tsx': 'listbox options and picker rows, not actions',
   'src/ui/ClickMenu.tsx': 'menu items (role=menuitem rows)',
   'src/ui/TabStrip.tsx': 'pin / close glyph buttons inside a tab',

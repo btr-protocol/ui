@@ -38,7 +38,7 @@ test('Shell mounts Header and Footer in the fixed-shell model', () => {
   );
   expect(html).toContain('z-header');
   expect(html).toContain('z-footer');
-  expect(html).toContain('max-w-6xl');
+  expect(html).toContain('--shell-w,72rem');
   expect(html).toContain('Alpha');
   expect(html).toContain('Terms');
   expect(html).toContain('Nothing');

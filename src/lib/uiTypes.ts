@@ -19,6 +19,8 @@ export interface SelectionItem {
   pinned?: boolean;
   /** Section of the row (`SelectionModal` `groups`: e.g. the chain of a pool leg). */
   group?: string;
+  /** Filter chip ids the row answers to (`SelectionList` `filters`). */
+  tags?: string[];
 }
 
 /** Dropdown menu item. */

@@ -17,7 +17,7 @@ export function Notifications() {
     // full width minus 8px, one line, tap dismisses, and BELOW modals (z-footer < z-modal) so a
     // toast never floats over an open sheet.
     <div className="no-print fixed inset-x-2 bottom-[calc(var(--chrome-b)+0.5rem)] z-footer sm:z-toast pointer-events-none">
-      <div className="flex flex-col gap-2 mx-auto max-w-6xl items-end">
+      <div className="flex flex-col gap-2 mx-auto max-w-[var(--shell-w,72rem)] items-end">
         {shown.map((notification: Notification) => (
           // Tap target: the Toast itself is inert, so the click lands here.
           <div

@@ -114,7 +114,7 @@ export function Header({
     // Paints bg-0 behind the status bar (::before over the --sat inset); the glass nav keeps its
     // own blur below it. Landscape cutouts inset by --sal/--sar.
     <header className="no-print fixed inset-x-0 top-0 z-header flex h-[var(--chrome-t)] items-center pl-[var(--sal)] pr-[var(--sar)] pt-[var(--sat)] safe-t">
-      <nav className="relative max-w-6xl h-full mx-auto w-full flex items-center justify-between gap-2 lg:gap-6 px-3 border border-t-0 rounded-b-lg backdrop-blur-md bg-glass border-border">
+      <nav className="relative max-w-[var(--shell-w,72rem)] h-full mx-auto w-full flex items-center justify-between gap-2 lg:gap-6 px-3 border border-t-0 rounded-b-lg backdrop-blur-md bg-glass border-border">
         <a
           href={homePath}
           aria-label={brandLabel}

@@ -9,6 +9,8 @@ export interface StripTab {
   /** Full text on hover (raw id behind a short label). */
   title?: string;
   pinned?: boolean;
+  /** false: a fixed tab (an Overview / home tab) with no close button. */
+  closable?: boolean;
 }
 
 export interface TabStripProps {
@@ -44,7 +46,8 @@ export function tabKeyTarget(key: string, i: number, n: number): number | null {
   return null;
 }
 
-/** Closable, pinnable, drag-reorderable tab strip (a comparison set, open documents). Selected tab = the navbar-active look.
+/** Closable, pinnable, drag-reorderable tab strip (a comparison set, open documents), Chrome-like: the selected tab is the content's surface
+ *  (no rule under it, primary top edge) and the strip's rule runs under the others. Bar height = the search header row (3rem + its rule).
  *  Roving tabindex: the active tab (else the first) is the strip's one tab stop, arrows / Home / End move focus, Enter / Space select.
  *  Delete / Backspace closes the focused tab and P toggles its pin (so a non-active tab needs no extra tab stops).
  *  Pin and close are sibling buttons of the tab (never inside role=tab) and are tab stops only on the roving tab. */
@@ -54,7 +57,7 @@ export function TabStrip({ tabs, active, onSelect, onClose, onPin, onReorder, cl
   const ordered = [...tabs.filter((t) => t.pinned), ...tabs.filter((t) => !t.pinned)];
   const stop = ordered.some((t) => t.id === active) ? active : ordered[0]?.id;
   return (
-    <div ref={list} role="tablist" aria-label={label} className={cn('scroll-x flex items-stretch gap-1 border-b border-border px-2 py-1.5', className)}>
+    <div ref={list} role="tablist" aria-label={label} className={cn('scroll-x flex h-[calc(3rem+1px)] items-end gap-0.5 border-b border-border bg-bg-0 px-2', className)}>
       {ordered.map((t, i) => {
         const roving = t.id === stop;
         return (
@@ -69,8 +72,8 @@ export function TabStrip({ tabs, active, onSelect, onClose, onPin, onReorder, cl
               setDrag(null);
             }}
             className={cn(
-              'group flex h-8 shrink-0 select-none items-center gap-1 rounded-sm pr-1.5 text-xs font-medium transition-colors',
-              t.id === active ? 'bg-bg-primary text-primary' : 'text-fg-1 hover:bg-bg-3',
+              'group flex h-9 shrink-0 select-none items-center gap-1 rounded-t-md border border-b-0 pr-1.5 text-xs font-medium transition-colors',
+              t.id === active ? '-mb-px h-[37px] border-border border-t-2 border-t-primary bg-bg-1 text-fg-0' : 'border-transparent text-fg-2 hover:bg-bg-2 hover:text-fg-0',
               drag === t.id && 'opacity-50',
             )}
           >
@@ -101,16 +104,16 @@ export function TabStrip({ tabs, active, onSelect, onClose, onPin, onReorder, cl
                 e.preventDefault();
                 tabEls?.[to]?.focus();
               }}
-              className="h-full max-w-[12rem] cursor-pointer truncate rounded-sm pl-2.5 pr-1 outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="h-full max-w-[12rem] cursor-pointer truncate rounded-sm pl-3 pr-1 outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               {t.label}
             </button>
-            {onPin && (
+            {onPin && t.closable !== false && (
               <button type="button" tabIndex={roving ? 0 : -1} aria-label={t.pinned ? 'Unpin' : 'Pin'} aria-pressed={!!t.pinned} onClick={() => onPin(t.id)} className={cn('inline-flex h-5 w-5 items-center justify-center rounded-xs hover:bg-bg-4 focus-visible:opacity-100', !t.pinned && 'opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 coarse:opacity-100')}>
                 <Icon name="pin" className={cn('h-3.5 w-3.5', t.pinned && 'text-primary')} />
               </button>
             )}
-            {onClose && !t.pinned && (
+            {onClose && !t.pinned && t.closable !== false && (
               <button type="button" tabIndex={roving ? 0 : -1} aria-label="Close" onClick={() => onClose(t.id)} className="inline-flex h-5 w-5 items-center justify-center rounded-xs hover:bg-bg-4">
                 <Icon name="x" className="h-3.5 w-3.5" />
               </button>

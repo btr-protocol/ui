@@ -70,7 +70,7 @@ export function MasterDetail({
   return (
     <div
       className={cn(
-        'overflow-hidden rounded-lg border border-border bg-bg-1 lg:grid lg:grid-cols-[var(--md-w,clamp(280px,22%,360px))_minmax(0,1fr)]',
+        'overflow-clip rounded-lg border border-border bg-bg-1 lg:grid lg:grid-cols-[var(--md-w,clamp(280px,22%,360px))_minmax(0,1fr)]',
         className,
       )}
       style={masterWidth ? ({ '--md-w': masterWidth } as Record<string, string>) : undefined}
@@ -80,7 +80,7 @@ export function MasterDetail({
         onFocusIn={(e) => {
           lastRow.current = e.target as HTMLElement;
         }}
-        className={cn('min-w-0 bg-bg-0 lg:block lg:border-r lg:border-border', selected && 'max-lg:hidden')}
+        className={cn('min-w-0 bg-bg-0 lg:sticky lg:top-0 lg:flex lg:max-h-[calc(100dvh-var(--chrome-t,0px)-var(--chrome-b,0px))] lg:flex-col lg:self-start lg:overflow-y-auto lg:border-r lg:border-border', selected && 'max-lg:hidden')}
       >
         {(masterSearch || masterFilters) && (
           <div className="sticky top-0 z-sticky border-b border-border bg-bg-1">

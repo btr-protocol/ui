@@ -38,6 +38,7 @@ export * from './ScrollPane';
 export * from './SearchInput';
 export * from './SegmentedControl';
 export * from './Select';
+export * from './SelectionList';
 export * from './SelectModal';
 export * from './PercentLadderSlider';
 export * from './SettingRow';

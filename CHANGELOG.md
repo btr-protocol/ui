@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.9.0
+- Lists: `SelectionList` / `useSelectionView` / `chipMatch` (shared parts in ui/selectionView.tsx, re-exported by ui/SelectionList.tsx; `labels.reset` / `labels.noteSep` are honoured): the multiselect modal's list (label + caption, sortable right-aligned figure columns via `fmt`, +/check mark, open row) extracted from `SelectionModal`, which now hosts the same parts; inline form with its own search bar and filter chips under the field. Replaces `SeriesSelector` (removed). `StripTab.closable`; `TabStrip` is Chrome-like (selected tab merged with the content, rule under the rest). `ChartStack`: every pane has its own time axis and a compact title (no legend, no value tags), the right pane is the live-sorted value table at the crosshair (`StackPane.short`, `valuesWidth`). `MetricChart` `priceTags=false` also hides the last-value lines.
+- `Shell` `wide` (full viewport width via `--shell-w`; header, footer, rails follow); `MasterDetail` master is sticky with its own scroll; `SelectionList` filters are chips inside the search field (funnel opens the multi picker), dense rows with a tooltip; value pane 20rem with wrapped names, `MetricChart` `rightOffset` 8 (last tick label no longer clipped).
+
 ## 0.8.0
 - CSV export neutralises spreadsheet formulas (a text cell starting with = + - @, tab or CR gets a leading apostrophe); `Heatmap` and `TabStrip` use a roving tabindex with arrow keys; `CommandPalette` links the active option (`aria-activedescendant`), answers one global Ctrl/Cmd K and ignores IME composition; the chart sync mirrors only live gestures.
 - `assertSiweMessage`: exact structural parse of the EIP-4361 message (domain, address, statement, URI, Version 1, Chain ID, Nonce, Issued At, optional Expiration Time; extra, reordered or unknown lines refused; the statement must be the whole line, not merely contained); optional `chainId` pin.

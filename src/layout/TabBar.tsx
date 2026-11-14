@@ -83,7 +83,7 @@ export function TabBar({
         className="no-print lg:hidden kbd:hidden pointer-events-none fixed inset-x-0 bottom-0 z-footer flex h-[var(--chrome-b)] items-center justify-center pb-[var(--sab)] pl-[var(--sal)] pr-[var(--sar)] safe-b"
       >
         <div
-          className="pointer-events-auto relative mx-auto grid h-full w-full max-w-6xl gap-0.5 rounded-t-lg border border-b-0 border-border bg-glass p-0.5 backdrop-blur-md"
+          className="pointer-events-auto relative mx-auto grid h-full w-full max-w-[var(--shell-w,72rem)] gap-0.5 rounded-t-lg border border-b-0 border-border bg-glass p-0.5 backdrop-blur-md"
           style={{ gridTemplateColumns: `repeat(${tabs.length + (hasMore ? 1 : 0)}, minmax(0, 1fr))` }}
         >
           {tabs.map((item) => (

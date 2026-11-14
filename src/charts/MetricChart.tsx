@@ -136,7 +136,7 @@ export function MetricChart({
   loading?: boolean;
   emptyMessage?: string;
   actions?: preact.ComponentChildren;
-  /** Value tags on the price axis (last value + crosshair). `false` where a header already reads the value and the tag would
+  /** Value tags and last-value lines on the price axis. `false` where a header already reads the value and the tag would
    *  overprint the axis tick labels (dense value-table panels). Read at mount: change it with the chart's key. */
   priceTags?: boolean;
   /** Floating legend chips over the plot. `false` when the legend lives in a value table (ChartPanel). */
@@ -404,7 +404,7 @@ export function MetricChart({
             borderColor: colors.chartBorder,
             timeVisible: true,
             secondsVisible: false,
-            rightOffset: 4,
+            rightOffset: 8,
             tickMarkFormatter: (time: number, type: number) => tickMarkFormatter(time, type),
             visible: timeAxis,
           },
@@ -496,7 +496,7 @@ export function MetricChart({
           ...seriesPaint(spec, 1, spec.fade ? chartColors().bg1 : undefined),
           priceScaleId: scaleId === 'hidden' ? `hidden:${spec.id}` : scaleId,
           lastValueVisible: priceTags && !stacked && !spec.extent && spec.scale !== 'hidden',
-          priceLineVisible: !stacked && !spec.extent && spec.scale !== 'hidden',
+          priceLineVisible: priceTags && !stacked && !spec.extent && spec.scale !== 'hidden',
           priceLineWidth: 1 as const,
           priceLineStyle: 2,
           priceFormat: { type: 'custom' as const, formatter: (v: number) => trimZeros(fmt(v)), minMove: 0.00000001 },
