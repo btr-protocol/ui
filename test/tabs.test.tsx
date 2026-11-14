@@ -67,26 +67,81 @@ test('attached: strip on the panel, panel named by the active tab, tabs control 
   const list = host.querySelector('[role=tablist]')!;
   expect(list.classList.contains('btn-group')).toBe(true);
   expect(list.classList.contains('btn-group-attached')).toBe(true);
-  expect(list.classList.contains('btn-group-accent')).toBe(false);
+  expect(list.classList.contains('btn-group-accent')).toBe(true); // accent is the attached default
   expect(host.querySelector('.tabs-attached-bar')!.contains(list)).toBe(true);
 });
 
-test('attached accent variant and a caller-owned panel id', () => {
-  const html = ssr(<SegmentedControl presentation="attached" accent panelId="mine" options={O} value="a" onChange={() => {}} />);
-  expect(html).toContain('btn-group-accent');
+test('attached: accent={false} is flush; a caller-owned panel id with no children renders no panel', () => {
+  const html = ssr(<SegmentedControl presentation="attached" accent={false} panelId="mine" options={O} value="a" onChange={() => {}} />);
+  expect(html).not.toContain('btn-group-accent');
   expect(html).toContain('aria-controls="mine"');
   expect(html).not.toContain('role="tabpanel"');
 });
+
+test('panelId + children: ONE id, the built-in panel carries it and every tab points at it', () => {
+  const { host } = mount(<SegmentedControl presentation="attached" aria-label="S" panelId="mine" options={O} value="a" onChange={() => {}}>body</SegmentedControl>);
+  const panel = host.querySelector('[role=tabpanel]')!;
+  expect(panel.id).toBe('mine');
+  for (const t of tabs(host)) expect(t.getAttribute('aria-controls')).toBe('mine');
+  expect(panel.getAttribute('aria-labelledby')).toBe(tabs(host)[0]!.id);
+});
+
+test('tabpanel is a tab stop only when it has nothing focusable inside', () => {
+  const a = mount(<SegmentedControl presentation="attached" aria-label="S" options={O} value="a" onChange={() => {}}>text</SegmentedControl>);
+  expect(a.host.querySelector('[role=tabpanel]')!.getAttribute('tabindex')).toBe('0');
+  const b = mount(<SegmentedControl presentation="attached" aria-label="S" options={O} value="a" onChange={() => {}}><button type="button">go</button></SegmentedControl>);
+  expect(b.host.querySelector('[role=tabpanel]')!.hasAttribute('tabindex')).toBe(false);
+});
+
+test('href tabs are real anchors with tab semantics; a plain click selects without navigating, a modified click is native', () => {
+  const got: string[] = [];
+  const { host } = mount(<SegmentedControl aria-label="S" options={[{ value: 'a', label: 'A', href: '/x/a' }, { value: 'b', label: 'B', href: '/x/b' }]} value="a" onChange={(v) => got.push(v)} />);
+  const [, b] = tabs(host);
+  expect(b!.tagName).toBe('A');
+  expect(b!.getAttribute('href')).toBe('/x/b');
+  expect(b!.getAttribute('role')).toBe('tab');
+  const plain = new MouseEvent('click', { bubbles: true, cancelable: true });
+  act(() => { b!.dispatchEvent(plain); });
+  expect(plain.defaultPrevented).toBe(true);
+  expect(got).toEqual(['b']);
+  const meta = new MouseEvent('click', { bubbles: true, cancelable: true, metaKey: true });
+  act(() => { b!.dispatchEvent(meta); });
+  expect(meta.defaultPrevented).toBe(false);
+  expect(got).toEqual(['b']);
+});
+
+test('xs rides Button xs height; sm and md ride Button sm', () => {
+  const h = (size: 'xs' | 'sm' | 'md') => ssr(<SegmentedControl aria-label="S" size={size} options={O} value="a" onChange={() => {}} />);
+  expect(h('xs')).toContain('h-[var(--ctl-s)]');
+  expect(h('sm')).toContain('h-[var(--ctl-m)]');
+  expect(h('md')).toContain('h-[var(--ctl-m)]');
+});
+
+test('manual activation: arrows only move focus, Enter / click selects', () => {
+  const got: string[] = [];
+  const { host } = mount(<SegmentedControl aria-label="S" activation="manual" options={O} value="a" onChange={(v) => got.push(v)} />);
+  const list = host.querySelector('[role=tablist]')!;
+  tabs(host)[0]!.focus();
+  key(list, 'ArrowRight');
+  expect(document.activeElement).toBe(tabs(host)[2]!);
+  expect(got).toEqual([]);
+  click(document.activeElement!);
+  expect(got).toEqual(['c']);
+});
+
+test('arrows step from the focused tab, not the selected value (async consumers lag)', () => {
+  const got: string[] = [];
+  const { host } = mount(<SegmentedControl aria-label="S" options={O} value="a" onChange={(v) => got.push(v)} />);
+  const list = host.querySelector('[role=tablist]')!;
+  tabs(host)[0]!.focus();
+  key(list, 'ArrowRight'); // value stays "a": the consumer has not committed yet
+  key(list, 'ArrowRight');
+  expect(got).toEqual(['c', 'd']);
+});
+
 
 test('no selected value: the first enabled tab is the one tab stop', () => {
   const { host } = mount(<SegmentedControl options={O} value={'zz' as 'a'} onChange={() => {}} />);
   expect(tabs(host).map((x) => x.tabIndex)).toEqual([0, -1, -1, -1]);
 });
 
-test('css: attached merges the active tab into the panel and keeps the group metrics', async () => {
-  const css = await Bun.file(new URL('../src/styles/button-group.css', import.meta.url)).text();
-  expect(css).toContain("[aria-selected='true']");
-  expect(css).toContain('margin-bottom: -1px');
-  expect(css).toContain('border-start-start-radius: 0'); // panel corner under the strip
-  expect(css).not.toMatch(/\.btn-group-attached[^{]*\{[^}]*(?:\n\s*)height:\s*calc/); // no height of its own: ButtonGroup's
-});

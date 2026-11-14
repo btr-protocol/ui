@@ -42,15 +42,19 @@ export interface SegmentedControlProps<T extends string> {
   'aria-label'?: string;
   /** `group` (default): a plain ButtonGroup. `attached`: the strip sits on the top edge of the card it controls. */
   presentation?: 'group' | 'attached';
-  /** attached only: mark the active tab with a primary accent on its top edge (default: flush with the card). */
+  /** attached only: a primary accent on the active tab's top edge (default true; false = flush with the card). */
   accent?: boolean;
-  /** The tabpanel's id when the panel is rendered by the caller: tabs get aria-controls to it. */
+  /** `auto` (default): arrows move focus AND select. `manual`: arrows move focus only, Enter / Space selects (for tabs whose change is expensive: a route or a fetch). */
+  activation?: 'auto' | 'manual';
+  /** The tabpanel's id: the one id `aria-controls` points at. With `children` the built-in panel takes it; without, the panel is yours and must carry it. */
   panelId?: string;
   /** attached only: the card's content (rendered as the tabpanel below the strip, named by the active tab). */
   children?: ComponentChildren;
 }
 
 let uid = 0;
+let warned = false;
+const FOCUSABLE = 'a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])';
 
 export function SegmentedControl<T extends string>({
   options,
@@ -60,7 +64,8 @@ export function SegmentedControl<T extends string>({
   size = 'md',
   equal = false,
   presentation = 'group',
-  accent = false,
+  accent = true,
+  activation = 'auto',
   panelId,
   children,
   'aria-label': label,
@@ -70,7 +75,8 @@ export function SegmentedControl<T extends string>({
   const list = useRef<HTMLDivElement>(null);
   const attached = presentation === 'attached';
   const hasPanel = attached && children != null;
-  const controls = panelId ?? (hasPanel ? `${id}-panel` : undefined);
+  const controls = panelId ?? (hasPanel ? `${id}-panel` : undefined); // ONE id: the built-in panel carries exactly it
+  const panel = useRef<HTMLDivElement>(null);
   const btnSize = size === 'xs' ? 'xs' : 'sm';
   const on = options.filter((o) => !o.disabled);
   // Roving tabindex: the selected tab is the one tab stop (else the first enabled one).
@@ -86,7 +92,8 @@ export function SegmentedControl<T extends string>({
       c.toggleAttribute('data-r', c.scrollLeft + c.clientWidth < c.scrollWidth - 1);
     };
     const t = c.querySelector<HTMLElement>('[aria-selected="true"]');
-    if (t) c.scrollLeft = t.offsetLeft - (c.clientWidth - t.offsetWidth) / 2;
+    // Measured from the rects, not offsetLeft: no dependence on which ancestor is the offsetParent.
+    if (t) c.scrollLeft += t.getBoundingClientRect().left - c.getBoundingClientRect().left - (c.clientWidth - t.offsetWidth) / 2;
     edges();
     c.addEventListener('scroll', edges, { passive: true });
     const ro = new ResizeObserver(edges);
@@ -97,16 +104,37 @@ export function SegmentedControl<T extends string>({
     };
   }, [value]);
 
-  // Arrow / Home / End select AND focus the target (automatic activation, like the control it replaces).
+  // A tabpanel with nothing focusable inside is itself a tab stop (APG); set imperatively, it depends on the children's DOM.
+  useEffect(() => {
+    const p = panel.current;
+    if (!p) return;
+    if (p.querySelector(FOCUSABLE)) p.removeAttribute('tabindex');
+    else p.setAttribute('tabindex', '0');
+  });
+  useEffect(() => {
+    if (label || warned) return;
+    warned = true;
+    console.warn('SegmentedControl: pass an aria-label, a tablist needs a name for assistive tech');
+  }, [label]);
+
+  // Arrow / Home / End step from the FOCUSED tab (not the selected value: an async consumer has not committed the last change yet).
+  // auto: they also select; manual: focus only, Enter / Space selects.
   const onKeyDown = (e: KeyboardEvent) => {
     if (e.metaKey || e.ctrlKey || e.altKey) return;
-    const i = on.findIndex((o) => o.value === stop);
+    const els = [...(list.current?.querySelectorAll<HTMLElement>('[role=tab]:not([aria-disabled])') ?? [])];
+    if (e.key === ' ' && (e.target as HTMLElement).tagName === 'A') {
+      e.preventDefault(); // an anchor does not click on Space
+      (e.target as HTMLElement).click();
+      return;
+    }
+    const focused = els.indexOf(document.activeElement as HTMLElement);
+    const i = focused >= 0 ? focused : on.findIndex((o) => o.value === stop);
     const to = tabKeyTarget(e.key, Math.max(i, 0), on.length);
     if (to == null) return;
     e.preventDefault();
-    list.current?.querySelectorAll<HTMLElement>('[role=tab]:not([aria-disabled])')[to]?.focus();
+    els[to]?.focus();
     const next = on[to];
-    if (next && next.value !== value) {
+    if (activation === 'auto' && next && next.value !== value) {
       haptic('tap');
       onChange(next.value);
     }
@@ -174,7 +202,7 @@ export function SegmentedControl<T extends string>({
         {strip}
       </div>
       {hasPanel && (
-        <div id={`${id}-panel`} role="tabpanel" aria-labelledby={active ? `${id}-${active.value}` : undefined} className={cn('tabs-panel surface bg-bg-1 shadow-sm', PANEL_BODY)}>
+        <div ref={panel} id={controls} role="tabpanel" aria-labelledby={active ? `${id}-${active.value}` : undefined} className={cn('tabs-panel surface bg-bg-1 shadow-sm', PANEL_BODY)}>
           {children}
         </div>
       )}
