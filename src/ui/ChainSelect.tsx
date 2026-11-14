@@ -1,9 +1,10 @@
 import type { ComponentChildren } from 'preact';
-import { Suspense, lazy } from 'preact/compat';
-import { useState } from 'preact/hooks';
+import type { ComponentProps } from 'preact';
+import { useEffect, useState } from 'preact/hooks';
 import { useOpen } from '../lib/modalRoute';
 import { chainIcon } from '../lib/chainIcon';
 import { cn } from '../lib/cn';
+import { BaseModal, MODAL_PADDING } from './BaseModal';
 import { Button } from './Button';
 import { Icon } from './Icon';
 import type { SelectionItem, SelectionSortColumn } from './Select';
@@ -122,7 +123,49 @@ interface ChainSelectProps {
   routeKey?: string;
 }
 
-const LazyChainSelectModal = lazy(() => import('./ChainSelectModal').then((m) => ({ default: m.ChainSelectModal })));
+type ModalProps = ComponentProps<typeof import('./ChainSelectModal').ChainSelectModal>;
+type ModalModule = typeof import('./ChainSelectModal');
+const loadModal = (): Promise<ModalModule> => import('./ChainSelectModal');
+
+/** The modal chunk, fetched on first open: one retry on a rejected import, then an inline error with
+ *  a Retry button (never a blank screen); a minimal pending state while it loads. `load` is a test seam. */
+export function ChainSelectModalHost({ load = loadModal, ...props }: ModalProps & { load?: () => Promise<ModalModule> }) {
+  const [mod, setMod] = useState<ModalModule | null>(null);
+  const [failed, setFailed] = useState(false);
+  const [round, setRound] = useState(0);
+  useEffect(() => {
+    let live = true;
+    setFailed(false);
+    const go = (left: number): void => {
+      load().then(
+        (m) => live && setMod(m),
+        () => (left > 0 ? go(left - 1) : live && setFailed(true)),
+      );
+    };
+    go(1);
+    return () => {
+      live = false;
+    };
+  }, [round, load]);
+  if (mod) return <mod.ChainSelectModal {...props} />;
+  if (!props.isOpen) return null;
+  return (
+    <BaseModal isOpen onClose={props.onClose} title={props.title ?? 'Select network'} headerType="title" size="sm">
+      <div className={`${MODAL_PADDING} py-6 text-sm text-fg-2`} role={failed ? 'alert' : 'status'}>
+        {failed ? (
+          <div className="flex items-center justify-between gap-3">
+            <span>Could not load the network list.</span>
+            <Button size="sm" onClick={() => setRound(round + 1)}>
+              Retry
+            </Button>
+          </div>
+        ) : (
+          'Loading networks…'
+        )}
+      </div>
+    </BaseModal>
+  );
+}
 
 /** The standard chain trigger: a button over `ChainSelectModal`. Reports ids only. */
 export function ChainSelect({ chains, value, onChange, title, routeKey, allLabel, onAll }: ChainSelectProps) {
@@ -147,8 +190,8 @@ export function ChainSelect({ chains, value, onChange, title, routeKey, allLabel
       </Button>
       {/* Fetched on first open: the trigger sits in every app header, the modal (list, sort, switch) does not. */}
       {seen && (
-        <Suspense fallback={null}>
-          <LazyChainSelectModal
+        <>
+          <ChainSelectModalHost
             isOpen={open}
             onClose={() => setOpen(false)}
             chains={chains}
@@ -158,7 +201,7 @@ export function ChainSelect({ chains, value, onChange, title, routeKey, allLabel
             allLabel={allLabel}
             onAll={onAll && (() => setOpen(false, onAll))}
           />
-        </Suspense>
+        </>
       )}
     </>
   );
