@@ -1,6 +1,10 @@
+import { WALLETS } from '@btr-protocol/sdk/eth/wallets';
+import { Tooltip } from '../ui/FloatingPanel';
 import { PageState } from '../ui/Feedback';
 import { WalletGlyph } from './WalletGlyph';
 import { WC_TILE_IDS } from './walletSections';
+
+const NAME = new Map(WALLETS.map((w) => [w.id, w.name]));
 
 /** The WalletConnect entry: the wallets it reaches as a blurred 6x4 grid behind the WalletConnect mark; hover (or focus) clears the blur and grows the tile. */
 export function WalletConnectTile({
@@ -36,9 +40,9 @@ export function WalletConnectTile({
       <span className={`block p-3 transition-all duration-500 ease-in-out ${loading ? 'opacity-20 blur-[2px]' : 'opacity-40 blur-[1.5px] group-hover:blur-0 group-hover:opacity-100 group-focus-visible:blur-0 group-focus-visible:opacity-100'}`}>
         <span aria-hidden="true" className="grid grid-cols-6 gap-2">
           {WC_TILE_IDS.map((id) => (
-            <span key={id} className="block aspect-square [&>span]:!h-full [&>span]:!w-full">
+            <Tooltip key={id} content={NAME.get(id) ?? id} side="top" wrapClass="block aspect-square [&>span]:!h-full [&>span]:!w-full">
               <WalletGlyph id={id} name={id} bare />
-            </span>
+            </Tooltip>
           ))}
         </span>
       </span>

@@ -380,6 +380,45 @@ describe('WalletConnect tile', () => {
     });
   });
 
+  test('hovering a mark shows the wallet name in a portaled tooltip; the accessible name, tab stops and height are untouched', async () => {
+    localStorage.clear();
+    await withUa(DESKTOP, async () => {
+      hang();
+      mount(<WalletModal isOpen onClose={() => {}} onConnect={async () => {}} />);
+      await until(() => tile() !== null);
+      const t = tile() as HTMLButtonElement;
+      const name = t.getAttribute('aria-label');
+      const marks = [...t.querySelectorAll('.grid > span')] as HTMLElement[];
+      expect(marks.length).toBe(WC_TILE_IDS.length);
+      expect(t.querySelector('[tabindex]')).toBeNull();
+      expect(t.querySelectorAll('[title]').length).toBe(0);
+      expect(document.querySelector('.floating-panel')).toBeNull();
+      act(() => { marks[0].dispatchEvent(new PointerEvent('pointerenter', { pointerType: 'mouse' })); });
+      await until(() => document.querySelector('.floating-panel') !== null);
+      const panel = document.querySelector('.floating-panel') as HTMLElement;
+      expect(panel.textContent).toBe('MetaMask');
+      expect(t.contains(panel)).toBe(false); // portaled: not clipped by the tile, not part of the button's name
+      expect(t.getAttribute('aria-label')).toBe(name);
+      expect(t.querySelector('.grid')?.getAttribute('aria-hidden')).toBe('true');
+      act(() => { marks[0].dispatchEvent(new PointerEvent('pointerleave', { pointerType: 'mouse' })); });
+      await until(() => document.querySelector('.floating-panel') === null);
+      // touch never opens one
+      act(() => { marks[1].dispatchEvent(new PointerEvent('pointerenter', { pointerType: 'touch' })); });
+      expect(document.querySelector('.floating-panel')).toBeNull();
+    });
+  });
+
+  test('phone UA: no tile, so no mark tooltips', async () => {
+    localStorage.clear();
+    await withUa(PHONE, async () => {
+      hang();
+      mount(<WalletModal isOpen onClose={() => {}} onConnect={async () => {}} />);
+      await until(() => (document.body.textContent ?? '').includes('WalletConnect'));
+      expect(tile()).toBeNull();
+      expect(document.body.querySelectorAll('.grid-cols-6').length).toBe(0);
+    });
+  });
+
   test('QR placeholder has the outer size of the QR card', async () => {
     localStorage.clear();
     await withUa(DESKTOP, async () => {
