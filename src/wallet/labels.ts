@@ -4,7 +4,24 @@
 export interface WalletModalLabels {
   title: string;
   searchPlaceholder: string;
+  /** Section headings. */
+  recent: string;
   installed: string;
+  walletConnect: string;
+  other: string;
+  /** Caption of an Other row; on a phone, where the row opens the wallet's app, `open`. */
+  install: string;
+  open: string;
+  /** Heading of the list when nothing else can connect (no injected wallet, no WalletConnect). */
+  installWallet: string;
+  /** Appended to the accessible name of a link that opens a new tab. */
+  newTab: string;
+  /** Accessible name of a Recent row's remove button; `{name}` = the wallet. */
+  removeRecent: string;
+  /** Caption of a recent wallet reached through WalletConnect. */
+  viaWalletConnect: string;
+  qrCaption: string;
+  appsCaption: string;
   thisBrowser: string;
   /** `{name}` = the wallet. */
   connectInBrowser: string;
@@ -15,9 +32,6 @@ export interface WalletModalLabels {
   connectMobile: string;
   otherWallets: string;
   preparing: string;
-  yourWallets: string;
-  moreWallets: string;
-  wallets: string;
   lastUsed: string;
   opensInApp: string;
   /** `{name}` = the wallet. */
@@ -28,9 +42,7 @@ export interface WalletModalLabels {
   cancel: string;
   /** `{name}` = the wallet. */
   getWallet: string;
-  anotherDevice: string;
   anotherDeviceQr: string;
-  scanWithMobile: string;
   qrAlt: string;
   qrFailed: string;
   qrLoading: string;
@@ -45,19 +57,27 @@ export interface WalletModalLabels {
 export const WALLET_MODAL_LABELS: WalletModalLabels = {
   title: 'Connect wallet',
   searchPlaceholder: 'Search wallets...',
+  recent: 'Recent',
   installed: 'Installed',
+  walletConnect: 'WalletConnect',
+  other: 'Other',
+  install: 'Install',
+  open: 'Open',
+  installWallet: 'Install a wallet',
+  newTab: '(opens in a new tab)',
+  removeRecent: 'Remove {name} from recent wallets',
+  viaWalletConnect: 'WalletConnect',
+  qrCaption: 'Scan a QR code with your phone',
+  appsCaption: 'Open a wallet app',
   thisBrowser: 'This browser',
   connectInBrowser: 'Connect {name} (this browser)',
   empty: 'No browser wallet detected.',
   navigate: 'Navigate',
   select: 'Select',
   close: 'Close',
-  connectMobile: 'Connect a mobile wallet',
-  otherWallets: 'Other wallets',
+  connectMobile: 'Mobile wallet',
+  otherWallets: 'Wallet apps',
   preparing: 'Preparing connection...',
-  yourWallets: 'Your wallets',
-  moreWallets: 'More wallets',
-  wallets: 'Wallets',
   lastUsed: 'Last used',
   opensInApp: 'Opens this page in the app',
   waitingFor: 'Waiting for {name}...',
@@ -66,9 +86,7 @@ export const WALLET_MODAL_LABELS: WalletModalLabels = {
   showQr: 'Show QR',
   cancel: 'Cancel',
   getWallet: 'Not installed? Get {name}',
-  anotherDevice: 'Another device',
   anotherDeviceQr: 'Another device (QR code)',
-  scanWithMobile: 'Scan with a mobile wallet',
   qrAlt: 'WalletConnect QR code',
   qrFailed: 'Could not generate the QR code.',
   qrLoading: 'Generating QR code...',

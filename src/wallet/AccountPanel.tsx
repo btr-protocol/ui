@@ -8,6 +8,7 @@ import { Badge } from '../ui/Badge';
 import { Button } from '../ui/Button';
 import { Notice } from '../ui/Feedback';
 import { WalletItemButton } from '../ui/WalletItemButton';
+import { WalletTile } from './WalletGlyph';
 import { ACCOUNT_LABELS, type AccountLabels } from './accountLabels';
 import { accountMismatch, sameAddress } from './wallet';
 
@@ -73,14 +74,13 @@ export interface AccountListProps {
   signers?: readonly string[];
   /** One click: make this the account (switch in the wallet, then re-auth when it is not the session). */
   onSelect?: (address: string) => void;
-  onChooseInWallet?: () => void;
   onConnectOther?: () => void;
   busy?: string;
   labels?: Partial<AccountLabels>;
 }
 
 /** Every account of the connected wallet (plus the session's), one click each; badges say which is active, signed in, a signer. */
-export function AccountList({ accounts, active, session, signers = [], onSelect, onChooseInWallet, onConnectOther, busy, labels }: AccountListProps) {
+export function AccountList({ accounts, active, session, signers = [], onSelect, onConnectOther, busy, labels }: AccountListProps) {
   const l = { ...ACCOUNT_LABELS, ...labels };
   const rows = [...accounts];
   if (session && !rows.some((a) => sameAddress(a, session))) rows.push(session);
@@ -124,27 +124,16 @@ export function AccountList({ accounts, active, session, signers = [], onSelect,
           />
         );
       })}
-      </div>
-      {(onChooseInWallet || onConnectOther) && (
-        <div>
-          {onChooseInWallet && (
-            <WalletItemButton
-              name={l.chooseInWallet}
-              disabled={busy !== undefined}
-              ariaDisabled
-              onClick={() => busy === undefined && onChooseInWallet()}
-            />
-          )}
-          {onConnectOther && (
-            <WalletItemButton
-              name={l.connectOther}
-              disabled={busy !== undefined}
-              ariaDisabled
-              onClick={() => busy === undefined && onConnectOther()}
-            />
-          )}
-        </div>
+      {onConnectOther && (
+        <WalletItemButton
+          name={l.connectOther}
+          icon={<WalletTile icon="plus" />}
+          disabled={busy !== undefined}
+          ariaDisabled
+          onClick={() => busy === undefined && onConnectOther()}
+        />
       )}
+      </div>
     </ModalSection>
   );
 }

@@ -38,7 +38,6 @@ export interface AccountModalProps {
   onSwitchChain: (chainId: number) => unknown;
   /** Resolve false to keep the modal open. */
   onSwitchAccount: (address: string) => boolean | Promise<boolean>;
-  onChooseAccount?: () => unknown;
   onConnectOther?: () => void;
   labels?: Partial<AccountLabels>;
 }
@@ -59,7 +58,6 @@ export function AccountModal({
   onDisconnect,
   onSwitchChain,
   onSwitchAccount,
-  onChooseAccount,
   onConnectOther,
   labels = {},
 }: AccountModalProps) {
@@ -152,7 +150,6 @@ export function AccountModal({
           busy={busy}
           labels={labels}
           onSelect={pick}
-          onChooseInWallet={onChooseAccount && (() => void run('', onChooseAccount))}
           onConnectOther={
             onConnectOther &&
             (() => {

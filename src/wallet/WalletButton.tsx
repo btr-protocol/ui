@@ -13,7 +13,6 @@ import { WalletGlyph } from './WalletGlyph';
 import {
   disconnectWallet,
   openConnectModal,
-  pickWalletAccount,
   switchWalletAccount,
   switchWalletChain,
   walletAccounts,
@@ -44,15 +43,13 @@ interface WalletButtonProps {
   /** Connected wallet's glyph (catalog id / name / announced icon). Default: the kit store. */
   wallet?: { id?: string; name: string; icon?: string; rdns?: string };
   onConnect?: () => void;
-  /** "Connect another wallet" in the account modal. Default: `onConnect`. */
+  /** "Add or switch wallet" in the account modal. Default: `onConnect`. */
   onConnectOther?: () => void;
   onDisconnect?: () => void;
   onSwitchChain?: (chainId: number) => boolean | Promise<boolean>;
   /** One click on an account row. Default: make it the wallet's active account (the wallet's picker when needed).
    *  An app with a session re-auths here when the account is not the session's. Resolve false to keep the modal open. */
   onSwitchAccount?: (address: string) => boolean | Promise<boolean>;
-  /** "Choose account in wallet". Default: the wallet's account picker. */
-  onChooseAccount?: () => void | Promise<unknown>;
   labels?: Partial<AccountLabels>;
 }
 
@@ -76,10 +73,6 @@ const storeSwitch = async (a: string) => {
   const p = walletEntry.value?.provider;
   return !!p && (await switchWalletAccount(p, a));
 };
-const storePick = async () => {
-  const p = walletEntry.value?.provider;
-  if (p) await pickWalletAccount(p);
-};
 
 export function WalletButton({
   className,
@@ -98,7 +91,6 @@ export function WalletButton({
   onDisconnect = disconnectWallet,
   onSwitchChain = switchWalletChain,
   onSwitchAccount = storeSwitch,
-  onChooseAccount = storePick,
   labels,
 }: WalletButtonProps) {
   const [showAccountModal, setShowAccountModal] = useState(false);
@@ -162,7 +154,6 @@ export function WalletButton({
           onDisconnect={onDisconnect}
           onSwitchChain={onSwitchChain}
           onSwitchAccount={onSwitchAccount}
-          onChooseAccount={onChooseAccount}
           onConnectOther={onConnectOther}
           labels={labels}
         />

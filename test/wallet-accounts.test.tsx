@@ -25,8 +25,10 @@ import {
 } from '../src';
 import { WALLETS } from '@btr-protocol/sdk/eth/wallets';
 import { WalletModal } from '../src/wallet/WalletModal';
+import { WalletGlyph } from '../src/wallet/WalletGlyph';
 import { labelsFrom, WALLET_MODAL_LABELS } from '../src';
-import { act, click, mount, until, useDom } from './dom';
+import { act, click, key, mount, until, useDom } from './dom';
+import { readRecent } from '../src/wallet/recentWallets';
 
 useDom();
 
@@ -151,6 +153,20 @@ describe('store + switch flow', () => {
   });
 });
 
+describe('restoreWallet with duplicate announcements', () => {
+  test('two announcements of the last rdns: nothing is bound silently', async () => {
+    const a = fakeWallet([SESSION]);
+    const b = fakeWallet([OTHER]);
+    await connectWallet(entry(a, 'io.metamask'));
+    disconnectWallet();
+    const dup = [{ ...entry(a, 'io.metamask'), info: { uuid: 'u1', name: 'MetaMask', rdns: 'io.metamask' } }, { ...entry(b, 'io.metamask'), info: { uuid: 'u2', name: 'MetaMask', rdns: 'io.metamask' } }];
+    expect(await restoreWallet(dup)).toBeUndefined();
+    expect(walletAddress.value).toBeUndefined();
+    expect(b.calls.length).toBe(0);
+    expect(await restoreWallet([dup[0] as never])).toBe(SESSION); // a single one still restores
+  });
+});
+
 describe('WalletButton account modal', () => {
   const chains = [
     { id: 143, name: 'Monad' },
@@ -231,13 +247,214 @@ describe('WalletModal', () => {
     const a = mount(<WalletModal isOpen onClose={() => {}} />);
     act(() => { announce(fakeWallet([SESSION]), 'io.metamask', 'MetaMask'); });
     await until(() => (document.body.textContent ?? '').includes('MetaMask'));
-    expect(document.body.textContent).not.toContain('Connect a mobile wallet');
+    expect(document.body.textContent).not.toContain('WalletConnect');
     a.unmount();
     configureWalletConnect({ projectId: 'public-id', metadata: { name: 'x', description: 'x', url: 'https://x', icons: [] }, chains: () => [143], loadSignClient: async () => ({ default: { init: async () => ({}) } }) });
     mount(<WalletModal isOpen onClose={() => {}} />);
     act(() => { announce(fakeWallet([SESSION]), 'io.metamask', 'MetaMask'); });
-    await until(() => (document.body.textContent ?? '').includes('Connect a mobile wallet'));
-    expect(document.body.textContent).toContain('Connect a mobile wallet');
+    await until(() => (document.body.textContent ?? '').includes('Mobile wallet'));
+    expect(document.body.textContent).toContain('WalletConnect');
+  });
+});
+
+describe('WalletModal sections', () => {
+  const announce = (p: ReturnType<typeof fakeWallet>, rdns: string, name: string) =>
+    window.dispatchEvent(new CustomEvent('eip6963:announceProvider', { detail: { info: { uuid: rdns, name, icon: '', rdns }, provider: p } }));
+  const headings = () => [...document.body.querySelectorAll('div.uppercase')].map((e) => e.textContent);
+
+  test('sections in order; a detected wallet is not offered for install; a connection is remembered as Recent', async () => {
+    localStorage.clear();
+    configureWalletConnect({ projectId: 'public-id', metadata: { name: 'x', description: 'x', url: 'https://x', icons: [] }, chains: () => [143], loadSignClient: async () => ({ default: { init: async () => ({}) } }) });
+    const m = mount(<WalletModal isOpen onClose={() => {}} onConnect={async () => {}} />);
+    expect(headings()).toEqual(['WalletConnect', 'Other']);
+    act(() => { announce(fakeWallet([SESSION]), 'io.rabby', 'Rabby Wallet'); });
+    await until(() => headings().includes('Installed'));
+    expect(headings()).toEqual(['Installed', 'WalletConnect', 'Other']);
+    const other = document.body.querySelector('a[href="https://rabby.io"]');
+    expect(other).toBeNull();
+    const metamask = document.body.querySelector('a[href="https://metamask.io"]') as HTMLAnchorElement;
+    expect(metamask.target).toBe('_blank');
+    expect(metamask.rel).toBe('noopener noreferrer');
+    click([...document.body.querySelectorAll('button')].find((b) => b.textContent?.includes('Rabby')) as HTMLElement);
+    await until(() => localStorage.getItem('btr-wallets-recent') !== null);
+    m.unmount();
+    mount(<WalletModal isOpen onClose={() => {}} onConnect={async () => {}} />);
+    act(() => { announce(fakeWallet([SESSION]), 'io.rabby', 'Rabby Wallet'); });
+    await until(() => headings().includes('Recent'));
+    expect(headings()).toEqual(['Recent', 'WalletConnect', 'Other']);
+  });
+});
+
+describe('WalletModal rows', () => {
+  const wc = (projectId: string) => configureWalletConnect({ projectId, metadata: { name: 'x', description: 'x', url: 'https://x', icons: [] }, chains: () => [143], loadSignClient: async () => ({ default: { init: async () => ({}) } }) });
+  const announce = (p: ReturnType<typeof fakeWallet>, rdns: string, name: string, uuid = rdns) =>
+    window.dispatchEvent(new CustomEvent('eip6963:announceProvider', { detail: { info: { uuid, name, icon: '', rdns }, provider: p } }));
+  const rows = () => [...document.body.querySelectorAll('button')].filter((b) => b.textContent?.includes('MetaMask'));
+
+  test('two announcements of one rdns: both in Installed captioned with the rdns, never Recent, and a connect is not remembered', async () => {
+    wc('');
+    localStorage.setItem('btr-wallets-recent', JSON.stringify([{ id: 'io.metamask', name: 'MetaMask', via: 'injected', last: 9, uses: 1 }]));
+    let got = 0;
+    mount(<WalletModal isOpen onClose={() => {}} onConnect={async () => void got++} />);
+    act(() => { announce(fakeWallet([SESSION]), 'io.metamask', 'MetaMask', 'u1'); announce(fakeWallet([OTHER]), 'io.metamask', 'MetaMask', 'u2'); });
+    await until(() => rows().length === 2);
+    expect([...document.body.querySelectorAll('div.uppercase')].map((e) => e.textContent)).toEqual(['Installed', 'Other']);
+    expect(rows().map((r) => r.textContent?.includes('io.metamask'))).toEqual([true, true]);
+    click(rows()[1] as HTMLElement);
+    await until(() => got === 1);
+    expect(readRecent().map((r) => r.id)).toEqual(['io.metamask']); // the seeded one only: no new use recorded
+    expect(readRecent()[0]?.uses).toBe(1);
+  });
+
+  test('a unique announcement is remembered, a Recent row has a Remove button, Disconnect keeps recents', async () => {
+    wc('');
+    mount(<WalletModal isOpen onClose={() => {}} onConnect={async () => {}} />);
+    act(() => { announce(fakeWallet([SESSION]), 'io.rabby', 'Rabby Wallet'); });
+    await until(() => rows().length === 0 && (document.body.textContent ?? '').includes('Rabby'));
+    click([...document.body.querySelectorAll('button')].find((b) => b.textContent?.includes('Rabby')) as HTMLElement);
+    await until(() => readRecent().length === 1);
+    disconnectWallet();
+    expect(readRecent().map((r) => r.id)).toEqual(['io.rabby']);
+    document.body.innerHTML = '';
+    mount(<WalletModal isOpen onClose={() => {}} onConnect={async () => {}} />);
+    act(() => { announce(fakeWallet([SESSION]), 'io.rabby', 'Rabby Wallet'); });
+    const rm = () => document.body.querySelector('button[aria-label^="Remove "]') as HTMLElement | null;
+    await until(() => !!rm());
+    expect(rm()?.getAttribute('aria-label')).toBe('Remove Rabby from recent wallets');
+    click(rm() as HTMLElement);
+    await until(() => !rm());
+    expect(readRecent()).toEqual([]);
+    expect([...document.body.querySelectorAll('div.uppercase')].map((e) => e.textContent)).toContain('Installed');
+  });
+
+  test('an unknown wallet that is also window.ethereum is listed once', async () => {
+    wc('');
+    const p = fakeWallet([SESSION]);
+    (window as unknown as { ethereum?: unknown }).ethereum = p;
+    try {
+      mount(<WalletModal isOpen onClose={() => {}} onConnect={async () => {}} />);
+      act(() => { announce(p, 'com.example.unknown', 'Unknown Wallet'); });
+      await until(() => (document.body.textContent ?? '').includes('Unknown Wallet'));
+      expect(document.body.textContent).not.toContain('Browser Wallet');
+      expect([...document.body.querySelectorAll('button')].filter((b) => b.textContent?.includes('Unknown Wallet')).length).toBe(1);
+    } finally {
+      delete (window as unknown as { ethereum?: unknown }).ethereum;
+    }
+  });
+
+  test('empty browser without WalletConnect: the list is headed "Install a wallet"', () => {
+    wc('');
+    mount(<WalletModal isOpen onClose={() => {}} />);
+    expect([...document.body.querySelectorAll('div.uppercase')].map((e) => e.textContent)).toEqual(['Install a wallet']);
+  });
+
+  test('sections are ARIA groups; Other links announce a new tab; arrows reach the WalletConnect and Other rows', async () => {
+    wc('public-id');
+    const opened: string[] = [];
+    const realOpen = window.open;
+    window.open = ((u: string) => void opened.push(String(u))) as never;
+    try {
+      mount(<WalletModal isOpen onClose={() => {}} onConnect={async () => {}} />);
+      act(() => { announce(fakeWallet([SESSION]), 'io.rabby', 'Rabby Wallet'); announce(fakeWallet([OTHER]), 'io.metamask', 'MetaMask'); });
+      await until(() => document.body.querySelectorAll('input').length > 0 && document.body.querySelectorAll('div.uppercase').length === 3);
+      expect(document.body.querySelectorAll('[role="group"][aria-labelledby]').length).toBe(3);
+      const link = document.body.querySelector('a[target="_blank"]') as HTMLAnchorElement;
+      expect(link.getAttribute('aria-label')).toContain('(opens in a new tab)');
+      const input = document.body.querySelector('input') as HTMLInputElement;
+      // order: Installed MetaMask, Installed Rabby, WalletConnect row, first Other row
+      for (let i = 0; i < 3; i++) key(input, 'ArrowDown');
+      key(input, 'Enter');
+      expect(opened).toEqual([link.getAttribute('href') as string]);
+    } finally {
+      window.open = realOpen;
+    }
+  });
+
+  test('nothing detected, WalletConnect off and every popular wallet already installed natively: the install list still shows', async () => {
+    const ua = Object.getOwnPropertyDescriptor(navigator, 'userAgent');
+    Object.defineProperty(navigator, 'userAgent', { configurable: true, get: () => 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)' });
+    const all = WALLETS.flatMap((x) => x.android ?? []);
+    const api = { installed: async () => ({ installed: all }), open: async () => ({ opened: true }) };
+    configureWalletLinks({ native: async () => ({ api }) });
+    (globalThis as { Capacitor?: unknown }).Capacitor = { isNativePlatform: () => true };
+    try {
+      wc('');
+      mount(<WalletModal isOpen onClose={() => {}} />);
+      await until(() => document.body.querySelectorAll('div.uppercase').length > 0);
+      await act(async () => { await new Promise((r) => setTimeout(r, 30)); });
+      expect([...document.body.querySelectorAll('div.uppercase')].map((e) => e.textContent)).toEqual(['Install a wallet']);
+      expect(document.body.querySelectorAll('a').length).toBeGreaterThan(0);
+    } finally {
+      delete (globalThis as { Capacitor?: unknown }).Capacitor;
+      configureWalletLinks({});
+      if (ua) Object.defineProperty(navigator, 'userAgent', ua);
+    }
+  });
+
+  test('phone: deep-link rows say Open, and Other is hidden while the wallet apps list is open', async () => {
+    const ua = Object.getOwnPropertyDescriptor(navigator, 'userAgent');
+    Object.defineProperty(navigator, 'userAgent', { configurable: true, get: () => 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)' });
+    try {
+      wc('');
+      const a = mount(<WalletModal isOpen onClose={() => {}} />);
+      const caps = [...document.body.querySelectorAll('a')].map((x) => x.textContent ?? '');
+      expect(caps.length).toBeGreaterThan(0);
+      const deep = [...document.body.querySelectorAll('a')].filter((x) => !x.hasAttribute('target'));
+      expect(deep.length).toBeGreaterThan(0);
+      expect(deep.every((x) => x.textContent?.includes('Open') && !x.textContent.includes('Install'))).toBe(true);
+      a.unmount();
+      wc('public-id');
+      mount(<WalletModal isOpen onClose={() => {}} />);
+      expect([...document.body.querySelectorAll('div.uppercase')].map((e) => e.textContent)).not.toContain('Other');
+      // a wallet in this browser: the wallet-apps list stays closed, so Other is still offered (deep links)
+      document.body.innerHTML = '';
+      mount(<WalletModal isOpen onClose={() => {}} />);
+      act(() => { window.dispatchEvent(new CustomEvent('eip6963:announceProvider', { detail: { info: { uuid: 'u', name: 'Rabby Wallet', icon: '', rdns: 'io.rabby' }, provider: fakeWallet([SESSION]) } })); });
+      await until(() => [...document.body.querySelectorAll('div.uppercase')].some((e) => e.textContent === 'Other'));
+      expect([...document.body.querySelectorAll('div.uppercase')].map((e) => e.textContent)).toEqual(['This browser', 'WalletConnect', 'Other']);
+    } finally {
+      if (ua) Object.defineProperty(navigator, 'userAgent', ua);
+      else delete (navigator as unknown as { userAgent?: string }).userAgent;
+    }
+  });
+});
+
+describe('WalletGlyph', () => {
+  test('never an empty tile: generic glyph without an image, glyph under a loading image, glyph again after an error', () => {
+    const none = mount(<WalletGlyph id="no-such-wallet" name="Zed" />);
+    expect(document.body.querySelector('svg')).toBeTruthy();
+    expect(document.body.querySelector('img')).toBeNull();
+    none.unmount();
+    mount(<WalletGlyph id="no-such-wallet" name="Zed" announcedIcon="data:image/svg+xml,%3Csvg/%3E" />);
+    const img = document.body.querySelector('img') as HTMLImageElement;
+    expect(document.body.querySelector('svg')).toBeTruthy(); // under the image while it loads
+    expect(img.className).toContain('opacity-0');
+    act(() => { img.dispatchEvent(new Event('load')); });
+    expect((document.body.querySelector('img') as HTMLImageElement).className).not.toContain('opacity-0');
+    act(() => { (document.body.querySelector('img') as HTMLImageElement).dispatchEvent(new Event('error')); });
+    expect(document.body.querySelector('img')).toBeNull();
+    expect(document.body.querySelector('svg')).toBeTruthy();
+  });
+});
+
+describe('WalletGlyph announced icon and walletIcon keys', () => {
+  test('only a small data:image icon is drawn; https and oversize give the generic glyph', () => {
+    const draw = (icon: string) => {
+      const m = mount(<WalletGlyph id="no-such-wallet" name="Zed" announcedIcon={icon} />);
+      const has = !!document.body.querySelector('img');
+      m.unmount();
+      return has;
+    };
+    expect(draw('data:image/svg+xml,%3Csvg/%3E')).toBe(true);
+    expect(draw('https://evil.example/x.png')).toBe(false);
+    expect(draw(`data:image/png;base64,${'A'.repeat(33 * 1024)}`)).toBe(false);
+    expect(draw('data:text/html,hi')).toBe(false);
+  });
+  test('inherited object keys are not wallets', async () => {
+    const { walletIcon } = await import('../src/lib/walletIcon');
+    expect(walletIcon('constructor')).toBeUndefined();
+    expect(walletIcon('__proto__')).toBeUndefined();
+    expect(walletIcon('rabby')).toBeTruthy();
   });
 });
 
@@ -358,6 +575,22 @@ describe('review fixes', () => {
     expect(document.activeElement).toBe(rows[1]!);
     act(() => { rows[1]!.dispatchEvent(new KeyboardEvent('keydown', { key: 'End', bubbles: true })); });
     expect(document.activeElement).toBe(rows[2]!);
+  });
+
+  test('add / switch wallet is one more row in the arrow order, no wallet brand icon, and there is no "choose account" row', async () => {
+    const { AccountList } = await import('../src');
+    let opened = 0;
+    const { host } = mount(<AccountList accounts={[SESSION, OTHER]} active={SESSION} onSelect={() => {}} onConnectOther={() => void opened++} />);
+    const rows = [...host.querySelectorAll('button')];
+    const add = rows[rows.length - 1]!;
+    expect(add.textContent).toContain('Add or switch wallet');
+    expect(add.querySelector('img')).toBeNull();
+    expect(host.textContent).not.toContain('Choose account');
+    rows[0]!.focus();
+    act(() => { rows[0]!.dispatchEvent(new KeyboardEvent('keydown', { key: 'End', bubbles: true })); });
+    expect(document.activeElement).toBe(add);
+    click(add);
+    expect(opened).toBe(1);
   });
 
   test('labelsFrom walks the keys: the app translates without mirroring the list', () => {

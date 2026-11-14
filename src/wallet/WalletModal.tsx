@@ -1,25 +1,28 @@
-// THE connect modal of every BTR app (moved from btr.markets): installed wallets (EIP-6963 + legacy injected), a
-// WalletConnect pairing (QR on desktop, deep links to the wallet apps on phones), the in-wallet-browser rows, and the
-// "last used" / natively-detected ordering. The app decides what a connection means through `onConnect`.
+// THE connect modal of every BTR app (moved from btr.markets). Sections, empty ones not rendered: Recent (wallets this browser
+// connected with, max 3), Installed (EIP-6963 + legacy injected), WalletConnect (QR on desktop, deep links to the wallet apps
+// on phones; needs a project id), Other (popular wallets this browser lacks, each an install link). The app decides what a
+// connection means through `onConnect`.
 import type { WalletDef } from '@btr-protocol/sdk/eth/wallets';
-import { getDownloadUrl, isKnownWallet, isMobile } from '@btr-protocol/sdk/eth/wallets';
+import { WALLETS, getDownloadUrl, isKnownWallet, isMobile } from '@btr-protocol/sdk/eth/wallets';
 import type { ComponentChildren } from 'preact';
-import { useEffect, useState } from 'preact/hooks';
+import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { copyText } from '../lib/clipboard';
 import { addNotification } from '../lib/notifications';
 import { useKeyboardNav } from '../lib/useKeyboardNav';
 import { BaseModal, MODAL_PADDING, ModalSection } from '../ui/BaseModal';
 import { Button } from '../ui/Button';
+import { ButtonGroup } from '../ui/ButtonGroup';
+import { CloseButton } from '../ui/CloseButton';
 import { Notice, PageState } from '../ui/Feedback';
 import { Icon } from '../ui/Icon';
 import { TOOLTIP_LINK } from '../ui/InfoBox';
 import { KeyboardShortcutGroup } from '../ui/KeyboardShortcut';
 import { Spinner } from '../ui/Spinner';
 import { WalletItemButton } from '../ui/WalletItemButton';
-import { WalletGlyph } from './WalletGlyph';
+import { WalletGlyph, WalletTile } from './WalletGlyph';
 import { WALLET_MODAL_LABELS, type WalletModalLabels } from './labels';
 import { connectError, useWalletConnection } from './connection';
-import { type WalletInfo, useInjectedWallets } from './useInjectedWallets';
+import { type InjectedWallet as WalletInfo, useInjectedWallets } from './useInjectedWallets';
 import {
   type Eip1193Provider,
   type ProviderEntry,
@@ -28,6 +31,8 @@ import {
   connectWallet,
   walletChainId,
 } from './wallet';
+import { OTHER_IDS, OTHER_MAX, type RecentRow, otherHref, sectionWallets } from './walletSections';
+import { readRecent, recentEntry, recordRecent, removeRecent } from './recentWallets';
 import { walletConnectEnabled } from './walletConnectShell';
 import {
   browseHref,
@@ -110,6 +115,8 @@ export function WalletModal({
   const [err, setErr] = useState('');
   const [copied, setCopied] = useState(false);
   const [detected, setDetected] = useState<string[]>([]);
+  const [recents, setRecents] = useState(readRecent);
+  const qrRef = useRef<HTMLDivElement>(null);
 
   const keepLast = (id: string) => {
     if (onLastWallet) return onLastWallet(id);
@@ -121,11 +128,14 @@ export function WalletModal({
 
   // Pair up front (mobile Chrome only launches an app from a live gesture, so the URI must exist
   // before the tap) unless a provider is injected: the wallet's own browser needs no pairing.
-  const pairing = wcOn && isOpen && (injected.length === 0 || more);
+  const pairing = wcOn && isOpen && (more || (mobile && injected.length === 0));
   const showQr = pairing && (!mobile || qrOpen);
   const finish = async (provider: Eip1193Provider, w: ConnectedWallet) => {
     await onConnect(provider, w);
     if (isKnownWallet(w.id)) keepLast(w.id);
+    // A wallet that shares its rdns with another announcement cannot be told apart next time: it is not remembered.
+    const shared = w.via === 'injected' && injected.some((x) => x.provider === provider && sections.ambiguous.has(x));
+    if (!shared) setRecents(recordRecent(recentEntry(w, w.via)));
     onClose();
   };
   const {
@@ -142,6 +152,15 @@ export function WalletModal({
       addNotification('success', l.connectedViaWc);
     },
   });
+
+  useEffect(() => {
+    if (isOpen) setRecents(readRecent());
+  }, [isOpen]);
+
+  // The "Another device" button unmounts on click: keyboard focus moves to the QR block it opened.
+  useEffect(() => {
+    if (showQr && mobile) qrRef.current?.focus();
+  }, [showQr, mobile]);
 
   useEffect(() => {
     void installedWallets(mobileWallets()).then(setDetected);
@@ -185,14 +204,42 @@ export function WalletModal({
     });
 
   const q = search.toLowerCase();
-  const shown = injected.filter((w) => w.name.toLowerCase().includes(q));
+  const has = (name: string) => name.toLowerCase().includes(q);
+  const sections = sectionWallets({ injected, recents, wcOn, nativeIds: detected });
+  const recentRows = sections.recent.filter((r) => has(r.recent.name));
+  const installedRows = sections.installed.filter((w) => has(w.name));
+  const empty = injected.length === 0 && !wcOn;
+  // Nothing to connect with and nothing to install from: the popular wallets anyway, never an empty modal.
+  const popularDefs = OTHER_IDS.flatMap((id) => WALLETS.find((w) => w.id === id) ?? []).slice(0, OTHER_MAX);
+  const otherRows = empty && sections.other.length === 0 ? popularDefs : sections.other.filter((w) => has(w.name));
+  const otherShown = otherRows.length > 0 && !waiting && !(pairing && mobile);
+  const wcRowShown = wcOn && !(pairing && mobile) && !waiting;
+  const wKey = (w: WalletInfo) => w.uuid ?? w.id;
+  const otherLink = (w: WalletDef) => otherHref(w, mobile, location.href);
+  // Keyboard order = the rows in view, top to bottom: Recent, Installed, the WalletConnect row, Other.
+  const nav = [
+    ...recentRows.map((r) =>
+      r.wallet
+        ? { id: wKey(r.wallet), run: () => void connectInjected(r.wallet as WalletInfo) }
+        : { id: `wc-${r.recent.id}`, run: () => setMore(true) },
+    ),
+    ...installedRows.map((w) => ({ id: wKey(w), run: () => void connectInjected(w) })),
+    ...(wcRowShown ? [{ id: 'wc', run: () => setMore(!more) }] : []),
+    ...(otherShown ? otherRows.map((w) => ({ id: `other-${w.id}`, run: () => void window.open(otherLink(w).href, '_blank', 'noopener,noreferrer') })) : []),
+  ];
+  const navKey = nav.map((n) => n.id).join('|');
+  const navIds = useMemo(() => navKey.split('|'), [navKey]);
   const searchable = !mobile && injected.length > 1;
   const { selectedIndex, handleKeyDown } = useKeyboardNav({
-    items: shown,
-    onSelect: connectInjected,
+    items: navIds,
+    onSelect: (id) => nav.find((n) => n.id === id)?.run(),
     isEnabled: isOpen && searchable && !connecting,
   });
-  const { mine, popular } = orderWallets(mobileWallets(), lastWallet, detected);
+  const hl = (id: string) => searchable && navIds[selectedIndex] === id;
+  const recentIds = recentRows.map((r) => r.wallet?.id ?? r.recent.id);
+  const apps = orderWallets(mobileWallets(), lastWallet, detected);
+  const mine = apps.mine.filter((w) => !recentIds.includes(w.id));
+  const popular = apps.popular.filter((w) => !recentIds.includes(w.id));
   const error = err || pairError;
   const copyGlyph = <Icon name={copied ? 'check-circle' : 'copy'} className="w-4 h-4" />;
 
@@ -209,6 +256,45 @@ export function WalletModal({
         disabled={!browse && !uri}
         onClick={(e) => launch(w, e)}
       />
+    );
+  };
+
+  const injectedRow = (w: WalletInfo) => (
+    <WalletItemButton
+      key={wKey(w)}
+      name={mobile ? fill(l.connectInBrowser, w.name) : w.name}
+      caption={sections.ambiguous.has(w) ? w.rdns || w.id : undefined}
+      icon={<WalletGlyph id={w.id} name={w.name} announcedIcon={w.announcedIcon} size={28} />}
+      variant="detected"
+      isConnecting={connecting === w.id}
+      disabled={connecting !== null}
+      isHighlighted={hl(wKey(w))}
+      onClick={() => connectInjected(w)}
+    />
+  );
+
+  // A recent that connected through WalletConnect: a phone with a live pairing opens that wallet's app, anything else starts the pairing.
+  const recentRow = ({ recent, wallet }: RecentRow<WalletInfo>) => {
+    const def = wallet ? undefined : mobileWallets().find((w) => w.id === recent.id);
+    return (
+      <div key={wallet ? wKey(wallet) : `wc-${recent.id}`} className="flex items-stretch">
+        <div className="flex-1 min-w-0">
+          {wallet ? (
+            injectedRow(wallet)
+          ) : (
+            <WalletItemButton
+              name={recent.name}
+              icon={def ? <WalletGlyph id={def.id} name={def.name} size={28} /> : <WalletTile icon="link" />}
+              caption={l.viaWalletConnect}
+              isHighlighted={hl(`wc-${recent.id}`)}
+              onClick={(e) => (mobile && uri && def ? launch(def, e) : setMore(true))}
+            />
+          )}
+        </div>
+        <div className="w-10 shrink-0 flex items-center justify-center border-b border-border bg-bg-2 text-fg-2">
+          <CloseButton size={16} aria-label={fill(l.removeRecent, recent.name)} onClick={() => setRecents(removeRecent(recent.id))} />
+        </div>
+      </div>
     );
   };
 
@@ -255,93 +341,114 @@ export function WalletModal({
           </div>
         )}
 
-        {injected.length > 0 && (
-          <ModalSection title={mobile ? l.thisBrowser : l.installed}>
-            {shown.map((w, i) => (
-              <WalletItemButton
-                key={w.id}
-                name={mobile ? fill(l.connectInBrowser, w.name) : w.name}
-                icon={<WalletGlyph id={w.id} name={w.name} announcedIcon={w.announcedIcon} size={28} />}
-                variant="detected"
-                isConnecting={connecting === w.id}
-                disabled={connecting !== null}
-                isHighlighted={searchable && selectedIndex === i}
-                onClick={() => connectInjected(w)}
-              />
-            ))}
+        {recentRows.length > 0 && (
+          <ModalSection title={l.recent} groupId="wm-recent">
+            {recentRows.map(recentRow)}
           </ModalSection>
         )}
 
-        {injected.length === 0 && !wcOn && <p className={`${MODAL_PADDING} py-3 text-sm text-fg-2`}>{l.empty}</p>}
-
-        {wcOn && !pairing && (
-          <div className={`${MODAL_PADDING} py-3`}>
-            <Button onClick={() => setMore(true)}>{mobile ? l.otherWallets : l.connectMobile}</Button>
-          </div>
+        {installedRows.length > 0 && (
+          <ModalSection title={mobile ? l.thisBrowser : l.installed} groupId="wm-installed">
+            {installedRows.map(injectedRow)}
+          </ModalSection>
         )}
 
-        {pairing && mobile && !waiting && (
-          <>
-            {!uri && !pairError && <p className={`${MODAL_PADDING} pt-3 text-xs text-fg-2`}>{l.preparing}</p>}
-            {mine.length > 0 && <ModalSection title={l.yourWallets}>{mine.map(row)}</ModalSection>}
-            <ModalSection title={mine.length ? l.moreWallets : l.wallets}>{popular.map(row)}</ModalSection>
-          </>
+        {empty && <p className={`${MODAL_PADDING} py-3 text-sm text-fg-2`}>{l.empty}</p>}
+
+        {wcOn && (
+          <ModalSection title={l.walletConnect} groupId="wm-wc">
+            {wcRowShown && (
+              <WalletItemButton
+                name={mobile ? l.otherWallets : l.connectMobile}
+                icon={<WalletTile icon="link" />}
+                caption={mobile ? l.appsCaption : l.qrCaption}
+                isSelected={pairing}
+                isHighlighted={hl('wc')}
+                onClick={() => setMore(!more)}
+              />
+            )}
+
+            {pairing && mobile && !waiting && (
+              <>
+                {!uri && !pairError && <p className={`${MODAL_PADDING} py-3 text-xs text-fg-2`}>{l.preparing}</p>}
+                {mine.map(row)}
+                {popular.map(row)}
+              </>
+            )}
+
+            {waiting && (
+              <div className={`flex flex-col gap-2 items-center ${MODAL_PADDING} py-6 text-center`}>
+                <WalletGlyph id={waiting.id} name={waiting.name} size={48} />
+                <p className="flex items-center gap-2 text-sm text-fg-0">
+                  <Spinner />
+                  {fill(l.waitingFor, waiting.name)}
+                </p>
+                <p className="text-xs text-fg-2">{l.approveThere}</p>
+                <ButtonGroup aria-label={l.title} wrap className="justify-center">
+                  <Button variant="primary" onClick={() => uri && void openWallet(waiting, uri)}>
+                    {l.openAgain}
+                  </Button>
+                  <Button onClick={() => setQrOpen(true)}>{l.showQr}</Button>
+                  <Button variant="ghost" onClick={retry}>
+                    {l.cancel}
+                  </Button>
+                </ButtonGroup>
+                <a
+                  href={getDownloadUrl(waiting.id) ?? undefined}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={`text-xs ${TOOLTIP_LINK}`}
+                >
+                  {fill(l.getWallet, waiting.name)}
+                </a>
+              </div>
+            )}
+
+            {pairing && mobile && !waiting && !qrOpen && (
+              <div className={`${MODAL_PADDING} py-3`}>
+                <Button onClick={() => setQrOpen(true)}>{l.anotherDeviceQr}</Button>
+              </div>
+            )}
+
+            {showQr && (
+              <div ref={qrRef} tabIndex={-1} role="group" aria-label={l.qrAlt} className={`flex flex-col gap-4 items-center ${MODAL_PADDING} py-4 outline-none`}>
+                {qr ? (
+                  <div className="bg-white p-2 rounded-lg">
+                    <img src={qr} alt={l.qrAlt} className="w-full max-w-60 aspect-square" />
+                  </div>
+                ) : qr === '' || pairError ? (
+                  <PageState kind="error" message={l.qrFailed} className="py-0" />
+                ) : (
+                  <PageState kind="loading" message={l.qrLoading} className="py-8" />
+                )}
+                <Button disabled={!uri} onClick={copy} leftIcon={copyGlyph}>
+                  {copied ? l.copied : l.copyLink}
+                </Button>
+              </div>
+            )}
+          </ModalSection>
         )}
 
-        {waiting && (
-          <div className={`flex flex-col gap-2 items-center ${MODAL_PADDING} py-6 text-center`}>
-            <WalletGlyph id={waiting.id} name={waiting.name} size={48} />
-            <p className="flex items-center gap-2 text-sm text-fg-0">
-              <Spinner />
-              {fill(l.waitingFor, waiting.name)}
-            </p>
-            <p className="text-xs text-fg-2">{l.approveThere}</p>
-            <div className="flex flex-wrap justify-center gap-2">
-              <Button variant="primary" onClick={() => uri && void openWallet(waiting, uri)}>
-                {l.openAgain}
-              </Button>
-              <Button onClick={() => setQrOpen(true)}>{l.showQr}</Button>
-              <Button variant="ghost" onClick={retry}>
-                {l.cancel}
-              </Button>
-            </div>
-            <a
-              href={getDownloadUrl(waiting.id) ?? undefined}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={`text-xs ${TOOLTIP_LINK}`}
-            >
-              {fill(l.getWallet, waiting.name)}
-            </a>
-          </div>
-        )}
-
-        {pairing && mobile && !waiting && !qrOpen && (
-          <div className={`${MODAL_PADDING} py-3`}>
-            <Button onClick={() => setQrOpen(true)}>{l.anotherDeviceQr}</Button>
-          </div>
-        )}
-
-        {showQr && (
-          <ModalSection title={mobile ? l.anotherDevice : l.scanWithMobile}>
-            <div className={`flex flex-col gap-4 items-center ${MODAL_PADDING} py-4`}>
-              {qr ? (
-                <div className="bg-white p-2 rounded-lg">
-                  <img src={qr} alt={l.qrAlt} className="w-full max-w-60 aspect-square" />
-                </div>
-              ) : qr === '' || pairError ? (
-                <PageState kind="error" message={l.qrFailed} className="py-0" />
-              ) : (
-                <PageState kind="loading" message={l.qrLoading} className="py-8" />
-              )}
-              <Button
-                disabled={!uri}
-                onClick={copy}
-                leftIcon={copyGlyph}
-              >
-                {copied ? l.copied : l.copyLink}
-              </Button>
-            </div>
+        {/* On a phone the open pairing already lists the wallet apps: no second list of the same wallets. */}
+        {otherShown && (
+          <ModalSection title={empty ? l.installWallet : l.other} groupId="wm-other">
+            {otherRows.map((w) => {
+              const { href, deepLink } = otherLink(w);
+              return (
+                <WalletItemButton
+                  key={w.id}
+                  name={w.name}
+                  icon={<WalletGlyph id={w.id} name={w.name} size={28} />}
+                  caption={deepLink ? l.open : l.install}
+                  ariaLabel={deepLink ? undefined : `${w.name}, ${l.install} ${l.newTab}`}
+                  variant="discover"
+                  isHighlighted={hl(`other-${w.id}`)}
+                  href={href}
+                  external={!deepLink}
+                  onClick={() => {}}
+                />
+              );
+            })}
           </ModalSection>
         )}
         {extra}
