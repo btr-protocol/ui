@@ -228,13 +228,41 @@ describe('WalletModal', () => {
     const a = mount(<WalletModal isOpen onClose={() => {}} />);
     act(() => { announce(fakeWallet([SESSION]), 'io.metamask', 'MetaMask'); });
     await until(() => (document.body.textContent ?? '').includes('MetaMask'));
-    expect(document.body.textContent).not.toContain('Connect a mobile wallet');
+    expect(document.body.textContent).not.toContain('WalletConnect');
     a.unmount();
     configureWalletConnect({ projectId: 'public-id', metadata: { name: 'x', description: 'x', url: 'https://x', icons: [] }, chains: () => [143], loadSignClient: async () => ({ default: { init: async () => ({}) } }) });
     mount(<WalletModal isOpen onClose={() => {}} />);
     act(() => { announce(fakeWallet([SESSION]), 'io.metamask', 'MetaMask'); });
-    await until(() => (document.body.textContent ?? '').includes('Connect a mobile wallet'));
-    expect(document.body.textContent).toContain('Connect a mobile wallet');
+    await until(() => (document.body.textContent ?? '').includes('Mobile wallet'));
+    expect(document.body.textContent).toContain('WalletConnect');
+  });
+});
+
+describe('WalletModal sections', () => {
+  const announce = (p: ReturnType<typeof fakeWallet>, rdns: string, name: string) =>
+    window.dispatchEvent(new CustomEvent('eip6963:announceProvider', { detail: { info: { uuid: rdns, name, icon: '', rdns }, provider: p } }));
+  const headings = () => [...document.body.querySelectorAll('div.uppercase')].map((e) => e.textContent);
+
+  test('sections in order; a detected wallet is not offered for install; a connection is remembered as Recent', async () => {
+    localStorage.clear();
+    configureWalletConnect({ projectId: 'public-id', metadata: { name: 'x', description: 'x', url: 'https://x', icons: [] }, chains: () => [143], loadSignClient: async () => ({ default: { init: async () => ({}) } }) });
+    const m = mount(<WalletModal isOpen onClose={() => {}} onConnect={async () => {}} />);
+    expect(headings()).toEqual(['WalletConnect', 'Other']);
+    act(() => { announce(fakeWallet([SESSION]), 'io.rabby', 'Rabby Wallet'); });
+    await until(() => headings().includes('Installed'));
+    expect(headings()).toEqual(['Installed', 'WalletConnect', 'Other']);
+    const other = document.body.querySelector('a[href="https://rabby.io"]');
+    expect(other).toBeNull();
+    const metamask = document.body.querySelector('a[href="https://metamask.io"]') as HTMLAnchorElement;
+    expect(metamask.target).toBe('_blank');
+    expect(metamask.rel).toBe('noopener noreferrer');
+    click([...document.body.querySelectorAll('button')].find((b) => b.textContent?.includes('Rabby')) as HTMLElement);
+    await until(() => localStorage.getItem('btr-wallets-recent') !== null);
+    m.unmount();
+    mount(<WalletModal isOpen onClose={() => {}} onConnect={async () => {}} />);
+    act(() => { announce(fakeWallet([SESSION]), 'io.rabby', 'Rabby Wallet'); });
+    await until(() => headings().includes('Recent'));
+    expect(headings()).toEqual(['Recent', 'WalletConnect', 'Other']);
   });
 });
 
@@ -355,6 +383,22 @@ describe('review fixes', () => {
     expect(document.activeElement).toBe(rows[1]!);
     act(() => { rows[1]!.dispatchEvent(new KeyboardEvent('keydown', { key: 'End', bubbles: true })); });
     expect(document.activeElement).toBe(rows[2]!);
+  });
+
+  test('add / switch wallet is one more row in the arrow order, no wallet brand icon, and there is no "choose account" row', async () => {
+    const { AccountList } = await import('../src');
+    let opened = 0;
+    const { host } = mount(<AccountList accounts={[SESSION, OTHER]} active={SESSION} onSelect={() => {}} onConnectOther={() => void opened++} />);
+    const rows = [...host.querySelectorAll('button')];
+    const add = rows[rows.length - 1]!;
+    expect(add.textContent).toContain('Add or switch wallet');
+    expect(add.querySelector('img')).toBeNull();
+    expect(host.textContent).not.toContain('Choose account');
+    rows[0]!.focus();
+    act(() => { rows[0]!.dispatchEvent(new KeyboardEvent('keydown', { key: 'End', bubbles: true })); });
+    expect(document.activeElement).toBe(add);
+    click(add);
+    expect(opened).toBe(1);
   });
 
   test('labelsFrom walks the keys: the app translates without mirroring the list', () => {

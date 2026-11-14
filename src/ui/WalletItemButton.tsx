@@ -21,6 +21,8 @@ interface WalletItemButtonProps {
   /** Renders a real link (long-press / open-in-app work) instead of a button; the row is a button
    *  again while it is unset or `disabled`. */
   href?: string;
+  /** With `href`: a page outside this app, opened in a new tab (`noopener noreferrer`). */
+  external?: boolean;
   disabled?: boolean;
   variant?: WalletItemVariant;
   isConnecting?: boolean;
@@ -41,6 +43,7 @@ export function WalletItemButton({
   icon,
   onClick,
   href,
+  external = false,
   disabled = false,
   variant = 'default',
   isConnecting = false,
@@ -99,7 +102,7 @@ export function WalletItemButton({
   );
   const button =
     href && !off ? (
-      <a href={href} className={cls} onClick={onClick}>
+      <a href={href} className={cls} onClick={onClick} {...(external && { target: '_blank', rel: 'noopener noreferrer' })}>
         {content}
       </a>
     ) : (

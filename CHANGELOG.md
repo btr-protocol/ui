@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.10.0
+- CONSUMER ACTION: `AccountModal` / `AccountList` / `WalletButton` lose `onChooseAccount` / `onChooseInWallet` and the label `chooseInWallet` ("Choose account in wallet": same flow as switching). `connectOther` now reads "Add or switch wallet" and is a row like the accounts (generic plus mark, in the arrow-key order) that opens the connect list; delete the app's `chooseInWallet` translation. Removed labels `yourWallets`, `moreWallets`, `wallets`; new labels `recent`, `walletConnect`, `other`, `install`, `viaWalletConnect`, `qrCaption`, `appsCaption` (`connectMobile` is now "Mobile wallet", `otherWallets` "Wallet apps").
+- Connect modal sections, empty ones not rendered: Recent (wallets this browser connected with, max 3, newest first; `btr-wallets-recent` in localStorage: id = rdns or catalog id, name, small icon, time, use count, never an address), Installed, WalletConnect (a row that opens the QR on desktop or the wallet-app deep links on phones; absent without a project id), Other (popular wallets this browser lacks, max 5, each an install link, on phones the wallet's deep link). Brings back the "Discover" list the btr.markets modal lost in 8e175e318 and gives WalletConnect its own section. A WalletConnect pairing is no longer opened up front on desktop: one click on the row.
+- New: `sectionWallets`, `otherHref`, `OTHER_IDS` (walletSections), `readRecent` / `recordRecent` / `noteUse` / `rankRecent` / `recentEntry` (recentWallets), `WalletTile` (generic action mark in a wallet mark's size). `WalletItemButton` `external` (with `href`: new tab, `noopener noreferrer`).
+
 ## 0.9.1
 - `ChartStack`: one small value table beside each pane (that pane's series at the crosshair, sorted live) instead of one wide table with a column per pane; `valuesWidth` defaults to 15rem. Below xl the pane height applies to the chart alone and the table sits under it; the charts are memoised so a crosshair move re-renders only the tables.
 
