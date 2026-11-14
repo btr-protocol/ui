@@ -49,7 +49,7 @@ test('the kit itself is clean', () => {
 });
 
 test('check-copy self-test (boundaries, entities, css and en dash forms)', () => {
-  const r = Bun.spawnSync(['bash', 'scripts/check-copy.sh', '--self-test'], { stdout: 'pipe', stderr: 'pipe' }, 60_000); // spawns grep per fixture: seconds on a busy machine
+  const r = Bun.spawnSync(['bash', 'scripts/check-copy.sh', '--self-test'], { stdout: 'pipe', stderr: 'pipe' });
   expect(r.stderr.toString()).toBe('');
   expect(r.exitCode).toBe(0);
-});
+}, 60_000); // spawns grep per fixture: seconds on a busy machine
