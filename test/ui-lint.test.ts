@@ -92,7 +92,6 @@ const RAW_BUTTON_OK: Record<string, string> = {
   'src/ui/Feedback.tsx': 'notice-action is tinted by the notice tone (.notice-action); Toast dismiss is an icon',
   'src/ui/AddrActions.tsx': 'icon-only copy / explorer glyph buttons inline with text',
   'src/ui/Table.tsx': 'sortable header cell and row-expander: table chrome, not an action button',
-  'src/ui/SegmentedControl.tsx': 'segments are a radio-like group, not buttons',
   'src/layout/TabBar.tsx': 'tab items',
   'src/layout/Footer.tsx': 'footer text links rendered as buttons',
   'src/layout/Header.tsx': 'nav items / icon chrome',

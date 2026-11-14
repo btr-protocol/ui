@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.12.0
+- Tabs on ButtonGroup. `SegmentedControl` (the kit's tab selector) is now a `ButtonGroup` of `Button`s: height, line height, padding, radius, border and dividers are the group's, so a tab row and a button group in one toolbar are pixel-identical. The pill container and its own tab styles are gone. API unchanged for existing call sites.
+- SIZE CHANGE: `size="sm"` (and the default) now equals the standard ButtonGroup height (Button sm: 32 px on desktop, 44 px on touch, text-sm) plus the group's 1 px border, 34 px in all. It used to be compact (text-xs, 24 px tab inside a 30 px pill). New `size="xs"` is the compact one (Button xs). Rows that put tabs beside Inputs, Selects or Buttons now line up; check dense rows that relied on the old height.
+- New `presentation="attached"`: the strip sits on the top edge of the card it controls, the active tab shares the card's surface and covers the shared edge (chrome-style), with a primary accent on the active tab's top edge (`accent={false}` for flush). The card is the `children` (rendered as the `tabpanel`, named by the active tab, a tab stop when it has nothing focusable) or yours via `panelId`. `aria-controls` points at that one id.
+- New `activation="manual"`: arrows move focus only, Enter / Space selects (default `auto`: arrows also select, as before). Arrows and Home / End step from the focused tab and skip disabled ones.
+- Overflow: one line that scrolls, the edge fade as before; the active tab is centred from its measured rect (the scroll container is now positioned).
+- CONSUMER ACTION: `SegmentedControl` requires a name for its tablist, `aria-label` or `aria-labelledby` (a TypeScript error without one; the kit has no internal call site). Safe app sites to label: ActionsTabs:19, ActionsPage:68, ActivityFeed:118, DefiParams:110, HaltSheet:84, HoldingsChart:185 and :188, Params:182, SafeDetail:47, SendParams:157, VaultPage:147. The front keeps its own fork and is unaffected until it switches.
+- ButtonGroup: dividers use `border-inline-start` (RTL). Plain groups wrap their text exactly as before; only tabs are `nowrap`.
+- Tests: `test/tabs.browser.test.tsx` renders in Chromium (playwright-core, a new devDependency; fails with the install command, `bunx playwright install chromium`, where no Chromium is found).
+
 ## 0.11.2
 - WalletConnect tile: hovering a mark shows the wallet's name again (the btr.markets tile had it), through the kit `Tooltip` (portaled, so the tile's overflow and the modal do not clip it). The marks stay `aria-hidden`, the button's accessible name is unchanged, no tab stop is added, the tile's height and grid are unchanged, and touch never opens one (the tile is desktop only).
 

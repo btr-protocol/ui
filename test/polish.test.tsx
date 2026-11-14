@@ -29,8 +29,8 @@ test('icon shapes: chains are rounded squares (owner round 4), tokens and protoc
 
 test('SegmentedControl equal mode uses equal-width columns', () => {
   const o = [{ value: 'a', label: 'A' }, { value: 'bb', label: 'Longer' }];
-  expect(render(<SegmentedControl options={o} value="a" onChange={() => {}} equal />)).toContain('auto-cols-fr');
-  expect(render(<SegmentedControl options={o} value="a" onChange={() => {}} />)).not.toContain('auto-cols-fr');
+  expect(render(<SegmentedControl aria-label="Sections" options={o} value="a" onChange={() => {}} equal />)).toContain('btn-group-equal');
+  expect(render(<SegmentedControl aria-label="Sections" options={o} value="a" onChange={() => {}} />)).not.toContain('btn-group-equal');
 });
 
 test('PageHeader puts controls beside the title (row from sm)', () => {
