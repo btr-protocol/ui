@@ -156,42 +156,61 @@ const fitModes = [
   { name: '390px touch (coarse pointer)', w: 390, touch: true },
   { name: '1440px coarse pointer', w: 1440, touch: true },
 ];
-async function openMode(w: number, touch: boolean) {
+async function withMode<R>(w: number, touch: boolean, fn: (page: import('playwright-core').Page) => Promise<R>): Promise<R> {
   const ctx = await browser!.newContext({ viewport: { width: w, height: 900 }, hasTouch: touch, isMobile: touch });
-  const page = await ctx.newPage();
-  await page.goto(`file://${join(cache, 'index.html')}`);
-  await page.waitForSelector('#fit [role=tab]');
-  return { page, ctx };
+  try {
+    const page = await ctx.newPage();
+    await page.goto(`file://${join(cache, 'index.html')}`);
+    await page.waitForSelector('#fit [role=tab]');
+    expect(await page.evaluate(() => matchMedia('(pointer: coarse)').matches)).toBe(touch);
+    return await fn(page);
+  } finally {
+    await ctx.close();
+  }
 }
 for (const mode of fitModes)
   for (const z of ['xs', 'sm', 'md'])
-    t(`fit: 2 short ${z} tabs do not overflow their scroller (${mode.name})`, async () => {
-      const { page, ctx } = await openMode(mode.w, mode.touch);
-      expect(await page.evaluate(() => matchMedia('(pointer: coarse)').matches)).toBe(mode.touch);
-      const m = await page.evaluate((z) =>
-        [...document.querySelectorAll(`#fit-${z} [role=tablist]`)].map((tl) => {
-          const sc = (tl.parentElement!.classList.contains('tabs-attached-bar') ? tl.parentElement! : tl) as HTMLElement;
-          return { sw: sc.scrollWidth, cw: sc.clientWidth, sh: sc.scrollHeight, ch: sc.clientHeight, l: sc.hasAttribute('data-l'), r: sc.hasAttribute('data-r'), fade: sc.classList.contains('seg-fade') };
-        }), z);
-      expect(m.length).toBe(2);
-      for (const x of m) {
-        expect(x.fade).toBe(true);
-        expect(x.sw).toBeLessThanOrEqual(x.cw);
-        expect(x.sh).toBeLessThanOrEqual(x.ch);
-        expect(x.l).toBe(false);
-        expect(x.r).toBe(false);
-      }
-      await ctx.close();
-    });
+    t(`fit: 2 short ${z} tabs do not overflow their scroller (${mode.name})`, () =>
+      withMode(mode.w, mode.touch, async (page) => {
+        // The edge effect runs after mount: wait for it to have measured (the scroll listener is attached in the same effect).
+        await page.waitForFunction(() => document.querySelectorAll('#fit .seg-fade').length > 0 && document.fonts.status === 'loaded');
+        await page.waitForTimeout(150);
+        const m = await page.evaluate((z) =>
+          [...document.querySelectorAll(`#fit-${z} [role=tablist]`)].map((tl) => {
+            const sc = (tl.parentElement!.classList.contains('tabs-attached-bar') ? tl.parentElement! : tl) as HTMLElement;
+            return { sw: sc.scrollWidth, cw: sc.clientWidth, sh: sc.scrollHeight, ch: sc.clientHeight, l: sc.hasAttribute('data-l'), r: sc.hasAttribute('data-r') };
+          }), z);
+        expect(m.length).toBe(2);
+        for (const x of m) {
+          expect(x.sw).toBeLessThanOrEqual(x.cw);
+          expect(x.sh).toBeLessThanOrEqual(x.ch);
+          expect(x.l).toBe(false);
+          expect(x.r).toBe(false);
+        }
+      }));
 
-// Plain ButtonGroup geometry is the baseline the tabs fix must not move (numbers asserted from origin/main).
+// Plain ButtonGroup geometry is the baseline the tabs fix must not move (measured on origin/main, 0.12.0).
+const BASE: Record<string, [number, number]> = { xs: [66.375, 26], sm: [87.59375, 34], md: [87.59375, 34] };
 for (const z of ['xs', 'sm', 'md'])
   t(`ButtonGroup ${z} keeps its size`, async () => {
     const page = await open(1440);
     const m = await page.evaluate((z) => { const r = document.querySelector(`#fit-${z} [role=group]`)!.getBoundingClientRect(); return [r.width, r.height]; }, z);
-    console.log(`ButtonGroup ${z}: ${m[0]} x ${m[1]}`);
+    expect(m).toEqual(BASE[z]);
     await page.close();
   });
+
+// Touch hit-area: a tab in the strip takes its own box; every other button keeps the 44 px floor, also a
+// plain ButtonGroup inside an attached panel and one at top level. The panel group also wraps like any group.
+t('touch: only strip tabs drop the 44 px hit-area; panel and top-level ButtonGroups keep it', () =>
+  withMode(390, true, async (page) => {
+    const after = (sel: string) => page.evaluate((s) => { const c = getComputedStyle(document.querySelector(s)!, '::after'); return [c.minWidth, c.minHeight]; }, sel);
+    expect(await after('#fit-xs [role=group] button')).toEqual(['44px', '44px']);
+    expect(await after('#panelgrp [role=tabpanel] [role=group] button')).toEqual(['44px', '44px']);
+    expect(await after('#panelgrp [role=tablist] [role=tab]')).toEqual(['0px', '0px']);
+    expect(await after('#fit-xs [role=tablist] [role=tab]')).toEqual(['0px', '0px']);
+    const s = await page.evaluate(() => { const b = document.querySelector('#panelgrp [role=tabpanel] [role=group] button:last-child')!; return [getComputedStyle(b).flexGrow + getComputedStyle(b).flexShrink, getComputedStyle(b).whiteSpace]; });
+    expect(s).toEqual(['01', 'normal']); // flex: 0 1 auto and normal wrapping, as in any plain ButtonGroup
+  }));
 
 // True overflow keeps its fade: data-r while content is hidden to the right, data-l once scrolled.
 for (const id of ['over', 'att7'])
