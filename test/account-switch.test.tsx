@@ -2,7 +2,7 @@
 // names may live in another wallet. happy-dom; every provider records its requests. No wall-clock asserts: waits are conditions.
 import { afterEach, describe, expect, test } from 'bun:test';
 import { recordRecent } from '../src/wallet/recentWallets';
-import { LAST_WALLET_KEY, WalletButton, activateAccount, connectWallet, disconnectWallet, switchWalletAccount, walletAccounts, walletAddress, walletEntry } from '../src';
+import { LAST_WALLET_KEY, WalletButton, restoreWallet, activateAccount, connectWallet, disconnectWallet, switchWalletAccount, walletAccounts, walletAddress, walletEntry } from '../src';
 import { act, click, mount, until, useDom } from './dom';
 
 useDom();
@@ -40,6 +40,9 @@ function fake(o: Opts = {}) {
     set(next: string[]) {
       list = next;
       listeners.get('accountsChanged')?.forEach((l) => l(next));
+    },
+    hangNow() {
+      o.hang = true;
     },
     async request({ method }: { method: string; params?: unknown[] }) {
       calls.push(method);
@@ -380,6 +383,29 @@ describe('activateAccount', () => {
       expect(walletEntry.value).toBe(bare);
       expect(localStorage.getItem(LAST_WALLET_KEY)).toBe(before ?? null);
     }
+  });
+
+  test('undo with an old wallet that hangs: bounded by the probe limit, disconnected (never the new wallet, never a stale account)', async () => {
+    const { a, entries } = await setup({ exposed: [RABBY_ACCT] });
+    const res = await activateAccount(RABBY_ACCT, { entries, probeMs: 40 });
+    if (!res.ok) throw new Error('not ok');
+    a.hangNow();
+    await res.undo();
+    expect(walletEntry.value).toBeUndefined();
+  });
+
+  test('RESIDUAL (accepted): an announcement under a recorded rdns passes the gate and is bound, exactly what restoreWallet does for it', async () => {
+    const impostor = () => entry(fake({ exposed: [RABBY_ACCT] }), 'io.rabby', 'Not really Rabby');
+    const { entries } = await setup({ exposed: [] });
+    const fakeRabby = impostor();
+    const res = await activateAccount(RABBY_ACCT, { entries: [entries[0], fakeRabby] });
+    expect(res.ok).toBe(true);
+    expect(walletEntry.value).toBe(fakeRabby);
+    disconnectWallet();
+    localStorage.setItem(LAST_WALLET_KEY, 'io.rabby');
+    const again = impostor();
+    expect(await restoreWallet([again])).toBe(RABBY_ACCT);
+    expect(walletEntry.value).toBe(again); // the same trust the page already had on load
   });
 
   test('undo puts the previous wallet back; it does nothing once another wallet was connected', async () => {

@@ -109,7 +109,8 @@ export async function activateAccount(target: string, o: ActivateOptions = {}): 
     (!sameWallet && walletAccounts.peek().join() !== before.accounts.join());
   const lastBefore = lastWallet();
   // Back to the wallet that was connected, but only while the one we bound is still the connected one (a user's own change stays). The
-  // old wallet's accounts are READ again (it may have changed meanwhile); if it no longer answers, nothing stale is bound: disconnected.
+  // old wallet's accounts are READ again (it may have changed meanwhile), within the probe limit `ms`; if it no longer answers (hung,
+  // throws, none), nothing stale is bound: disconnected. No abort signal here: an aborted click must still roll back.
   const restoreFrom = (bound: ProviderEntry) => async () => {
     if (bound === cur || walletEntry.peek() !== bound) return;
     const fresh = await probe(before.entry.provider, ms);
@@ -126,6 +127,9 @@ export async function activateAccount(target: string, o: ActivateOptions = {}): 
     const foundP: Promise<readonly ProviderEntry[]> = wc ? Promise.resolve([]) : o.entries ? Promise.resolve(o.entries) : unlessAborted(discoverProviders(), signal);
     // Only wallets the user connected here through the connect modal (the recent list) are ever probed, bound or asked anything: a page
     // can announce any provider, and it must not get a request, let alone the session, from a click on an address.
+    // RESIDUAL RISK, accepted: a provider announcing a previously connected rdns while the real wallet is not announced passes this gate.
+    // That is the baseline of `restoreWallet` (it re-adopts by the `LAST_WALLET_KEY` rdns on load when one announcement matches), and
+    // `eth_requestAccounts` to such a provider is answered by the provider itself, so the extra request adds nothing.
     const trusted = new Set(readRecent().map((r) => r.id));
     const othersP = foundP.then(async (found): Promise<[ProviderEntry[], ProviderEntry[], (Address[] | null)[]]> => {
       const others = found.filter((e) => e.provider !== cur.provider);

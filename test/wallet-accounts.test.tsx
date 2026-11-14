@@ -252,7 +252,7 @@ describe('WalletModal', () => {
     configureWalletConnect({ projectId: 'public-id', metadata: { name: 'x', description: 'x', url: 'https://x', icons: [] }, chains: () => [143], loadSignClient: async () => ({ default: { init: async () => ({}) } }) });
     mount(<WalletModal isOpen onClose={() => {}} />);
     act(() => { announce(fakeWallet([SESSION]), 'io.metamask', 'MetaMask'); });
-    await until(() => (document.body.textContent ?? '').includes('WalletConnect'));
+    await until(() => !!document.body.querySelector('button[aria-expanded]'));
     expect(document.body.textContent).toContain('WalletConnect');
     const tile = document.body.querySelector('button[aria-expanded]') as HTMLElement;
     expect(tile.getAttribute('aria-label')).toContain('Scan a QR code with your phone');
