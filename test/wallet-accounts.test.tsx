@@ -204,11 +204,9 @@ describe('WalletButton account modal', () => {
     expect(text()).toContain('In wallet');
     expect(text()).toContain('Signed in');
     expect((text().match(/Signer(?!s)/g) ?? []).length).toBeGreaterThanOrEqual(2);
-    // the current account's row is selected, full contrast, and not a switch target
-    const current = buttons().find((b) => b.textContent?.includes('0xaB7B…0760')) as HTMLButtonElement;
-    expect(current.disabled).toBe(false);
-    click(current);
-    await act(async () => { await new Promise((r) => setTimeout(r, 20)); });
+    // the current account's row is selected, full contrast, and not a switch target: a plain row, not a button
+    expect(buttons().find((b) => b.textContent?.includes('0xaB7B…0760'))).toBeUndefined();
+    expect(document.body.querySelector('[aria-current=true]')?.textContent).toContain('0xaB7B…0760');
     expect(switched).toEqual([]);
     const row = buttons().find((b) => b.textContent?.includes('0x0b83…1111')) as HTMLButtonElement;
     click(row);
@@ -254,7 +252,7 @@ describe('WalletModal', () => {
     configureWalletConnect({ projectId: 'public-id', metadata: { name: 'x', description: 'x', url: 'https://x', icons: [] }, chains: () => [143], loadSignClient: async () => ({ default: { init: async () => ({}) } }) });
     mount(<WalletModal isOpen onClose={() => {}} />);
     act(() => { announce(fakeWallet([SESSION]), 'io.metamask', 'MetaMask'); });
-    await until(() => (document.body.textContent ?? '').includes('Mobile wallet'));
+    await until(() => !!document.body.querySelector('button[aria-expanded]'));
     expect(document.body.textContent).toContain('WalletConnect');
     const tile = document.body.querySelector('button[aria-expanded]') as HTMLElement;
     expect(tile.getAttribute('aria-label')).toContain('Scan a QR code with your phone');
@@ -522,14 +520,15 @@ describe('WalletModal rows', () => {
     const ua = Object.getOwnPropertyDescriptor(navigator, 'userAgent');
     Object.defineProperty(navigator, 'userAgent', { configurable: true, get: () => 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)' });
     const all = WALLETS.flatMap((x) => x.android ?? []);
-    const api = { installed: async () => ({ installed: all }), open: async () => ({ opened: true }) };
+    let asked = false;
+    const api = { installed: async () => ((asked = true), { installed: all }), open: async () => ({ opened: true }) };
     configureWalletLinks({ native: async () => ({ api }) });
     (globalThis as { Capacitor?: unknown }).Capacitor = { isNativePlatform: () => true };
     try {
       wc('');
       mount(<WalletModal isOpen onClose={() => {}} />);
-      await until(() => document.body.querySelectorAll('div.uppercase').length > 0);
-      await act(async () => { await new Promise((r) => setTimeout(r, 30)); });
+      await until(() => asked && document.body.querySelectorAll('div.uppercase').length > 0);
+      await act(async () => {}); // the answer was delivered: let its render land
       expect([...document.body.querySelectorAll('div.uppercase')].map((e) => e.textContent)).toEqual(['Install a wallet']);
       expect(document.body.querySelectorAll('a').length).toBeGreaterThan(0);
     } finally {
@@ -706,8 +705,11 @@ describe('review fixes', () => {
   test('a transient disconnect (1013) re-checks the wallet; 4900 logs out', async () => {
     const w = fakeWallet([SESSION]);
     await connectWallet(entry(w));
+    const reads = () => w.calls.filter((c) => c.method === 'eth_accounts').length;
+    const was = reads();
     w.emit('disconnect', { code: 1013 });
-    await act(async () => { await new Promise((r) => setTimeout(r, 10)); });
+    await until(() => reads() > was); // the re-check went out ...
+    await act(async () => {}); // ... and its answer was processed
     expect(walletAddress.value).toBe(SESSION);
     w.emit('disconnect', { code: 4900 });
     expect(walletAddress.value).toBeUndefined();
@@ -716,13 +718,16 @@ describe('review fixes', () => {
   test('account rows: arrow keys move focus; a busy list keeps focus (aria-disabled, not disabled)', async () => {
     const { AccountList } = await import('../src');
     const { host } = mount(<AccountList accounts={[SESSION, OTHER, THIRD]} active={SESSION} busy={OTHER} onSelect={() => {}} />);
+    // the current account (SESSION) is a plain row, not a tab stop; the other two are the arrow order
+    expect(host.querySelector('[aria-current=true]')?.tagName).toBe('DIV');
     const rows = [...host.querySelectorAll('button')].filter((b) => /0x/.test(b.textContent ?? ''));
+    expect(rows).toHaveLength(2);
     expect(rows.every((b) => !b.disabled && b.getAttribute('aria-disabled') === 'true')).toBe(true);
     rows[0]!.focus();
     act(() => { rows[0]!.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true })); });
     expect(document.activeElement).toBe(rows[1]!);
-    act(() => { rows[1]!.dispatchEvent(new KeyboardEvent('keydown', { key: 'End', bubbles: true })); });
-    expect(document.activeElement).toBe(rows[2]!);
+    act(() => { rows[1]!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Home', bubbles: true })); });
+    expect(document.activeElement).toBe(rows[0]!);
   });
 
   test('add / switch wallet is one more row in the arrow order, no wallet brand icon, and there is no "choose account" row', async () => {

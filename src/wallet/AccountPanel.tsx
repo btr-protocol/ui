@@ -2,17 +2,14 @@
 // "Active" = the account the wallet signs with right now; "session" = the account the app is signed in as (SIWE) or
 // expects; "signer" = an owner of the Safe in view. The wallet only ever signs as its active account, so a switch is
 // made IN the wallet (its account picker) and the app follows its `accountsChanged`.
+import type { ComponentChildren } from 'preact';
 import { shortAddr } from '../lib/address';
 import { ModalSection } from '../ui/BaseModal';
 import { Badge } from '../ui/Badge';
-import { Button } from '../ui/Button';
-import { Notice } from '../ui/Feedback';
 import { WalletItemButton } from '../ui/WalletItemButton';
 import { WalletTile } from './WalletGlyph';
 import { ACCOUNT_LABELS, type AccountLabels } from './accountLabels';
 import { accountMismatch, sameAddress } from './wallet';
-
-const fill = (s: string, v: Record<string, string>) => s.replace(/\{(\w+)\}/g, (_, k: string) => v[k] ?? '');
 
 /** The one account picture both the modal and a signing card read: who signs vs who is expected. */
 export interface AccountGate {
@@ -28,42 +25,6 @@ export const accountGate = (active?: string | null, expected?: string | null): A
   mismatch: accountMismatch(active, expected),
 });
 
-/** The wrong-account banner: the primary action brings the wallet to the expected account, the secondary re-auths as the active one. */
-export function WrongAccountNotice({
-  active,
-  expected,
-  onSwitch,
-  onUseActive,
-  busy,
-  labels,
-  className,
-}: {
-  active: string;
-  expected: string;
-  onSwitch: () => void;
-  onUseActive?: () => void;
-  busy?: boolean;
-  labels?: Partial<AccountLabels>;
-  className?: string;
-}) {
-  const l = { ...ACCOUNT_LABELS, ...labels };
-  return (
-    <Notice tone="warning" role="alert" className={className}>
-      <span className="block">{fill(l.mismatch, { active: shortAddr(active), session: shortAddr(expected) })}</span>
-      <span className="mt-2 flex flex-wrap gap-2">
-        <Button size="sm" variant="primary" disabled={busy} onClick={onSwitch}>
-          {fill(l.switchTo, { addr: shortAddr(expected) })}
-        </Button>
-        {onUseActive && (
-          <Button size="sm" disabled={busy} onClick={onUseActive}>
-            {fill(l.useInstead, { addr: shortAddr(active) })}
-          </Button>
-        )}
-      </span>
-    </Notice>
-  );
-}
-
 export interface AccountListProps {
   /** Accounts the wallet exposes, active first. */
   accounts: readonly string[];
@@ -77,10 +38,12 @@ export interface AccountListProps {
   onConnectOther?: () => void;
   busy?: string;
   labels?: Partial<AccountLabels>;
+  /** `Notice size="row"` items listed above the accounts, in the same list. */
+  notices?: ComponentChildren;
 }
 
 /** Every account of the connected wallet (plus the session's), one click each; badges say which is active, signed in, a signer. */
-export function AccountList({ accounts, active, session, signers = [], onSelect, onConnectOther, busy, labels }: AccountListProps) {
+export function AccountList({ accounts, active, session, signers = [], onSelect, onConnectOther, busy, labels, notices }: AccountListProps) {
   const l = { ...ACCOUNT_LABELS, ...labels };
   const rows = [...accounts];
   if (session && !rows.some((a) => sameAddress(a, session))) rows.push(session);
@@ -97,6 +60,7 @@ export function AccountList({ accounts, active, session, signers = [], onSelect,
   return (
     <ModalSection title={l.accounts}>
       <div onKeyDown={onKeyDown}>
+      {notices && <ul className="m-0 list-none p-0">{notices}</ul>}
       {rows.map((a) => {
         const isActive = sameAddress(a, active);
         const isSession = sameAddress(a, session);
@@ -109,11 +73,12 @@ export function AccountList({ accounts, active, session, signers = [], onSelect,
             caption={exposed ? undefined : l.notExposed}
             isSelected={current}
             isConnecting={busy !== undefined && sameAddress(busy, a)}
-            // The current account stays at full contrast (selected, not disabled); clicking it is a no-op. Busy = aria-disabled,
+            // The current account (or any row with nothing to do) is a plain row: no hover, pointer or focus stop. Busy = aria-disabled,
             // so focus never drops out of the list while a switch runs.
-            disabled={!onSelect || busy !== undefined}
+            inert={current || !onSelect}
+            disabled={busy !== undefined}
             ariaDisabled
-            onClick={() => !current && busy === undefined && onSelect?.(a)}
+            onClick={() => busy === undefined && onSelect?.(a)}
             rightIcon={
               <span className="flex shrink-0 items-center gap-1">
                 {signers.some((s) => sameAddress(s, a)) && <Badge variant="secondary">{l.signer}</Badge>}

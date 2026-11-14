@@ -8,7 +8,8 @@ export type { WalletModalProps, ConnectedWallet } from './WalletModal';
 export type { AccountModalProps } from './AccountModal';
 export { WalletGlyph } from './WalletGlyph';
 export { ConnectModalHost } from './ConnectModalHost';
-export { AccountList, WrongAccountNotice, accountGate, type AccountGate, type AccountListProps } from './AccountPanel';
+export { activateAccount, type ActivateOptions, type ActivateResult } from './accountSwitch';
+export { AccountList, accountGate, type AccountGate, type AccountListProps } from './AccountPanel';
 export {
   ACCOUNT_LABELS,
   WALLET_MODAL_LABELS,

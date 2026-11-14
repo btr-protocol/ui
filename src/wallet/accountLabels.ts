@@ -19,6 +19,13 @@ export interface AccountLabels {
   useInstead: string;
   /** Row caption of an account the wallet does not expose to this site. */
   notExposed: string;
+  /** Row hints after a click on an account that could not be activated. `{addr}` = short address, `{wallet}` = the wallet's announced
+   *  name (named once), `{action}` = the `connectOther` label. */
+  hintRejected: string;
+  hintNotShared: string;
+  hintAmbiguous: string;
+  /** The app's own step after the switch failed; the previous wallet is back. */
+  hintFailed: string;
 }
 
 export const ACCOUNT_LABELS: AccountLabels = {
@@ -33,6 +40,10 @@ export const ACCOUNT_LABELS: AccountLabels = {
   mismatch: 'Your wallet is on {active}, but you are signed in as {session}. Signing now would fail.',
   switchTo: 'Switch wallet to {addr}',
   useInstead: 'Use {addr} instead',
-  notExposed: 'Not shared with this site: pick it in the wallet',
+  notExposed: 'Not in this wallet: select to find it',
+  hintRejected: 'Request cancelled in {wallet}. Select {addr} there, share it with this site, then try again.',
+  hintNotShared: '{wallet} does not share {addr} with this site. Select it there, then try again.',
+  hintAmbiguous: '{addr} may be in another installed wallet. Choose that wallet with "{action}", then select the account.',
+  hintFailed: 'Could not switch to {addr}. The previous wallet is back. Try again.',
 };
 

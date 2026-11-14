@@ -36,6 +36,10 @@
     background: color-mix(in srgb, var(--nt) 10%, transparent);
     color: var(--nt);
     font: 500 0.875rem/1 var(--font-title);
+    /* One line by construction: the label truncates (its span carries `truncate`), the button shrinks to its row. */
+    white-space: nowrap;
+    min-width: 0;
+    max-width: 100%;
     transition: background-color 0.15s, border-color 0.15s;
   }
   /* A Button passed as a Notice child inherits the tone too (neutral grey would clash with the tinted bar). */

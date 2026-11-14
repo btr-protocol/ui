@@ -100,7 +100,8 @@ export async function pickWalletAccount(p: Eip1193Provider): Promise<Address[]> 
   return accounts;
 }
 
-/** Make `target` the wallet's active account: already active -> true; else the wallet's picker, then re-check. */
+/** Make `target` the wallet's active account: already active -> true; else the wallet's picker, then re-check. Only the provider it is
+ *  given is asked; it never connects another wallet (`activateAccount` does, on a user's click in the account modal). */
 export async function switchWalletAccount(p: Eip1193Provider, target: string): Promise<boolean> {
   if (sameAddress((await readAccounts(p))[0], target)) return true;
   return sameAddress((await pickWalletAccount(p))[0], target);
@@ -182,6 +183,13 @@ const remember = (v?: string) => {
     if (v) localStorage.setItem(LAST_WALLET_KEY, v);
   } catch {}
 };
+/** Put `LAST_WALLET_KEY` back to exactly `v` (absent = removed): the rollback of a switch that did not hold. */
+export const restoreLastWallet = (v: string | undefined): void => {
+  try {
+    if (v === undefined) localStorage.removeItem(LAST_WALLET_KEY);
+    else localStorage.setItem(LAST_WALLET_KEY, v);
+  } catch {}
+};
 export const lastWallet = (): string | undefined => {
   try {
     return localStorage.getItem(LAST_WALLET_KEY) ?? undefined;
@@ -244,6 +252,19 @@ function bind(entry: ProviderEntry, accounts: Address[]): void {
     entry.provider.removeListener?.('chainChanged', onChain);
     entry.provider.removeListener?.('disconnect', onEnd);
   };
+}
+
+/** Bumped by every connect / disconnect / bind: a caller that awaited across one knows its picture of the wallet is stale. */
+export const walletGeneration = (): number => generation;
+
+/** Make an already-authorised provider THE connected wallet (no prompt): what `activateAccount` does, and its rollback. Resolves the
+ *  generation of THIS binding, so a caller can tell a later disconnect / connect from its own. `keep: false` leaves `LAST_WALLET_KEY` alone. */
+export async function adoptWallet(entry: ProviderEntry, accounts: Address[], keep = true): Promise<number> {
+  bind(entry, accounts);
+  const g = generation;
+  walletChainId.value = await chainIdOf(entry.provider);
+  if (keep) remember(entry.info.rdns ?? entry.info.id);
+  return g;
 }
 
 /** Connect an EIP-1193 provider and keep the store in sync with its account / chain events. */
