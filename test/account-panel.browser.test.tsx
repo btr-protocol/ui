@@ -99,7 +99,7 @@ t('the warning is a row of the account list: same edges, same divider, no card; 
   expect(m.nestedSurface).toBe(false);
 });
 
-for (const w of [1440, 390])
+for (const w of [1440, 390, 360])
   t(`both actions are kit Buttons: same radius, height and look as a reference Button (${w}px)`, async () => {
     const page = await open('share', w);
     // The refs sit in one `.surface`, as the modal's rows do: the kit nests control radii by surface depth.
@@ -158,6 +158,12 @@ if (shots)
     t(`screenshots ${w} ${theme}`, async () => {
       let page = await open('share', w, theme);
       await shot(page, `mismatch-${w}-${theme}`);
+      console.log('HEIGHTS', w, theme, JSON.stringify(await page.evaluate(() => {
+        const h = (el?: Element | null) => Math.round((el?.getBoundingClientRect().height ?? 0) * 10) / 10;
+        const dlg = document.querySelector('[role=dialog]')!;
+        const btn = [...dlg.querySelectorAll('button')];
+        return { accountRow: h(btn.find((b) => b.classList.contains('border-b') && b.textContent?.includes('0xaB7B'))), switchBtn: h(btn.find((b) => b.textContent?.startsWith('Switch wallet to'))), useBtn: h(btn.find((b) => b.textContent?.startsWith('Use '))), warnRow: h([...dlg.querySelectorAll('div')].find((d) => d.textContent?.startsWith('Your wallet is on') && d.classList.contains('border-b'))), addRow: h(btn.find((b) => b.textContent?.includes('Add or switch'))), refBtn: h(document.querySelector('#ref-primary')) };
+      })));
       await accountRow(page).click();
       await page.getByRole('dialog').waitFor({ state: 'detached', timeout: 5000 });
       await page.getByRole('button', { name: /open account/ }).click();

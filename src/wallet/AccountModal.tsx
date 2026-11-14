@@ -128,10 +128,10 @@ export function AccountModal({
           role="alert"
           actions={
             <>
-              <Button size="sm" variant="primary" disabled={busyNow} onClick={() => gate.expected && pick(gate.expected)}>
+              <Button size="sm" variant="primary" disabled={busyNow} title={fill(l.switchTo, { addr: gate.expected })} aria-label={fill(l.switchTo, { addr: gate.expected })} onClick={() => gate.expected && pick(gate.expected)}>
                 {fill(l.switchTo, { addr: shortAddr(gate.expected) })}
               </Button>
-              <Button size="sm" disabled={busyNow} onClick={() => gate.active && pick(gate.active)}>
+              <Button size="sm" disabled={busyNow} title={fill(l.useInstead, { addr: gate.active })} aria-label={fill(l.useInstead, { addr: gate.active })} onClick={() => gate.active && pick(gate.active)}>
                 {fill(l.useInstead, { addr: shortAddr(gate.active) })}
               </Button>
             </>
