@@ -1,6 +1,7 @@
 import { walletId } from '@btr-protocol/sdk/eth/wallets';
 import { useEffect, useState } from 'preact/hooks';
 import { walletIcon } from '../lib/walletIcon';
+import { Icon } from '../ui/Icon';
 import type { ProviderInfo } from './wallet';
 
 /**
@@ -44,6 +45,19 @@ export function WalletGlyph({
       className="flex shrink-0 items-center justify-center rounded-xs bg-bg-3 text-xs font-semibold text-fg-1"
     >
       {name.charAt(0).toUpperCase()}
+    </span>
+  );
+}
+
+/** A generic action mark in the size and shape of a wallet mark (add / switch wallet, WalletConnect): never a brand icon. */
+export function WalletTile({ icon, size = 28 }: { icon: string; size?: number }) {
+  return (
+    <span
+      style={{ width: size, height: size }}
+      aria-hidden="true"
+      className="flex shrink-0 items-center justify-center rounded-xs bg-bg-3 text-fg-1"
+    >
+      <Icon name={icon} className="w-4 h-4" />
     </span>
   );
 }

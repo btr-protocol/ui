@@ -9,8 +9,7 @@ export interface AccountLabels {
   active: string;
   signedIn: string;
   signer: string;
-  /** Opens the wallet's account picker. */
-  chooseInWallet: string;
+  /** Row that opens the connect list to add or switch to another wallet. */
   connectOther: string;
   /** `{active}` / `{session}` = short addresses. */
   mismatch: string;
@@ -30,8 +29,7 @@ export const ACCOUNT_LABELS: AccountLabels = {
   active: 'In wallet',
   signedIn: 'Signed in',
   signer: 'Signer',
-  chooseInWallet: 'Choose account in wallet',
-  connectOther: 'Connect another wallet',
+  connectOther: 'Add or switch wallet',
   mismatch: 'Your wallet is on {active}, but you are signed in as {session}. Signing now would fail.',
   switchTo: 'Switch wallet to {addr}',
   useInstead: 'Use {addr} instead',
