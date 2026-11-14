@@ -53,7 +53,8 @@ afterEach(async () => { for (const p of pages.splice(0)) await p.close().catch((
 // The edge effect and its ResizeObserver run after mount: wait until they have measured. A one-shot observer on every
 // fade scroller is delivered after the component's own (created first, same frame), then two frames of slack.
 async function settled(page: import('playwright-core').Page) {
-  await page.evaluate(() => new Promise<void>((done) => {
+  await page.evaluate(() => new Promise<void>((done, fail) => {
+    setTimeout(() => fail(new Error('settled(): no resize notification within 5 s')), 5000);
     const els = [...document.querySelectorAll('.seg-fade')];
     const frames = () => requestAnimationFrame(() => requestAnimationFrame(() => done()));
     if (!els.length) return frames();

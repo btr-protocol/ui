@@ -2,7 +2,7 @@
 
 ## 0.12.1
 - Tabs: a group that fits no longer fades its last label. On touch (`pointer: coarse`) the 44 px hit-area `::after` of each tab counted as scrollable overflow of the tab scroller (two xs tabs, `$` and `APR`: scrollWidth 66 over clientWidth 64), so `data-r` was set and the edge fade masked the end of the strip. Inside a tab strip that pseudo now takes the tab's own box (`min-width` / `min-height` 0; the scroller clipped it already), which also ends a vertical scroll of about 6 px the xs strip had on touch. Real overflow is unchanged.
-- SCOPE CHANGE: the strip rules (`flex: none; white-space: nowrap`, and the hit-area above) now name the strip itself (`.tabs-attached-bar > .btn-group`). In 0.12.0 they also matched a plain `ButtonGroup` placed inside an attached tab's panel: its buttons did not wrap and lost their 44 px touch floor. They now behave like any plain `ButtonGroup`, so such a group may wrap its text where it did not. Standalone `ButtonGroup`s are unchanged (same width and height).
+- SCOPE CHANGE: the strip rules (`flex: none; white-space: nowrap`, and the hit-area above) now name the strip itself (`.tabs-attached-bar > .btn-group`). In 0.12.0 they also matched a plain `ButtonGroup` placed inside an attached tab's panel: its buttons did not wrap. They now behave like any plain `ButtonGroup`, so such a group may wrap its text where it did not. Standalone `ButtonGroup`s are unchanged (same width and height).
 - Test: `test/tabs.browser.test.tsx`, 2 short tabs at xs / sm / md, group and attached, touch and not; plus the panel `ButtonGroup` hit-area and a width / height comparison against a plain group on the same page.
 
 ## 0.12.0
