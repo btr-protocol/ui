@@ -228,7 +228,6 @@ export function useSelectionView(p: SelectionViewProps) {
 
   /** Section heading: icon + label + picked/total (+ the note of an empty section). With `onToggleMany`: a button toggling the section. */
   const heading = (g: SelectionGroup, rows: SelectionItem[]) => {
-    const ids = rows.map((r) => r.id);
     const live = g.note ? [] : rows.filter((r) => !r.disabled); // a noted section ("DEX not deployed") takes no picks
     const n = live.filter((r) => selected.includes(r.id)).length;
     const inner = (
@@ -240,7 +239,7 @@ export function useSelectionView(p: SelectionViewProps) {
     );
     const cls = cn(MODAL_PADDING, 'flex w-full items-center gap-2 bg-bg-2 py-1.5 text-left text-xs');
     return onToggleMany && live.length > 0 ? (
-      <button type="button" id={headId(g.id)} data-group={g.id} aria-label={g.label} aria-pressed={live.every((r) => selected.includes(r.id))} onClick={() => onToggleMany(ids)} className={cn(cls, 'hover:bg-bg-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring')}>
+      <button type="button" id={headId(g.id)} data-group={g.id} aria-label={g.label} aria-pressed={live.every((r) => selected.includes(r.id))} onClick={() => onToggleMany(live.map((r) => r.id))} className={cn(cls, 'hover:bg-bg-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring')}>
         {inner}
       </button>
     ) : (

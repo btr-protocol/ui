@@ -60,3 +60,12 @@ test('labels.noteSep and labels.reset reach the shared list (inline and modal)',
   expect(document.body.textContent).toContain(' // off');
   c.unmount();
 });
+
+test('a section heading toggles its enabled rows only', () => {
+  const got: string[][] = [];
+  const rows = [...items, { id: 'c', label: 'Gamma', group: 'g1', disabled: true }];
+  const { host, unmount } = mount(<SelectionList items={rows} groups={[{ id: 'g1', label: 'One' }]} selected={[]} onToggle={() => {}} onToggleMany={(ids) => got.push([...ids])} />);
+  click(host.querySelector<HTMLElement>('button[data-group=g1]')!);
+  expect(got).toEqual([['a', 'b']]);
+  unmount();
+});
