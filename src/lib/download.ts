@@ -1,10 +1,13 @@
 /** Client-side file export: CSV from rows, and a Blob download. No server, works from file://. */
 
+const NUMERIC = /^[+-]?(\d+\.?\d*|\.\d+)(e[+-]?\d+)?$/i;
+
 const cell = (v: unknown): string => {
   if (v == null) return '';
   let s = typeof v === 'number' ? (Number.isFinite(v) ? String(v) : '') : String(v);
-  // A cell a spreadsheet would run as a formula (= + - @, tab, CR) gets a leading apostrophe. Numbers are data, not formulas.
-  if (typeof v !== 'number' && /^[=+\-@\t\r]/.test(s)) s = `'${s}`;
+  // A cell a spreadsheet would run as a formula (= + - @, tab, CR; also after leading spaces) gets a leading apostrophe, except a plain
+  // number ("-12.5", "+1", "1e-3", a bigint) which is data and would show the apostrophe in Excel.
+  if (typeof v !== 'number' && !NUMERIC.test(s) && /^ *[=+\-@\t\r]/.test(s)) s = `'${s}`;
   return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 };
 

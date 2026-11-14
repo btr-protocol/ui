@@ -57,8 +57,10 @@ describe('large inputs and csv safety', () => {
     expect(h.edges[0]).toBe(0);
   });
   test('csv cells that start like a formula get a leading apostrophe', () => {
-    for (const c of ['=SUM(A1)', '+1', '-1+2', '@cmd', '\tx', '\rx']) expect(toCsv(['a'], [[c]]).split('\n')[1]!.replace(/^"/, '')).toStartWith("'");
+    for (const c of ['=SUM(A1)', '+1+1', '-1+2', '@cmd', '\tx', '\rx']) expect(toCsv(['a'], [[c]]).split('\n')[1]!.replace(/^"/, '')).toStartWith("'");
     expect(toCsv(['a'], [[-5]])).toBe('a\n-5\n');
+    for (const c of ['-12.5', '+1', '1e-3', '-.5', '5.', 12n, -3n]) expect(toCsv(['a'], [[c]])).toBe(`a\n${String(c)}\n`);
+    for (const c of ['  =1+1', ' @x', '-1+2', '+SUM(A1)', '--1', '-1e']) expect(toCsv(['a'], [[c]]).split('\n')[1]!.replace(/^"/, '')).toStartWith("'");
     expect(toCsv(['a'], [['ok']])).toBe('a\nok\n');
   });
 });
