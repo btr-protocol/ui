@@ -66,3 +66,88 @@
     -1px 0 0 var(--border-color),
     0 -1px 0 var(--border-color);
 }
+
+/* ── Tabs on a group (ui/SegmentedControl.tsx) ───────────────────────────────────────────────
+   The tablist is a plain `.btn-group`; these only add what a ButtonGroup of buttons lacks. */
+
+/* `equal`: every cell as wide as the widest label. */
+.btn-group-equal {
+  display: inline-grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+}
+/* One line that scrolls (the fade mask is `.seg-fade`): tabs keep their width instead of shrinking. */
+.btn-group-scroll {
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.btn-group-scroll::-webkit-scrollbar {
+  display: none;
+}
+.btn-group-scroll > *,
+.tabs-attached .btn-group > * {
+  flex: none;
+  white-space: nowrap;
+}
+
+/* attached: the strip sits on the top edge of the card it controls (the `.tabs-panel`). The bar
+   overlaps the panel's top border by exactly that 1px row, so the strip's bottom edge IS the
+   panel's top edge; the active tab covers the row, which merges tab and card into one surface.
+   The strip is square at the bottom (the panel's left edge and the strip's run straight into each
+   other), so the panel's top-left corner is the strip's corner: it adapts by construction. */
+.tabs-attached {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.tabs-attached-bar {
+  position: relative;
+  z-index: var(--z-index-raised);
+  display: flex;
+  align-self: flex-start;
+  max-width: 100%;
+  margin-bottom: -1px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.tabs-attached-bar::-webkit-scrollbar {
+  display: none;
+}
+.btn-group-attached {
+  background: var(--bg-2); /* inactive tabs sit behind, on the group surface */
+  border-end-start-radius: 0;
+  border-end-end-radius: 0;
+}
+.btn-group-attached > :first-child,
+.btn-group-attached > :last-child {
+  border-end-start-radius: 0;
+  border-end-end-radius: 0;
+}
+.btn-group-attached > [role='tab'] {
+  background: var(--bg-2);
+}
+.btn-group.btn-group-attached > [role='tab'][aria-selected='true'] {
+  /* The card's surface, 1px taller than its siblings (over the strip's bottom edge, margin keeps the strip's height). */
+  background: var(--bg-1);
+  color: var(--fg-0);
+  height: auto;
+  align-self: stretch;
+  margin-bottom: -1px;
+  padding-bottom: 1px;
+}
+.btn-group.btn-group-attached:not(.btn-group-accent) > [role='tab'][aria-selected='true'] {
+  color: var(--fg-primary);
+}
+/* accent: the primary edge on top of the active tab (inset, so the metrics do not move). */
+.btn-group.btn-group-accent > [role='tab'][aria-selected='true'] {
+  box-shadow: inset 0 2px 0 var(--primary);
+}
+.btn-group.btn-group-attached > [role='tab']:not([aria-selected='true']):not([aria-disabled]):hover {
+  background: var(--bg-3);
+  color: var(--fg-0);
+}
+.tabs-panel {
+  border: var(--border);
+  border-radius: var(--radius-lg, var(--r, 16px));
+  border-start-start-radius: 0;
+}

@@ -110,7 +110,7 @@ test('Header / TabBar items and SegmentedControl link mode are real anchors', ()
   expect(render(<Header items={items} activePath="/safes" onNavigate={() => {}} />)).toContain('href="/actions"');
   expect(render(<TabBar tabs={items} activePath="/safes" onNavigate={() => {}} />)).toContain('<a href="/actions"');
   const html = render(<SegmentedControl value="a" onChange={() => {}} options={[{ value: 'a', label: 'A', href: '/x/a' }, { value: 'b', label: 'B', href: '/x/b' }]} />);
-  expect(html).toContain('role="tab" href="/x/b"');
+  expect(html).toMatch(/<a [^>]*href="\/x\/b"[^>]*role="tab"|<a [^>]*role="tab"[^>]*href="\/x\/b"/);
 });
 
 test('AuthShell: card only, no nav', () => {
