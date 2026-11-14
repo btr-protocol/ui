@@ -44,7 +44,7 @@ beforeAll(async () => {
   launching = setup();
   browser = await launching;
 }, 120000);
-afterAll(async () => { await (await launching?.catch(() => undefined))?.close(); }, 30000);
+afterAll(async () => { await (await launching?.catch(() => undefined))?.close(); }, 120000);
 
 // Every page `open()` hands out is closed here, also when its test throws.
 const pages: import('playwright-core').Page[] = [];
@@ -53,7 +53,8 @@ afterEach(async () => { for (const p of pages.splice(0)) await p.close().catch((
 // The edge effect and its ResizeObserver run after mount: wait until they have measured. A one-shot observer on every
 // fade scroller is delivered after the component's own (created first, same frame), then two frames of slack.
 // Every wait fails as an assertion after 5 s, never as the 30 s test timeout.
-const until = <A,>(page: import('playwright-core').Page, fn: (a: A) => unknown, arg?: A) => page.waitForFunction(fn, arg as A, { timeout: 5000 });
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const until = (page: import('playwright-core').Page, fn: (a: any) => unknown, arg?: unknown) => page.waitForFunction(fn, arg, { timeout: 5000 });
 
 async function settled(page: import('playwright-core').Page) {
   await page.evaluate(() => new Promise<void>((done, fail) => {
