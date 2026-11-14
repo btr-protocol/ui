@@ -183,6 +183,13 @@ const remember = (v?: string) => {
     if (v) localStorage.setItem(LAST_WALLET_KEY, v);
   } catch {}
 };
+/** Put `LAST_WALLET_KEY` back to exactly `v` (absent = removed): the rollback of a switch that did not hold. */
+export const restoreLastWallet = (v: string | undefined): void => {
+  try {
+    if (v === undefined) localStorage.removeItem(LAST_WALLET_KEY);
+    else localStorage.setItem(LAST_WALLET_KEY, v);
+  } catch {}
+};
 export const lastWallet = (): string | undefined => {
   try {
     return localStorage.getItem(LAST_WALLET_KEY) ?? undefined;
@@ -250,11 +257,14 @@ function bind(entry: ProviderEntry, accounts: Address[]): void {
 /** Bumped by every connect / disconnect / bind: a caller that awaited across one knows its picture of the wallet is stale. */
 export const walletGeneration = (): number => generation;
 
-/** Make an already-authorised provider THE connected wallet (no prompt): what `activateAccount` does, and its rollback. */
-export async function adoptWallet(entry: ProviderEntry, accounts: Address[]): Promise<void> {
+/** Make an already-authorised provider THE connected wallet (no prompt): what `activateAccount` does, and its rollback. Resolves the
+ *  generation of THIS binding, so a caller can tell a later disconnect / connect from its own. `keep: false` leaves `LAST_WALLET_KEY` alone. */
+export async function adoptWallet(entry: ProviderEntry, accounts: Address[], keep = true): Promise<number> {
   bind(entry, accounts);
+  const g = generation;
   walletChainId.value = await chainIdOf(entry.provider);
-  remember(entry.info.rdns ?? entry.info.id);
+  if (keep) remember(entry.info.rdns ?? entry.info.id);
+  return g;
 }
 
 /** Connect an EIP-1193 provider and keep the store in sync with its account / chain events. */

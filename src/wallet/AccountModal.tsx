@@ -7,7 +7,7 @@ import { MODAL_PADDING } from '../ui/BaseModal';
 import type { ChainItem } from '../ui/ChainSelect';
 import { ChainSelectModal } from '../ui/ChainSelectModal';
 import { Button } from '../ui/Button';
-import { Notice, NoticeAction } from '../ui/Feedback';
+import { Notice } from '../ui/Feedback';
 import { Tooltip } from '../ui/FloatingPanel';
 import { Icon } from '../ui/Icon';
 import { FormRow } from '../ui/Primitives';
@@ -21,6 +21,13 @@ import { WalletGlyph } from './WalletGlyph';
 import { connectError } from './connection';
 
 const fill = (s: string, v: Record<string, string>) => s.replace(/\{(\w+)\}/g, (_, k: string) => v[k] ?? '');
+/** `fill` for running text: the values named in `whole` (addresses) stay one unbreakable piece, never split across lines. */
+const fillNodes = (s: string, v: Record<string, string>, whole: readonly string[]) =>
+  s.split(/(\{\w+\})/).map((part, i) => {
+    const k = /^\{(\w+)\}$/.exec(part)?.[1];
+    if (k === undefined) return part;
+    return whole.includes(k) ? <span key={i} className="whitespace-nowrap">{v[k] ?? ''}</span> : (v[k] ?? '');
+  });
 
 export interface AccountModalProps {
   isOpen: boolean;
@@ -114,17 +121,20 @@ export function AccountModal({
       try {
         done = (await onSwitchAccount(a)) !== false;
       } catch {}
-      if (ac.signal.aborted) return;
-      if (done) return close();
+      // A failed app step puts the previous wallet back even when the modal was closed or a newer click took over meanwhile.
+      if (done) return ac.signal.aborted ? undefined : close();
       await undo?.();
-      setHint({ address: a, kind: 'failed' });
+      if (!ac.signal.aborted) setHint({ address: a, kind: 'failed' });
     });
   const hintKey = { rejected: 'hintRejected', 'not-shared': 'hintNotShared', ambiguous: 'hintAmbiguous', failed: 'hintFailed' } as const;
-  const hintText = hint && fill(l[hintKey[hint.kind]], { addr: shortAddr(hint.address), wallet: hint.wallet ?? l.wallet, action: l.connectOther });
+  const hintText = hint && fillNodes(l[hintKey[hint.kind]], { addr: shortAddr(hint.address), wallet: hint.wallet ?? l.wallet, action: l.connectOther }, ['addr']);
   const busyNow = busy !== undefined;
   const hasNotices = !!err || !!hintText || (gate.mismatch && !!gate.active && !!gate.expected);
-  // The visible label (addresses middle-truncated) leads the accessible name, which adds the full address.
-  const named = (tpl: string, addr: string) => ({ label: fill(tpl, { addr: shortAddr(addr) }), ariaLabel: `${fill(tpl, { addr: shortAddr(addr) })} (${addr})` });
+  // The visible label (address middle-truncated, never split) leads the accessible name, which adds the full address.
+  const named = (tpl: string, addr: string) => {
+    const label = fill(tpl, { addr: shortAddr(addr) });
+    return { 'aria-label': `${label} (${addr})` };
+  };
   const notices = (
     <>
       {err && (
@@ -144,12 +154,16 @@ export function AccountModal({
           role="alert"
           action={
             <span className="flex min-w-0 flex-wrap gap-2">
-              <NoticeAction {...named(l.switchTo, gate.expected)} disabled={busyNow} onClick={() => gate.expected && pick(gate.expected)} />
-              <NoticeAction {...named(l.useInstead, gate.active)} disabled={busyNow} onClick={() => gate.active && pick(gate.active)} />
+              <Button size="sm" variant="primary" className="whitespace-nowrap" {...named(l.switchTo, gate.expected)} disabled={busyNow} onClick={() => gate.expected && pick(gate.expected)}>
+                {fill(l.switchTo, { addr: shortAddr(gate.expected) })}
+              </Button>
+              <Button size="sm" className="whitespace-nowrap" {...named(l.useInstead, gate.active)} disabled={busyNow} onClick={() => gate.active && pick(gate.active)}>
+                {fill(l.useInstead, { addr: shortAddr(gate.active) })}
+              </Button>
             </span>
           }
         >
-          {fill(l.mismatch, { active: shortAddr(gate.active), session: shortAddr(gate.expected) })}
+          {fillNodes(l.mismatch, { active: shortAddr(gate.active), session: shortAddr(gate.expected) }, ['active', 'session'])}
         </Notice>
       )}
     </>

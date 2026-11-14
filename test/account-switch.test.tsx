@@ -1,6 +1,7 @@
 // activateAccount + the account panel with TWO announced wallets (fake EIP-6963 providers, no real wallet): the account a click
 // names may live in another wallet. happy-dom; every provider records its requests. No wall-clock asserts: waits are conditions.
 import { afterEach, describe, expect, test } from 'bun:test';
+import { recordRecent } from '../src/wallet/recentWallets';
 import { LAST_WALLET_KEY, WalletButton, activateAccount, connectWallet, disconnectWallet, switchWalletAccount, walletAccounts, walletAddress, walletEntry } from '../src';
 import { act, click, mount, until, useDom } from './dom';
 
@@ -23,11 +24,16 @@ type Opts = {
   gate?: Promise<void>;
   /** After the wallet was bound (its first eth_chainId) it no longer exposes the account. */
   dropAfterBind?: boolean;
+  /** After the bind, eth_accounts throws. */
+  throwAfterBind?: boolean;
+  /** After the bind, eth_accounts waits for this (the re-read is in flight). */
+  holdAfterBind?: Promise<void>;
 };
 /** `exposed` = already authorised for the site; `shareOnRequest` = added once the user approves eth_requestAccounts. */
 function fake(o: Opts = {}) {
   const calls: string[] = [];
   let list = [...(o.exposed ?? [])];
+  let bound = false;
   const listeners = new Map<string, Set<(...a: unknown[]) => void>>();
   return {
     calls,
@@ -38,11 +44,14 @@ function fake(o: Opts = {}) {
     async request({ method }: { method: string; params?: unknown[] }) {
       calls.push(method);
       if (method === 'eth_chainId') {
+        bound = true;
         if (o.dropAfterBind) list = [RABBY_2];
         return '0x8f';
       }
       if (method === 'eth_accounts') {
         if (o.hang) return new Promise(() => {});
+        if (bound && o.holdAfterBind) await o.holdAfterBind;
+        if (bound && o.throwAfterBind) throw new Error('gone');
         if (o.throwAccounts) throw new Error('boom');
         return list;
       }
@@ -74,11 +83,13 @@ const prompts = (p: Fake) => p.calls.filter((m) => m === 'eth_requestAccounts' |
 const tick = () => act(async () => { await new Promise((r) => setTimeout(r, 0)); });
 
 /** Connect the "ambire" wallet (active c140), with "rabby" announced beside it. */
-async function setup(rabby: Opts, ambire: Opts = {}) {
+async function setup(rabby: Opts, ambire: Opts = {}, connectedHere = true) {
   const a = fake({ exposed: [AMBIRE_ACCT], ...ambire });
   const r = fake(rabby);
   const ea = entry(a, 'com.ambire', 'Ambire', ICON_A);
   const er = entry(r, 'io.rabby', 'Rabby');
+  // "Recent": the user connected Rabby here through the connect modal before; nothing else the page announces is a candidate.
+  if (connectedHere) recordRecent({ id: 'io.rabby', name: 'Rabby', via: 'injected' });
   await connectWallet(ea);
   a.calls.length = 0;
   return { a, r, ea, er, entries: [ea, er] };
@@ -140,10 +151,29 @@ describe('activateAccount', () => {
   test('a rogue second wallet claims the account too: nobody is bound, nobody is prompted, reason ambiguous', async () => {
     const { a, r, ea, entries } = await setup({ exposed: [RABBY_ACCT] });
     const rogue = fake({ exposed: [RABBY_ACCT] });
+    recordRecent({ id: 'evil.wallet', name: 'Evil', via: 'injected' }); // both were connected here: two claimants
     const res = await activateAccount(RABBY_ACCT, { entries: [...entries, entry(rogue, 'evil.wallet')] });
     expect(res).toEqual({ ok: false, reason: 'ambiguous' });
     expect(walletEntry.value).toBe(ea);
     expect([...prompts(a), ...prompts(r), ...prompts(rogue)]).toEqual([]);
+  });
+
+  test('a wallet the user never connected here claims the account: not probed, not bound, not asked, LAST_WALLET_KEY unchanged', async () => {
+    const { a, r, ea, entries } = await setup({ exposed: [RABBY_ACCT], shareOnRequest: [RABBY_ACCT], pickTo: RABBY_ACCT }, {}, false);
+    const res = await activateAccount(RABBY_ACCT, { entries });
+    expect(res).toEqual({ ok: false, reason: 'ambiguous' });
+    expect(r.calls).toEqual([]); // not even the silent read
+    expect(prompts(a)).toEqual([]);
+    expect(walletEntry.value).toBe(ea);
+    expect(localStorage.getItem(LAST_WALLET_KEY)).toBe('com.ambire');
+  });
+
+  test('a never-connected wallet beside a recent one that does not hold the account: ambiguous, the stranger gets no request', async () => {
+    const { ea, entries } = await setup({ exposed: [RABBY_2] });
+    const rogue = fake({ exposed: [RABBY_ACCT], shareOnRequest: [RABBY_ACCT] });
+    expect(await activateAccount(RABBY_ACCT, { entries: [...entries, entry(rogue, 'evil.wallet')] })).toEqual({ ok: false, reason: 'ambiguous' });
+    expect(rogue.calls).toEqual([]);
+    expect(walletEntry.value).toBe(ea);
   });
 
   test('one rdns announced twice, one of them claims the account: not bound (ambiguous)', async () => {
@@ -209,6 +239,7 @@ describe('activateAccount', () => {
 
   test('a provider that never answers is skipped at its limit; the others still decide', async () => {
     const { er, entries } = await setup({ exposed: [RABBY_ACCT] });
+    recordRecent({ id: 'xyz.hung', name: 'Hung', via: 'injected' });
     const res = await activateAccount(RABBY_ACCT, { entries: [...entries, entry(fake({ hang: true }), 'xyz.hung')], probeMs: 40 });
     expect(res.ok).toBe(true);
     expect(walletEntry.value).toBe(er);
@@ -218,6 +249,8 @@ describe('activateAccount', () => {
     const h1 = fake({ hang: true });
     const h2 = fake({ hang: true });
     const { entries } = await setup({ hang: true });
+    recordRecent({ id: 'xyz.h1', name: 'H1', via: 'injected' });
+    recordRecent({ id: 'xyz.h2', name: 'H2', via: 'injected' });
     const ac = new AbortController();
     const p = activateAccount(RABBY_ACCT, { entries: [...entries, entry(h1, 'xyz.h1'), entry(h2, 'xyz.h2')], probeMs: 600_000, signal: ac.signal });
     await until(() => h1.calls.includes('eth_accounts') && h2.calls.includes('eth_accounts'));
@@ -229,6 +262,7 @@ describe('activateAccount', () => {
 
   test('a provider whose eth_accounts throws is skipped', async () => {
     const { er, entries } = await setup({ exposed: [RABBY_ACCT] });
+    recordRecent({ id: 'xyz.bad', name: 'Bad', via: 'injected' });
     expect((await activateAccount(RABBY_ACCT, { entries: [entry(fake({ throwAccounts: true }), 'xyz.bad'), ...entries] })).ok).toBe(true);
     expect(walletEntry.value).toBe(er);
   });
@@ -284,6 +318,68 @@ describe('activateAccount', () => {
     expect(walletEntry.value).toBe(ea);
     expect(walletAddress.value).toBe(AMBIRE_ACCT);
     expect(localStorage.getItem(LAST_WALLET_KEY)).toBe('com.ambire');
+  });
+
+  test('the re-read after the bind throws or times out: failed (never a silent cancel), the previous wallet and LAST_WALLET_KEY are back', async () => {
+    for (const how of ['throw', 'timeout'] as const) {
+      disconnectWallet();
+      localStorage.clear();
+      const { ea, entries } = await setup(how === 'throw' ? { exposed: [RABBY_ACCT], throwAfterBind: true } : { exposed: [RABBY_ACCT], holdAfterBind: new Promise(() => {}) });
+      const res = await activateAccount(RABBY_ACCT, { entries, probeMs: how === 'timeout' ? 30 : undefined });
+      expect(res).toMatchObject({ ok: false, reason: 'failed', wallet: { name: 'Rabby' } });
+      expect(walletEntry.value).toBe(ea);
+      expect(walletAddress.value).toBe(AMBIRE_ACCT);
+      expect(localStorage.getItem(LAST_WALLET_KEY)).toBe('com.ambire');
+    }
+  });
+
+  test('a disconnect during the re-read: not ok, and nothing is re-connected behind the user', async () => {
+    let open!: () => void;
+    const { r, entries } = await setup({ exposed: [RABBY_ACCT], holdAfterBind: new Promise<void>((res) => (open = res)) });
+    const p = activateAccount(RABBY_ACCT, { entries });
+    await until(() => r.calls.filter((m) => m === 'eth_accounts').length >= 2); // probe + the re-read, held
+    disconnectWallet();
+    open();
+    expect(await p).toEqual({ ok: false, reason: 'cancelled' });
+    expect(walletEntry.value).toBeUndefined();
+  });
+
+  test('undo reads the old wallet again: an account change it made meanwhile is adopted, not the stale snapshot', async () => {
+    const { a, ea, entries } = await setup({ exposed: [RABBY_ACCT] });
+    const res = await activateAccount(RABBY_ACCT, { entries });
+    if (!res.ok) throw new Error('not ok');
+    a.set([RABBY_2, AMBIRE_ACCT]); // the old wallet's user switched account while the app step ran
+    await res.undo();
+    expect(walletEntry.value).toBe(ea);
+    expect(walletAddress.value).toBe(RABBY_2);
+  });
+
+  test('undo when the old wallet no longer answers: disconnected, never the stale account', async () => {
+    const { a, entries } = await setup({ exposed: [RABBY_ACCT] });
+    const res = await activateAccount(RABBY_ACCT, { entries });
+    if (!res.ok) throw new Error('not ok');
+    a.set([]);
+    await res.undo();
+    expect(walletEntry.value).toBeUndefined();
+  });
+
+  test('LAST_WALLET_KEY after a rollback is exactly what it was, also for a wallet with neither rdns nor id, and when it was absent', async () => {
+    for (const before of ['x.previous', undefined] as const) {
+      disconnectWallet();
+      localStorage.clear();
+      const bare = { info: { uuid: 'bare', name: 'Bare' }, provider: fake({ exposed: [AMBIRE_ACCT] }) };
+      const r = fake({ exposed: [RABBY_ACCT] });
+      recordRecent({ id: 'io.rabby', name: 'Rabby', via: 'injected' });
+      await connectWallet(bare);
+      if (before) localStorage.setItem(LAST_WALLET_KEY, before);
+      else localStorage.removeItem(LAST_WALLET_KEY);
+      const res = await activateAccount(RABBY_ACCT, { entries: [bare, entry(r, 'io.rabby', 'Rabby')] });
+      if (!res.ok) throw new Error('not ok');
+      expect(localStorage.getItem(LAST_WALLET_KEY)).toBe('io.rabby');
+      await res.undo();
+      expect(walletEntry.value).toBe(bare);
+      expect(localStorage.getItem(LAST_WALLET_KEY)).toBe(before ?? null);
+    }
   });
 
   test('undo puts the previous wallet back; it does nothing once another wallet was connected', async () => {
@@ -409,8 +505,7 @@ describe('account panel with two wallets', () => {
     await until(() => r.calls.includes('eth_requestAccounts')); // the request is out, the wallet's prompt is open
     closeModal();
     open(); // the user approves after the modal was closed
-    await tick();
-    await until(() => walletEntry.value !== ea || r.calls.filter((m) => m === 'eth_chainId').length > 0);
+    for (let i = 0; i < 5; i++) await tick(); // the approval is processed; nothing may follow from it
     expect(walletEntry.value).toBe(ea); // nothing is bound behind a closed modal
     expect(ran).toBe(0);
   });
@@ -427,6 +522,32 @@ describe('account panel with two wallets', () => {
       expect(walletAddress.value).toBe(AMBIRE_ACCT);
       expect(localStorage.getItem(LAST_WALLET_KEY)).toBe('com.ambire');
     }
+  });
+
+  test('the app step fails AFTER the modal was closed: the previous wallet is still put back', async () => {
+    let fail!: () => void;
+    let started = false;
+    const { ea, er } = await openPanel({ exposed: [RABBY_ACCT] }, { onSwitch: () => new Promise<boolean>((res) => ((started = true), (fail = () => res(false)))) });
+    click(byText('Switch wallet to') as HTMLElement);
+    await until(() => started && walletEntry.value === er); // bound, the app step is running
+    closeModal();
+    fail();
+    await until(() => walletEntry.value === ea);
+    expect(walletAddress.value).toBe(AMBIRE_ACCT);
+    expect(localStorage.getItem(LAST_WALLET_KEY)).toBe('com.ambire');
+  });
+
+  test('the old wallet changed account during the app step, then the step failed: its CURRENT account is back', async () => {
+    let fail!: () => void;
+    let started = false;
+    const { a, ea, er } = await openPanel({ exposed: [RABBY_ACCT] }, { onSwitch: () => new Promise<boolean>((res) => ((started = true), (fail = () => res(false)))) });
+    click(byText('Switch wallet to') as HTMLElement);
+    await until(() => started && walletEntry.value === er);
+    a.set([RABBY_2, AMBIRE_ACCT]);
+    fail();
+    await until(() => walletEntry.value === ea);
+    expect(walletAddress.value).toBe(RABBY_2);
+    await until(() => text().includes('The previous wallet is back'));
   });
 
   test('the account row is a real, focusable button and the current row is not', async () => {

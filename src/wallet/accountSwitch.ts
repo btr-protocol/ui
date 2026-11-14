@@ -4,6 +4,7 @@
 // the choice is unambiguous. Nothing here trusts an address beyond display: the app's signature-based sign-in still proves who the user is.
 import type { Address } from '../lib/address';
 import { requestAccountPicker, sameAddress } from './accounts';
+import { readRecent } from './recentWallets';
 import { isWalletConnectProvider } from './walletConnectShell';
 import {
   type Eip1193Provider,
@@ -11,7 +12,10 @@ import {
   type ProviderInfo,
   accountList,
   adoptWallet,
+  disconnectWallet,
   discoverProviders,
+  lastWallet,
+  restoreLastWallet,
   walletAccounts,
   walletEntry,
   walletGeneration,
@@ -19,8 +23,9 @@ import {
 
 /** `rejected`: the user closed the wallet's prompt; `not-shared`: the wallet answered but does not expose the account to this site (or
  *  did not keep it); `ambiguous`: no single wallet can be chosen, so none is bound (the user picks one in "Add or switch wallet");
+ *  `failed`: the wallet could not be confirmed after binding (no answer to the re-read), so the previous wallet was put back;
  *  `cancelled`: superseded, aborted or the wallet state changed under us, nothing was bound and there is nothing to show. */
-export type ActivateFailure = 'rejected' | 'not-shared' | 'ambiguous' | 'cancelled';
+export type ActivateFailure = 'rejected' | 'not-shared' | 'ambiguous' | 'failed' | 'cancelled';
 export type ActivateResult =
   | {
       ok: true;
@@ -102,9 +107,16 @@ export async function activateAccount(target: string, o: ActivateOptions = {}): 
     walletEntry.peek() !== cur ||
     walletGeneration() !== gen ||
     (!sameWallet && walletAccounts.peek().join() !== before.accounts.join());
-  // Back to the wallet that was connected, but only while the one we bound is still the connected one (a user's own change stays).
+  const lastBefore = lastWallet();
+  // Back to the wallet that was connected, but only while the one we bound is still the connected one (a user's own change stays). The
+  // old wallet's accounts are READ again (it may have changed meanwhile); if it no longer answers, nothing stale is bound: disconnected.
   const restoreFrom = (bound: ProviderEntry) => async () => {
-    if (bound !== cur && walletEntry.peek() === bound) await adoptWallet(before.entry, before.accounts);
+    if (bound === cur || walletEntry.peek() !== bound) return;
+    const fresh = await probe(before.entry.provider, ms);
+    if (walletEntry.peek() !== bound) return;
+    if (fresh?.length) await adoptWallet(before.entry, fresh, false);
+    else disconnectWallet();
+    restoreLastWallet(lastBefore);
   };
   try {
     const wc = isWalletConnectProvider(cur.provider);
@@ -112,9 +124,13 @@ export async function activateAccount(target: string, o: ActivateOptions = {}): 
     let settled = false;
     const liveP = probe(cur.provider, ms, signal);
     const foundP: Promise<readonly ProviderEntry[]> = wc ? Promise.resolve([]) : o.entries ? Promise.resolve(o.entries) : unlessAborted(discoverProviders(), signal);
-    const othersP = foundP.then(async (found): Promise<[ProviderEntry[], (Address[] | null)[]]> => {
+    // Only wallets the user connected here through the connect modal (the recent list) are ever probed, bound or asked anything: a page
+    // can announce any provider, and it must not get a request, let alone the session, from a click on an address.
+    const trusted = new Set(readRecent().map((r) => r.id));
+    const othersP = foundP.then(async (found): Promise<[ProviderEntry[], ProviderEntry[], (Address[] | null)[]]> => {
       const others = found.filter((e) => e.provider !== cur.provider);
-      return settled ? [[], []] : [others, await Promise.all(others.map((e) => probe(e.provider, ms, signal)))];
+      const known = others.filter((e) => trusted.has(keyOf(e)));
+      return settled ? [[], [], []] : [others, known, await Promise.all(known.map((e) => probe(e.provider, ms, signal)))];
     });
     othersP.catch(() => {}); // an abort rejects both; the awaited one reports it
     const live = await liveP;
@@ -122,12 +138,12 @@ export async function activateAccount(target: string, o: ActivateOptions = {}): 
       settled = true;
       return { ok: true, entry: cur, accounts: live, undo: async () => {} };
     }
-    const [others, seen] = await othersP;
+    const [others, known, seen] = await othersP;
     if (signal?.aborted) return { ok: false, reason: 'cancelled' };
-    const all = [cur, ...others];
+    const all = [cur, ...known];
     const lists = [live, ...seen];
-    const keys = all.map(keyOf);
-    const duplicated = (i: number) => keys.filter((k) => k === keys[i]).length > 1;
+    const keys = [cur, ...others].map(keyOf);
+    const duplicated = (i: number) => keys.filter((k) => k === keyOf(all[i])).length > 1;
     const claims = all.map((_, i) => i).filter((i) => lists[i]?.some((a) => sameAddress(a, target)));
 
     let pick = -1;
@@ -137,7 +153,7 @@ export async function activateAccount(target: string, o: ActivateOptions = {}): 
       pick = claims[0];
       list = lists[pick];
     } else if (others.length === 0) pick = 0;
-    else if (others.length === 1) pick = 1;
+    else if (others.length === 1 && known.length === 1) pick = 1;
     else return { ok: false, reason: 'ambiguous' };
     if (duplicated(pick)) return { ok: false, reason: 'ambiguous' };
     const entry = all[pick];
@@ -154,12 +170,16 @@ export async function activateAccount(target: string, o: ActivateOptions = {}): 
     if (!sameAddress(accounts[0], target)) return { ok: false, reason: 'not-shared', wallet: entry.info };
 
     if (stale(entry === cur)) return { ok: false, reason: 'cancelled' };
-    await adoptWallet(entry, accounts);
+    const bound = await adoptWallet(entry, accounts);
     // Re-verify on the bound provider: what the wallet says NOW, not what it said a moment ago.
     const again = await probe(entry.provider, ms, signal);
-    if (!again || !sameAddress(again[0], target) || mine !== latest || signal?.aborted) {
+    if (mine !== latest || signal?.aborted || walletEntry.peek() !== entry || walletGeneration() !== bound) {
+      await restoreFrom(entry)(); // a no-op when the user disconnected or switched meanwhile
+      return { ok: false, reason: 'cancelled' };
+    }
+    if (!again || !sameAddress(again[0], target)) {
       await restoreFrom(entry)();
-      return { ok: false, reason: again && mine === latest && !signal?.aborted ? 'not-shared' : 'cancelled', wallet: entry.info };
+      return { ok: false, reason: again ? 'not-shared' : 'failed', wallet: entry.info };
     }
     return { ok: true, entry, accounts: again, undo: restoreFrom(entry) };
   } catch (e) {

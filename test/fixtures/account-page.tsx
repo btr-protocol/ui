@@ -3,6 +3,7 @@
 // #multi (an unknown third wallet too, nothing remembered). `window.__state()` reads the kit store for the assertions.
 import { render } from 'preact';
 import { Button } from '../../src/ui/Button';
+import { recordRecent } from '../../src/wallet/recentWallets';
 import { WalletButton, connectWallet, walletAddress, walletEntry } from '../../src';
 
 const AMBIRE = '0xB28C00000000000000000000000000000000c140';
@@ -34,7 +35,8 @@ const hash = location.hash.slice(1);
 const fr = hash.endsWith('-fr');
 const mode = hash.replace(/-fr$/, '');
 // The longest French copy the Safe app used to ship: the actions must still be one line at 360 px.
-const FR = { mismatch: 'Votre portefeuille est sur {active}, mais vous êtes connecté en {session}. Signer maintenant échouerait.', switchTo: 'Passer le portefeuille sur {addr}', useInstead: 'Utiliser {addr} à la place' };
+const FR = { mismatch: 'Votre portefeuille est sur {active}, mais vous êtes connecté en {session}. Signer maintenant échouerait.', switchTo: 'Passer sur {addr}', useInstead: 'Utiliser {addr}' };
+recordRecent({ id: 'test.wallet.rabby', name: 'Rabby', via: 'injected' }); // the user connected it here before (the switch only ever asks such wallets)
 const ambire = { info: { uuid: 'a', name: 'Ambire', rdns: 'test.wallet.ambire', icon: icon('#ff00ff') }, provider: wallet([AMBIRE]) };
 const rabby = { info: { uuid: 'r', name: 'Rabby', rdns: 'test.wallet.rabby', icon: icon('#00ffff') }, provider: wallet(mode === 'reject' ? [] : [RABBY], { reject: mode === 'reject' }) };
 // #match: the session account IS the connected wallet's; the other account is listed (the session's list also shows the other signer).

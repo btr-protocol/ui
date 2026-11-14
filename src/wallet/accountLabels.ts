@@ -40,7 +40,7 @@ export const ACCOUNT_LABELS: AccountLabels = {
   mismatch: 'Your wallet is on {active}, but you are signed in as {session}. Signing now would fail.',
   switchTo: 'Switch wallet to {addr}',
   useInstead: 'Use {addr} instead',
-  notExposed: 'Not in the connected wallet: select it to look for it',
+  notExposed: 'Not in this wallet: select to find it',
   hintRejected: 'Request cancelled in {wallet}. Select {addr} there, share it with this site, then try again.',
   hintNotShared: '{wallet} does not share {addr} with this site. Select it there, then try again.',
   hintAmbiguous: '{addr} may be in another installed wallet. Choose that wallet with "{action}", then select the account.',

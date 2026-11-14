@@ -252,7 +252,7 @@ describe('WalletModal', () => {
     configureWalletConnect({ projectId: 'public-id', metadata: { name: 'x', description: 'x', url: 'https://x', icons: [] }, chains: () => [143], loadSignClient: async () => ({ default: { init: async () => ({}) } }) });
     mount(<WalletModal isOpen onClose={() => {}} />);
     act(() => { announce(fakeWallet([SESSION]), 'io.metamask', 'MetaMask'); });
-    await until(() => (document.body.textContent ?? '').includes('Mobile wallet'));
+    await until(() => (document.body.textContent ?? '').includes('WalletConnect'));
     expect(document.body.textContent).toContain('WalletConnect');
     const tile = document.body.querySelector('button[aria-expanded]') as HTMLElement;
     expect(tile.getAttribute('aria-label')).toContain('Scan a QR code with your phone');
@@ -520,14 +520,15 @@ describe('WalletModal rows', () => {
     const ua = Object.getOwnPropertyDescriptor(navigator, 'userAgent');
     Object.defineProperty(navigator, 'userAgent', { configurable: true, get: () => 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)' });
     const all = WALLETS.flatMap((x) => x.android ?? []);
-    const api = { installed: async () => ({ installed: all }), open: async () => ({ opened: true }) };
+    let asked = false;
+    const api = { installed: async () => ((asked = true), { installed: all }), open: async () => ({ opened: true }) };
     configureWalletLinks({ native: async () => ({ api }) });
     (globalThis as { Capacitor?: unknown }).Capacitor = { isNativePlatform: () => true };
     try {
       wc('');
       mount(<WalletModal isOpen onClose={() => {}} />);
-      await until(() => document.body.querySelectorAll('div.uppercase').length > 0);
-      await act(async () => { await new Promise((r) => setTimeout(r, 30)); });
+      await until(() => asked && document.body.querySelectorAll('div.uppercase').length > 0);
+      await act(async () => {}); // the answer was delivered: let its render land
       expect([...document.body.querySelectorAll('div.uppercase')].map((e) => e.textContent)).toEqual(['Install a wallet']);
       expect(document.body.querySelectorAll('a').length).toBeGreaterThan(0);
     } finally {
@@ -704,8 +705,11 @@ describe('review fixes', () => {
   test('a transient disconnect (1013) re-checks the wallet; 4900 logs out', async () => {
     const w = fakeWallet([SESSION]);
     await connectWallet(entry(w));
+    const reads = () => w.calls.filter((c) => c.method === 'eth_accounts').length;
+    const was = reads();
     w.emit('disconnect', { code: 1013 });
-    await act(async () => { await new Promise((r) => setTimeout(r, 10)); });
+    await until(() => reads() > was); // the re-check went out ...
+    await act(async () => {}); // ... and its answer was processed
     expect(walletAddress.value).toBe(SESSION);
     w.emit('disconnect', { code: 4900 });
     expect(walletAddress.value).toBeUndefined();

@@ -61,7 +61,7 @@ async function open(scenario: string, width = 1440, theme = 'dark', mismatch = t
   await page.goto(`file://${join(cache, 'index.html')}#${scenario}`);
   if (theme === 'light') await page.evaluate(() => document.documentElement.classList.add('light'));
   await page.getByRole('button', { name: /open account/ }).click();
-  if (mismatch) await page.locator('[role=dialog] .notice-action').first().waitFor({ timeout: 5000 });
+  if (mismatch) await page.locator('[role=dialog] li button[aria-label^="Switch"], [role=dialog] li button[aria-label^="Passer"]').first().waitFor({ timeout: 5000 });
   else await page.getByText('Accounts', { exact: true }).waitFor({ timeout: 5000 });
   await settled(page);
   return page;
@@ -100,25 +100,42 @@ t('the warning is a row of the account list: same edges, same divider, no card; 
   expect([m.tag, m.inList]).toEqual(['LI', 'UL']);
 });
 
-// The row's actions are the kit's NoticeAction: the control height and radius of a kit Button, the tone's tint, ONE line whatever the copy.
+// The row's actions are the plain kit Buttons ("our usual"): primary + secondary, same height / radius as their reference twins, ONE line.
 for (const [w, sc] of [[1440, 'share'], [390, 'share'], [360, 'share'], [360, 'share-fr']] as const)
-  t(`both actions: a Button's height and radius, one line, inside the row (${w}px, ${sc})`, async () => {
+  t(`both actions: kit Buttons (primary + secondary), one line, inside the row (${w}px, ${sc})`, async () => {
     const page = await open(sc, w);
     const m = await page.evaluate(() => {
-      const geo = (el: Element) => { const c = getComputedStyle(el), r = el.getBoundingClientRect(); return { r: c.borderRadius, h: r.height, right: r.right, ws: c.whiteSpace }; };
-      const ref = geo(document.querySelector('#ref-secondary')!);
+      const geo = (el: Element) => { const c = getComputedStyle(el), r = el.getBoundingClientRect(); return { r: c.borderRadius, h: r.height, right: r.right, ws: c.whiteSpace, bg: c.backgroundColor }; };
+      const refs = [geo(document.querySelector('#ref-primary')!), geo(document.querySelector('#ref-secondary')!)];
       const dlg = document.querySelector('[role=dialog]')!;
-      const row = [...dlg.querySelectorAll('li')].find((d) => d.classList.contains('border-b') && d.querySelector('.notice-action'))!;
-      return { ref, row: row.getBoundingClientRect().right, acts: [...row.querySelectorAll('.notice-action')].map((b) => ({ ...geo(b), overflowing: b.scrollWidth > b.clientWidth, label: b.textContent, aria: b.getAttribute('aria-label') })) };
+      const row = [...dlg.querySelectorAll('li')].find((d) => d.classList.contains('border-b') && d.querySelector('button'))!;
+      return { refs, row: row.getBoundingClientRect().right, acts: [...row.querySelectorAll('button')].map((b) => ({ ...geo(b), overflowing: b.scrollWidth > b.clientWidth, label: b.textContent, aria: b.getAttribute('aria-label') })) };
     });
     expect(m.acts).toHaveLength(2);
-    for (const a of m.acts) {
-      expect(a.h).toBe(m.ref.h);
-      expect(a.r).toBe(m.ref.r);
-      expect(a.ws).toBe('nowrap');
+    m.acts.forEach((a, i) => {
+      expect(a.h).toBe(m.refs[i].h);
+      expect(a.r).toBe(m.refs[i].r);
+      expect(a.bg).toBe(m.refs[i].bg); // primary is filled, secondary is not: the kit's own distinction
+      expect(a.overflowing).toBe(false);
       expect(a.right).toBeLessThanOrEqual(m.row);
       expect(a.aria?.startsWith(a.label ?? '?')).toBe(true); // the visible label leads the accessible name
-    }
+    });
+  });
+
+// Addresses in the notice text and the row caption are never split or cut.
+for (const [w, sc] of [[360, 'share'], [360, 'share-fr'], [390, 'reject']] as const)
+  t(`no address is split across lines and no row caption is truncated (${w}px, ${sc})`, async () => {
+    const page = await open(sc, w);
+    if (sc === 'reject') { await page.getByRole('button', { name: /^Switch wallet to/ }).click(); await page.getByText(/Request cancelled/).waitFor({ timeout: 5000 }); }
+    const m = await page.evaluate(() => {
+      const dlg = document.querySelector('[role=dialog]')!;
+      const spans = [...dlg.querySelectorAll('li span.whitespace-nowrap')].map((e) => ({ t: e.textContent, lines: e.getClientRects().length }));
+      const caps = [...dlg.querySelectorAll('span.text-2xs')].map((e) => ({ t: e.textContent, cut: e.scrollWidth > e.clientWidth }));
+      return { spans, caps };
+    });
+    expect(m.spans.length).toBeGreaterThan(0);
+    for (const s of m.spans) expect([s.t, s.lines]).toEqual([s.t, 1]);
+    for (const c of m.caps) expect([c.t, c.cut]).toEqual([c.t, false]);
   });
 
 t('clicking the account row activates the wallet that holds it: no mismatch row, header mark is that wallet\'s', async () => {
@@ -168,15 +185,23 @@ if (shots)
   for (const [w, theme] of [[1440, 'dark'], [1440, 'light'], [390, 'dark'], [390, 'light'], [360, 'dark'], [360, 'light']] as const)
     t(`screenshots ${w} ${theme}`, async () => {
       let page = await open('share', w, theme);
-      await shot(page, `r2-mismatch-${w}-${theme}`);
+      await shot(page, `r3-mismatch-${w}-${theme}`);
       await accountRow(page).click();
       await page.getByRole('dialog').waitFor({ state: 'detached', timeout: 5000 });
       await page.getByRole('button', { name: /open account/ }).click();
       await page.getByText('Accounts', { exact: true }).waitFor({ timeout: 5000 });
       await settled(page);
-      await shot(page, `r2-after-${w}-${theme}`);
+      await shot(page, `r3-after-${w}-${theme}`);
       page = await open('reject', w, theme);
       await page.getByRole('button', { name: /Switch wallet to/ }).click();
       await page.getByText(/Request cancelled in Rabby/).waitFor({ timeout: 5000 });
-      await shot(page, `r2-rejected-${w}-${theme}`);
+      await shot(page, `r3-rejected-${w}-${theme}`);
     }, 90000);
+  t('screenshots 360 dark FR', async () => {
+    let page = await open('share-fr', 360, 'dark');
+    await shot(page, 'r3-mismatch-fr-360-dark');
+    page = await open('reject-fr', 360, 'dark');
+    await page.getByRole('button', { name: /Passer sur/ }).click();
+    await page.getByText(/Request cancelled in Rabby/).waitFor({ timeout: 5000 });
+    await shot(page, 'r3-rejected-fr-360-dark');
+  }, 90000);
