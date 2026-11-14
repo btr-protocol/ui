@@ -30,6 +30,7 @@ export interface HistogramProps extends Bins {
 
 const LABEL_W = 74;
 const ROW_H = 11;
+const MIN_PLOT = 80;
 
 /** Row (0..) of each marker label so that labels on the same row are at least LABEL_W px apart. */
 export function labelRows(xs: readonly number[]): number[] {
@@ -43,6 +44,16 @@ export function labelRows(xs: readonly number[]): number[] {
     rows[i] = r;
   }
   return rows;
+}
+
+/** Label rows under a cap: a label whose row would reach `maxRows` is elided (null) and counted, and the count takes the last row. */
+export function layoutLabels(xs: readonly number[], maxRows: number): { rows: (number | null)[]; elided: number; used: number } {
+  const all = labelRows(xs);
+  const cap = Math.max(1, maxRows);
+  if (Math.max(-1, ...all) < cap) return { rows: all, elided: 0, used: Math.max(1, ...all.map((r) => r + 1)) };
+  const keep = Math.max(1, cap - 1);
+  const rows = all.map((r) => (r < keep ? r : null));
+  return { rows, elided: rows.filter((r) => r == null).length, used: keep + 1 };
 }
 
 export function Histogram({ edges, counts, format, normal, markers = [], logCount = false, edgeBins = true, label, height = 240, className, emptyMessage = 'Not enough data' }: HistogramProps) {
@@ -64,10 +75,13 @@ export function Histogram({ edges, counts, format, normal, markers = [], logCoun
   const bw = (hi - lo) / n;
   const padX = 6;
   const visible = markers.filter((m) => m.x >= lo && m.x <= hi);
-  const top = 8 + ROW_H * Math.max(1, new Set(labelRows(visible.map((m) => (m.x - lo) / (hi - lo) * W))).size);
   const bottom = 20;
   const H = height;
   const sx = (x: number) => padX + ((x - lo) / (hi - lo)) * (W - 2 * padX);
+  // Rows and the plot's top both come from the padded x the labels are drawn at; the rows are capped so the plot keeps MIN_PLOT px.
+  const lay = layoutLabels(visible.map((m) => sx(m.x)), Math.floor((H - bottom - MIN_PLOT - 8) / ROW_H));
+  const rows = lay.rows;
+  const top = 8 + ROW_H * lay.used;
   const yv = (c: number) => (logCount ? Math.log1p(c) : c);
   const pdfPeak = normal ? normalPdf(normal.mu, normal.mu, normal.sigma) * total * bw : 0;
   const max = Math.max(...counts.map(yv), yv(pdfPeak));
@@ -79,7 +93,6 @@ export function Histogram({ edges, counts, format, normal, markers = [], logCoun
       }).join('')
     : '';
   const ticks = [0, 0.25, 0.5, 0.75, 1].map((f) => lo + f * (hi - lo));
-  const rows = labelRows(visible.map((m) => sx(m.x)));
   return (
     <div ref={host} className={cn('w-full', className)}>
       <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} role="img" aria-label={label} className="block">
@@ -103,13 +116,18 @@ export function Histogram({ edges, counts, format, normal, markers = [], logCoun
           const flip = x > W - LABEL_W;
           return (
             <g key={m.label}>
-              <line x1={x} x2={x} y1={top - 4 - (rows[i] ?? 0) * 0 } y2={H - bottom} stroke={m.tone === 'red' ? 'var(--red)' : 'var(--fg-2)'} strokeWidth="1" strokeDasharray="3 3" />
-              <text x={flip ? x - 3 : x + 3} y={10 + (rows[i] ?? 0) * ROW_H} textAnchor={flip ? 'end' : 'start'} className={cn('font-numeric text-2xs', m.tone === 'red' ? 'fill-red' : 'fill-fg-1')}>
+              <line x1={x} x2={x} y1={top - 4} y2={H - bottom} stroke={m.tone === 'red' ? 'var(--red)' : 'var(--fg-2)'} strokeWidth="1" strokeDasharray="3 3" />
+              {rows[i] != null && <text x={flip ? x - 3 : x + 3} y={10 + (rows[i] as number) * ROW_H} textAnchor={flip ? 'end' : 'start'} className={cn('font-numeric text-2xs', m.tone === 'red' ? 'fill-red' : 'fill-fg-1')}>
                 {m.label}
-              </text>
+              </text>}
             </g>
           );
         })}
+        {lay.elided > 0 && (
+          <text x={W - padX} y={10 + (lay.used - 1) * ROW_H} textAnchor="end" className="fill-fg-2 font-numeric text-2xs">
+            {`+${lay.elided} more`}
+          </text>
+        )}
       </svg>
     </div>
   );
