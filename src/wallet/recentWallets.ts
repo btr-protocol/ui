@@ -27,10 +27,11 @@ export const rankRecent = (list: readonly RecentWallet[]): RecentWallet[] =>
 
 /** `list` after one more connection with `w` at `now`: bumped or added, ranked, capped. Pure. */
 export function noteUse(list: readonly RecentWallet[], w: Entry, now: number): RecentWallet[] {
-  if (!ID_RE.test(w.id)) return [...list];
-  const prev = list.find((r) => r.id === w.id);
-  const next: RecentWallet = { id: w.id, name: w.name.slice(0, NAME_MAX), via: w.via, last: now, uses: (prev?.uses ?? 0) + 1 };
-  return rankRecent([...list.filter((r) => r.id !== w.id), next]).slice(0, RECENT_KEPT);
+  const id = w.id.toLowerCase(); // rdns is case-insensitive in practice
+  if (!ID_RE.test(id)) return [...list];
+  const prev = list.find((r) => r.id === id);
+  const next: RecentWallet = { id, name: w.name.slice(0, NAME_MAX), via: w.via, last: now, uses: (prev?.uses ?? 0) + 1 };
+  return rankRecent([...list.filter((r) => r.id !== id), next]).slice(0, RECENT_KEPT);
 }
 
 const isRecent = (r: unknown): r is RecentWallet => {

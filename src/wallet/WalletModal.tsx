@@ -3,7 +3,7 @@
 // on phones; needs a project id), Other (popular wallets this browser lacks, each an install link). The app decides what a
 // connection means through `onConnect`.
 import type { WalletDef } from '@btr-protocol/sdk/eth/wallets';
-import { getDownloadUrl, isKnownWallet, isMobile } from '@btr-protocol/sdk/eth/wallets';
+import { WALLETS, getDownloadUrl, isKnownWallet, isMobile } from '@btr-protocol/sdk/eth/wallets';
 import type { ComponentChildren } from 'preact';
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { copyText } from '../lib/clipboard';
@@ -30,7 +30,7 @@ import {
   connectWallet,
   walletChainId,
 } from './wallet';
-import { type RecentRow, otherHref, sectionWallets } from './walletSections';
+import { OTHER_IDS, OTHER_MAX, type RecentRow, otherHref, sectionWallets } from './walletSections';
 import { readRecent, recentEntry, recordRecent, removeRecent } from './recentWallets';
 import { walletConnectEnabled } from './walletConnectShell';
 import {
@@ -207,9 +207,12 @@ export function WalletModal({
   const sections = sectionWallets({ injected, recents, wcOn, nativeIds: detected });
   const recentRows = sections.recent.filter((r) => has(r.recent.name));
   const installedRows = sections.installed.filter((w) => has(w.name));
+  const empty = injected.length === 0 && !wcOn;
   // On a phone with WalletConnect, Other would repeat the wallet apps behind the WalletConnect row.
   const appIds = mobile && wcOn ? mobileWallets().map((w) => w.id) : [];
-  const otherRows = sections.other.filter((w) => has(w.name) && !appIds.includes(w.id));
+  // Nothing to connect with and nothing to install from: the popular wallets anyway, never an empty modal.
+  const popularDefs = OTHER_IDS.flatMap((id) => WALLETS.find((w) => w.id === id) ?? []).slice(0, OTHER_MAX);
+  const otherRows = empty && sections.other.length === 0 ? popularDefs : sections.other.filter((w) => has(w.name) && !appIds.includes(w.id));
   const otherShown = otherRows.length > 0 && !waiting && !(pairing && mobile);
   const wcRowShown = wcOn && !(pairing && mobile) && !waiting;
   const wKey = (w: WalletInfo) => w.uuid ?? w.id;
@@ -239,7 +242,6 @@ export function WalletModal({
   const mine = apps.mine.filter((w) => !recentIds.includes(w.id));
   const popular = apps.popular.filter((w) => !recentIds.includes(w.id));
   const error = err || pairError;
-  const empty = injected.length === 0 && !wcOn;
   const copyGlyph = <Icon name={copied ? 'check-circle' : 'copy'} className="w-4 h-4" />;
 
   const row = (w: WalletDef) => {

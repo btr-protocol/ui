@@ -48,6 +48,13 @@ describe('recent wallets store', () => {
     expect(noteUse([], { id: 'a'.repeat(65), name: 'X', via: 'injected' }, 1)).toEqual([]);
   });
 
+  test('an uppercase rdns is stored lowercase and still matches; over 64 chars is refused', () => {
+    expect(noteUse([], { id: 'IO.Rabby', name: 'Rabby', via: 'injected' }, 1).map((r) => r.id)).toEqual(['io.rabby']);
+    expect(noteUse([], { id: 'A'.repeat(65), name: 'X', via: 'injected' }, 1)).toEqual([]);
+    const w = inj('rabby', 'IO.Rabby');
+    expect(sectionWallets({ wcOn: true, injected: [w], recents: [rec('io.rabby', 9)] }).recent[0]?.wallet).toBe(w);
+  });
+
   test('read: name clamped, bad ids dropped, duplicate ids keep the newest', () => {
     localStorage.setItem(
       RECENT_KEY,

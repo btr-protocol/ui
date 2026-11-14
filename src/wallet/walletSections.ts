@@ -17,7 +17,7 @@ interface Detected {
  * one (legacy global) by its catalog id, and only for a recent recorded through an injected provider. The SDK id
  * normalises several rdns to one catalog id and a WalletConnect recent carries a catalog id too, so neither may match.
  */
-const isSameWallet = (r: RecentWallet, w: Detected): boolean => r.via === 'injected' && r.id === (w.rdns || w.id);
+const isSameWallet = (r: RecentWallet, w: Detected): boolean => r.via === 'injected' && r.id === (w.rdns || w.id).toLowerCase();
 
 /** Wallets that share an rdns or a catalog id with another detected one: nothing says which the user meant. */
 export const ambiguousWallets = <W extends Detected>(injected: readonly W[]): Set<W> =>
