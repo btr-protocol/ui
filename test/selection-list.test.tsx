@@ -13,20 +13,36 @@ const key = (el: Element, k: string) => {
   return e;
 };
 
-test('mark mode: Enter / Space on the mark button toggles the mark and never opens the row; on the row it opens', () => {
+test('mark mode: no nested interactive; Enter / Space on the mark toggles the mark only, the open button opens', () => {
   const log: string[] = [];
   const { host, unmount } = mount(<SelectionList mark items={items} selected={[]} onToggle={(id) => log.push(`toggle:${id}`)} onOpen={(id) => log.push(`open:${id}`)} />);
+  expect(host.querySelectorAll('[role=button]')).toHaveLength(0);
+  expect(host.querySelectorAll('button button')).toHaveLength(0);
   const mark = host.querySelector<HTMLElement>('button[aria-label="Add Alpha"]')!;
-  for (const k of ['Enter', ' ']) {
-    const e = key(mark, k);
-    expect(e.defaultPrevented).toBe(false); // the browser then fires the button's own click
-  }
+  for (const k of ['Enter', ' ']) expect(key(mark, k).defaultPrevented).toBe(false); // the browser then fires the button's own click
   expect(log).toEqual([]);
   click(mark);
   expect(log).toEqual(['toggle:a']);
-  const row = host.querySelector<HTMLElement>('[role=button][title=a]')!;
-  expect(key(row, 'Enter').defaultPrevented).toBe(true);
+  const open = host.querySelector<HTMLElement>('button[title=a]')!;
+  expect(open.contains(mark)).toBe(false);
+  expect(key(open, 'Enter').defaultPrevented).toBe(false);
+  click(open);
   expect(log).toEqual(['toggle:a', 'open:a']);
+  unmount();
+});
+
+test('disabled rows: the mark button is disabled and the keyboard select path does not toggle them', () => {
+  const log: string[] = [];
+  const list = [{ id: 'a', label: 'Alpha', disabled: true }, { id: 'b', label: 'Beta' }];
+  const { host, unmount } = mount(<SelectionList mark items={list} selected={[]} onToggle={(id) => log.push(id)} onOpen={() => {}} />);
+  const mark = host.querySelector<HTMLButtonElement>('button[aria-label="Add Alpha"]')!;
+  expect(mark.disabled).toBe(true);
+  click(mark);
+  const input = host.querySelector<HTMLInputElement>('input')!;
+  key(input, 'Enter'); // the highlighted first row is the disabled one
+  expect(log).toEqual([]);
+  click(host.querySelector<HTMLElement>('button[aria-label="Add Beta"]')!);
+  expect(log).toEqual(['b']);
   unmount();
 });
 

@@ -147,11 +147,10 @@ export function useSelectionView(p: SelectionViewProps) {
     const known = new Set(groups.map((g) => g.id));
     return [...groups.flatMap((g) => sorted.filter((i) => i.group === g.id)), ...sorted.filter((i) => !i.group || !known.has(i.group))];
   }, [sorted, groups]);
-  const { selectedIndex, handleKeyDown } = useKeyboardNav({ items: ordered, onSelect: (i) => onToggle(i.id), isEnabled: enabled });
+  const { selectedIndex, handleKeyDown } = useKeyboardNav({ items: ordered, onSelect: (i) => !i.disabled && onToggle(i.id), isEnabled: enabled });
   const uid = useId();
   const headId = (g: string) => `${uid}-sec-${g.replace(/[^\w-]/g, '_')}`;
-  // The row's own handler ignores events from the mark button inside it (no nested interactive: Enter / Space there toggles the mark only).
-  const toggle = (e: Event, id: string) => (e.stopPropagation(), onToggle(id));
+  const toggle = (e: Event, id: string) => (e.stopPropagation(), !items.find((i) => i.id === id)?.disabled && onToggle(id));
   const aria = (key: string) => (sort.key === key ? (sort.dir === 'asc' ? 'ascending' : 'descending') : 'none');
   const head = (label: string, key: string, align: 'left' | 'right', className?: string) => (
     <SortHeader label={label} sortKey={key} active={sort.key === key} dir={sort.dir} onToggle={(k) => setSort((s) => nextSort(s, k))} align={align} className={className} />
@@ -177,20 +176,13 @@ export function useSelectionView(p: SelectionViewProps) {
     const open = item.id === activeId;
     const off = !!item.disabled;
     const click = () => (mark && onOpen ? onOpen(item.id) : onToggle(item.id));
-    const Row = mark ? 'div' : 'button'; // the mark is a button of its own: no button inside a button
-    return (
-      <Row
-        key={item.id}
-        {...(mark ? { role: 'button', tabIndex: off ? -1 : 0, 'aria-disabled': off, onKeyDown: (e: KeyboardEvent) => e.target === e.currentTarget && !off && (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), click()) } : { type: 'button', disabled: off })}
-        aria-current={open || undefined}
-        title={mark ? item.id : undefined}
-        onClick={off ? undefined : click}
-        className={cn(
+    const cls = cn(
           `flex w-full cursor-pointer items-center py-2 text-left transition-colors coarse:min-h-14 ${mark ? 'gap-2 px-3' : `gap-3 ${MODAL_PADDING}`}`,
           off ? 'cursor-not-allowed opacity-60' : idx === selectedIndex ? 'bg-bg-2' : 'hover:bg-bg-2',
           open ? 'bg-bg-primary text-primary' : on && (mark ? 'bg-bg-3' : 'bg-bg-primary'),
-        )}
-      >
+        );
+    const body = (
+      <>
         {item.icon &&
           (isStringIcon(item.icon) && isSvgPath(item.icon) ? (
             <img src={item.icon} alt={item.label} className="h-8 w-8 rounded-xs" />
@@ -213,12 +205,24 @@ export function useSelectionView(p: SelectionViewProps) {
             ),
         )}
         {item.badge}
-        {mark && (
-          <button type="button" aria-label={on ? `Remove ${item.label}` : `Add ${item.label}`} aria-pressed={on} onClick={(e) => toggle(e, item.id)} className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-xs hover:bg-bg-4">
+      </>
+    );
+    // With a mark the row is a plain div holding TWO sibling controls (the open button fills the row, the mark toggles): no nested interactive.
+    if (mark)
+      return (
+        <div key={item.id} className={cls}>
+          <button type="button" disabled={off} aria-current={open || undefined} title={item.id} onClick={click} className="flex min-w-0 flex-1 items-center gap-2 self-stretch text-left outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring disabled:cursor-not-allowed">
+            {body}
+          </button>
+          <button type="button" disabled={off} aria-label={on ? `Remove ${item.label}` : `Add ${item.label}`} aria-pressed={on} onClick={(e) => toggle(e, item.id)} className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-xs hover:bg-bg-4 disabled:cursor-not-allowed">
             <Icon name={on ? 'check' : 'plus'} className={cn('h-3.5 w-3.5', on ? 'text-primary' : 'text-fg-2')} />
           </button>
-        )}
-      </Row>
+        </div>
+      );
+    return (
+      <button key={item.id} type="button" disabled={off} aria-current={open || undefined} onClick={off ? undefined : click} className={cls}>
+        {body}
+      </button>
     );
   };
 
