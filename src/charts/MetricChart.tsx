@@ -32,6 +32,7 @@ import {
 } from './tdlc';
 import type { IChartApi, ISeriesApi, MouseEventParams, UTCTimestamp } from 'lightweight-charts';
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
+import { createGesture } from './gesture';
 import { SERIES_HIGHLIGHT, useSeriesHover } from './SeriesHover';
 import {
   type MetricPaneSpec,
@@ -56,6 +57,7 @@ import {
   timeGrid,
   trimZeros,
 } from './metricChartMath';
+export { underwater } from './metricChartMath';
 
 /** Cross-chart time-range + crosshair sync for metrics panes that share a syncId. */
 type SyncListener = {
@@ -108,6 +110,7 @@ export type {
 
 export function MetricChart({
   title,
+  watermark = true,
   series,
   panes = [{}],
   height,
@@ -124,6 +127,8 @@ export function MetricChart({
   priceTags = true,
 }: {
   title?: string;
+  /** The title also as a ghost watermark behind the plot (the front's metrics charts do). `false`: the legend heading only. */
+  watermark?: boolean;
   series: MetricSeriesSpec[];
   panes?: MetricPaneSpec[];
   /** Standalone use. Inside MetricsGrid the cell owns the height. */
@@ -407,6 +412,7 @@ export function MetricChart({
             borderColor: colors.chartBorder,
             textColor: colors.chartText,
             visible: true,
+            mode: panes[0]?.log ? 1 : 0, // PriceScaleMode.Logarithmic
             scaleMargins: { top: 0.12, bottom: 0.08 },
             // The scale reserved 64px and the labels never reached its right edge - dead gutter
             // on desktop, a real bite out of the plot at 320px. 44px still fits "$450.00K".
@@ -546,6 +552,14 @@ export function MetricChart({
               }
             : {};
         Object.assign(common, bounded);
+        // Underwater curve: values <= 0, the axis tops out at 0 and the fill runs from the curve up to that line (an inverted area).
+        if (spec.invert)
+          Object.assign(common, {
+            autoscaleInfoProvider: (orig: () => { priceRange: { minValue: number; maxValue: number } } | null) => {
+              const r = orig();
+              return r ? { ...r, priceRange: { minValue: r.priceRange.minValue, maxValue: 0 } } : r;
+            },
+          });
         const api =
           spec.type === 'histogram'
             ? chart.addSeries(
@@ -571,6 +585,7 @@ export function MetricChart({
                     // order (see `paintOrder`), which needs them opaque to work at all.
                     lineWidth: 2,
                     lineStyle: spec.dashed ? 2 : 0,
+                    invertFilledArea: spec.invert === true,
                   },
                   paneIndex,
                 )
@@ -636,6 +651,21 @@ export function MetricChart({
   onViewportChangeRef.current = onViewportChange;
   const lastEmitRef = useRef<{ from: number; to: number } | null>(null);
   const userTouchedRef = useRef(false);
+  // Any wheel / pointer / touch on the plot: only then does a range change count as a gesture to mirror to the group. Layout-driven changes
+  // (first fit, resize, a peer's first data) are not gestures, and broadcasting them collapsed every pane to the default window.
+  // Dropped again once the input stops (`createGesture`), so the range changes that follow are layout, not gestures.
+  const gestureRef = useRef(createGesture());
+  useEffect(() => {
+    const g = gestureRef.current;
+    const up = () => g.release();
+    window.addEventListener('pointerup', up);
+    window.addEventListener('pointercancel', up);
+    return () => {
+      window.removeEventListener('pointerup', up);
+      window.removeEventListener('pointercancel', up);
+      g.dispose();
+    };
+  }, []);
   const rafRef = useRef<number | null>(null);
   const pendingTimeRef = useRef<MouseEventParams['time'] | null>(null);
   useEffect(() => {
@@ -743,7 +773,7 @@ export function MetricChart({
       }
       // Mirror the exact visible window to the group (see `logicalToSec`): no clamping, so a
       // peer shows the same span even beyond its own data.
-      if (!syncId || syncingRef.current) return;
+      if (!syncId || syncingRef.current || !gestureRef.current.active) return;
       const lr = chart.timeScale().getVisibleLogicalRange();
       const ext = extentRef.current;
       if (!lr || !ext) return;
@@ -781,11 +811,28 @@ export function MetricChart({
       applyCrosshair: (time) => {
         const c = chartRef.current;
         if (!c) return;
+        // The legend of a PEER pane follows the linked crosshair: the library's move event does not carry the peer's own values.
+        const paint = (tMs: number | null) => {
+          const el = legendRef.current;
+          if (!el) return;
+          const nodes = legendValueNodes(el);
+          const { series: specs, panes: paneSpecs } = latest.current;
+          const at = tMs ?? latestActiveTime(specs);
+          for (const spec of specs) {
+            const node = nodes.get(spec.id);
+            if (!node) continue;
+            const pane = paneSpecs[spec.pane ?? 0] ?? {};
+            const fmt = spec.format ?? (spec.scale === 'left' ? pane.leftFormat : pane.format) ?? pane.format ?? 'usd';
+            const raw = tMs != null ? ownValueAt(spec, tMs) : restingValue(spec, at);
+            node.textContent = raw == null ? '' : formatter(fmt)(raw);
+          }
+        };
         syncingRef.current = true;
         if (time == null) {
           c.clearCrosshairPosition();
           syncingRef.current = false;
           restCrosshair(c);
+          paint(null);
           return;
         }
         {
@@ -794,6 +841,7 @@ export function MetricChart({
             // Snap to the bucket holding the time: a row's event time rarely sits on a bucket.
             const ext = extentRef.current;
             const at = ext ? (ext.times.findLast((x) => x <= time) ?? ext.times[0]!) : time;
+            paint(at * 1000);
             try {
               c.setCrosshairPosition(NaN, at as UTCTimestamp, first);
             } catch {
@@ -822,7 +870,7 @@ export function MetricChart({
 
   return (
     <ChartShell
-      title={title}
+      title={watermark ? title : undefined}
       loading={loading && !hasData}
       loadingTitle="Loading chart"
       empty={!hasData && !loading}
@@ -838,11 +886,16 @@ export function MetricChart({
         ref={hostRef}
         className="absolute inset-0 z-raised"
         onWheel={(e) => {
+          gestureRef.current.pulse();
           if (e.ctrlKey || e.metaKey) userTouchedRef.current = true;
         }}
         onPointerDown={() => {
+          gestureRef.current.press();
           userTouchedRef.current = true;
         }}
+        onTouchStart={() => gestureRef.current.pulse()}
+        onTouchMove={() => gestureRef.current.pulse()}
+        onTouchEnd={() => gestureRef.current.pulse()}
       />
       {/* Legend floats over the plot; the watermark, loading and empty states live in ChartShell. */}
       {/* Legend stays exactly ONE line at every width. It floats OVER the plot, so wrapping is

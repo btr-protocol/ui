@@ -2,6 +2,7 @@ import type { ComponentChildren } from 'preact';
 import { useEffect, useRef } from 'preact/hooks';
 import { cn } from '../lib/cn';
 import { Icon } from './Icon';
+import { SearchInput } from './SearchInput';
 
 export interface MasterDetailProps {
   /** The list (usually a selectable `<Table noHeader>`). */
@@ -18,6 +19,10 @@ export interface MasterDetailProps {
   placeholder?: ComponentChildren;
   /** Master column width on lg+ (CSS length). Default clamp(280px, 22%, 360px). */
   masterWidth?: string;
+  /** Search box in the master pane's own header (the BaseModal `input` header: 3rem row, bare input, bottom border). */
+  masterSearch?: { value: string; onChange: (v: string) => void; placeholder?: string };
+  /** Filter row under the search, still inside the pane header (chips, selects). */
+  masterFilters?: ComponentChildren;
   className?: string;
 }
 
@@ -38,6 +43,8 @@ export function MasterDetail({
   backLabel = 'Back',
   placeholder,
   masterWidth,
+  masterSearch,
+  masterFilters,
   className,
 }: MasterDetailProps) {
   const detailRef = useRef<HTMLDivElement>(null);
@@ -75,6 +82,16 @@ export function MasterDetail({
         }}
         className={cn('min-w-0 bg-bg-0 lg:block lg:border-r lg:border-border', selected && 'max-lg:hidden')}
       >
+        {(masterSearch || masterFilters) && (
+          <div className="sticky top-0 z-sticky border-b border-border bg-bg-1">
+            {masterSearch && (
+              <div className="flex h-12 items-center gap-2 px-3">
+                <SearchInput variant="bare" className="flex-1" value={masterSearch.value} onChange={masterSearch.onChange} placeholder={masterSearch.placeholder} />
+              </div>
+            )}
+            {masterFilters && <div className={cn('flex flex-wrap items-center gap-1.5 px-3 py-1.5', masterSearch && 'border-t border-border')}>{masterFilters}</div>}
+          </div>
+        )}
         {master}
       </div>
       <div

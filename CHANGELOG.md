@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.8.0
+- CSV export neutralises spreadsheet formulas (a text cell starting with = + - @, tab or CR gets a leading apostrophe); `Heatmap` and `TabStrip` use a roving tabindex with arrow keys; `CommandPalette` links the active option (`aria-activedescendant`), answers one global Ctrl/Cmd K and ignores IME composition; the chart sync mirrors only live gestures.
+- `assertSiweMessage`: exact structural parse of the EIP-4361 message (domain, address, statement, URI, Version 1, Chain ID, Nonce, Issued At, optional Expiration Time; extra, reordered or unknown lines refused; the statement must be the whole line, not merely contained); optional `chainId` pin.
+- Charts: `ChartStack` (time-series panes in one frame: shared x axis and range, linked crosshair, hover legend on every pane, hovered date in the header), `Histogram` (bars, normal overlay, markers), `Radar` (0..1 scores, several series), `seriesMath` (returns, rolling return / volatility / Sharpe, histogram, quantile). `ExportButton` + `toCsv` / `downloadText` (client-side CSV / JSON / YAML downloads). `MasterDetail` `masterSearch` / `masterFilters`: the search header inside the master pane (BaseModal input-header pattern).
+- Charts: `Heatmap` (labelled tinted grid, diverging or sequential, hover readout), `Doughnut` (ring + legend table, folds the tail into "Other"), `seriesCss` (theme-reactive series colours beyond six), `underwater()` (drawdown series of an equity series), `MetricPaneSpec.log` (log right scale, read at mount) and the `multiple` value format ("2.5x").
+
 ## 0.7.1
 - Chart tick labels take their decimals from the axis span (`axisDecimals`; `formatter(format, span)` exported): a base-1 index that moves 2% no longer ticks "1.01 1.01 1 1 0.99". `MetricChart` reads each series' autoscaled range for its axis, legend and crosshair labels. `ChartPanel` `tableSide` (`'left'` | `'right'`) puts the value table on either side of the chart.
 

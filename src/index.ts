@@ -31,3 +31,4 @@ export { chainIcon, chainSlug, CHAIN_ICON_SLUG, type ChainSlug } from './lib/cha
 export { type Ladder, geometricLadder, linearLadder, ladderIndexOf, snapToLadder } from './lib/ladder';
 export * from './lib/chart';
 export * from './charts';
+export { toCsv, downloadText } from './lib/download';

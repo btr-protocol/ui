@@ -154,3 +154,9 @@ export function fmtAge(sec: number | null | undefined, stale = false): string {
   if (sec < 3600) return `${Math.round(sec / 60)}m`;
   return `${(sec / 3600).toFixed(1)}h`;
 }
+
+/** A ratio as a percent in a table cell: values below `floor` (default 0.01 %) read "<0.01%" instead of the subscript-zero form ("0.0₄739%"). */
+export function fmtRatioFloor(v: number | null | undefined, floor = 0.0001): string {
+  if (v == null || !Number.isFinite(v)) return DASH;
+  return v !== 0 && Math.abs(v) < floor ? `${v < 0 ? '-' : ''}<${(floor * 100).toFixed(2)}%` : fmtRatio(v);
+}

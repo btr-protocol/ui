@@ -252,6 +252,8 @@ export interface TableProps<Row> {
   /** Cap the (non-virtual) body height in px and scroll within it; the sticky
    *  header stays pinned. For bounded feeds where virtualization is overkill. */
   maxHeight?: number;
+  /** Columns keep their natural width and the body scrolls sideways inside the frame (title and meta stay put): many numeric columns on a laptop. */
+  scrollX?: boolean;
   /** Virtual window for unbounded feeds - fixed row height, max body height. */
   virtual?: {
     rowHeight?: number;
@@ -431,6 +433,7 @@ export function Table<Row>({
   stackBelow = 'md',
   rowClassName,
   maxHeight,
+  scrollX = false,
   virtual,
   loading = false,
   loadingTitle = 'Loading…',
@@ -686,6 +689,7 @@ export function Table<Row>({
               className={cn(
                 maxHeight && 'overflow-y-auto [scrollbar-gutter:stable]',
                 compact && 'flex-1 overflow-auto min-h-0',
+                scrollX && 'overflow-x-auto [&_table]:min-w-max [&_td]:whitespace-nowrap [&_th]:whitespace-nowrap',
               )}
               style={maxHeight ? { maxHeight } : undefined}
             >

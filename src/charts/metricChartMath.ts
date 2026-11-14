@@ -3,7 +3,7 @@ import { formatCompact, formatCurrencyCompact } from '../lib/format';
 import type { MouseEventParams, UTCTimestamp } from 'lightweight-charts';
 
 export type MetricSeriesType = 'area' | 'line' | 'histogram';
-export type MetricValueFormat = 'usd' | 'pct' | 'yield' | 'count' | 'bps' | 'compact';
+export type MetricValueFormat = 'usd' | 'pct' | 'yield' | 'count' | 'bps' | 'compact' | 'multiple';
 
 export interface MetricPoint {
   t: number;
@@ -37,6 +37,8 @@ export interface MetricSeriesSpec {
    *  small gap between two large levels (TVL vs flow-implied TVL); an area then autoscales to its own
    *  padded min/max (`paddedRange`) and its fill still runs to the bottom of the plot. */
   zeroBase?: boolean;
+  /** Area for a series that is <= 0 (drawdown): the fill runs from the curve UP to 0, and the axis tops out at 0. */
+  invert?: boolean;
   /** Pool aggregate drawn over per-asset series. */
   dashed?: boolean;
   /** No own y-axis: muted min/max in the legend instead of a second scale. */
@@ -53,6 +55,8 @@ export interface MetricPaneSpec {
   /** Vertical weight relative to the other panes. */
   stretch?: number;
   format?: MetricValueFormat;
+  /** Logarithmic right scale (equity curves). Read at mount, like `priceTags`: change it with the chart's key. Needs values > 0. */
+  log?: boolean;
   /** Format for the left scale, when the pane carries two. */
   leftFormat?: MetricValueFormat;
   /**
@@ -167,6 +171,8 @@ function formatRaw(format: MetricValueFormat, span = 0): (v: number) => string {
         : fmtApr(v);
     };
   if (format === 'bps') return (v) => fmtBpsAt(v, decimals);
+  // An index rebased to 1 (equity multiple): '2.5x'.
+  if (format === 'multiple') return (v) => (Number.isFinite(v) ? `${trimZeros(v.toFixed(Math.abs(v) < 10 ? 2 : 1))}x` : formatCompact(v));
   // Counts are whole things - IPs, wallets, sessions. The compact ladder's 2dp is right for
   // magnitudes ("1.23M") but renders 5 as "5.00", and an axis tick reading "2.50 unique IPs"
   // is not a quantity that exists. Round, and drop decimals below the compact threshold.
@@ -464,4 +470,15 @@ export function paddedRange(min: number, max: number, nonNeg: boolean): { min: n
   const pad = span > Math.abs(max) * 1e-6 ? span * 0.1 : Math.abs(max) * 0.01 || 1;
   const lo = min - pad;
   return { min: nonNeg ? Math.max(0, lo) : lo, max: max + pad };
+}
+
+/** Underwater curve of an equity series: each point's drawdown from the running peak as a ratio <= 0 (-0.12 = 12% below the high).
+ *  Gaps (null) stay gaps and do not reset the peak. */
+export function underwater(points: readonly MetricPoint[]): MetricPoint[] {
+  let peak = -Infinity;
+  return points.map((p) => {
+    if (p.v == null || !Number.isFinite(p.v) || p.v <= 0) return { ...p, v: null };
+    peak = Math.max(peak, p.v);
+    return { ...p, v: p.v / peak - 1 };
+  });
 }

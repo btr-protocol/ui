@@ -126,21 +126,36 @@ export async function personalSign(entry: ProviderEntry, address: string, messag
 
 /**
  * Refuse to sign a server-provided SIWE (EIP-4361) message that does not name this login: the wallet must display
- * exactly what the operator authorises. The Host line is not asserted (a deployment's configured domain may differ).
+ * exactly what the operator authorises. Exact structural parse, line by line: domain line, address, blank, statement,
+ * blank, URI, Version 1, Chain ID, Nonce, Issued At, optional Expiration Time; anything else (extra, reordered or
+ * unknown lines, a statement merely CONTAINED in a longer one) is refused. `chainId` pins the chain when given.
  */
 export function assertSiweMessage(
   message: string,
   wantAddress: string,
-  { domain, statement, uri }: { domain: string; statement: string; uri: string },
+  { domain, statement, uri, chainId }: { domain: string; statement: string; uri: string; chainId?: number },
 ): void {
-  const head = `${domain} wants you to sign in with your Ethereum account:`;
+  const refuse = (why: string): never => {
+    throw new Error(`Refused to sign: ${why}.`);
+  };
   const lines = String(message || '').split('\n');
-  if (lines[0] !== head) throw new Error('Refused to sign: foreign login message.');
-  if ((lines[1] || '').toLowerCase() !== String(wantAddress).toLowerCase())
-    throw new Error('Refused to sign: address mismatch.');
-  if (!String(message).includes(statement)) throw new Error('Refused to sign: unknown statement.');
-  if (lines.find((l) => l.startsWith('URI: ')) !== `URI: ${uri}`)
-    throw new Error('Refused to sign: foreign URI.');
+  if (lines.length < 10 || lines.length > 11) refuse('unexpected message shape');
+  if (lines[0] !== `${domain} wants you to sign in with your Ethereum account:`) refuse('foreign login message');
+  if ((lines[1] || '').toLowerCase() !== String(wantAddress).toLowerCase()) refuse('address mismatch');
+  if (lines[2] !== '' || lines[4] !== '') refuse('unexpected message shape');
+  if (lines[3] !== statement.trim()) refuse('unknown statement');
+  if (lines[5] !== `URI: ${uri}`) refuse('foreign URI');
+  if (lines[6] !== 'Version: 1') refuse('unknown version');
+  const chain = /^Chain ID: ([1-9]\d*)$/.exec(lines[7]);
+  if (!chain || (chainId !== undefined && Number(chain[1]) !== chainId)) refuse('unexpected chain');
+  if (!/^Nonce: [A-Za-z0-9]{8,}$/.test(lines[8])) refuse('invalid nonce');
+  const iso = /^(Issued At|Expiration Time): (\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d+)?(?:Z|[+-]\d\d:\d\d))$/;
+  const issued = iso.exec(lines[9]);
+  if (!issued || issued[1] !== 'Issued At' || Number.isNaN(Date.parse(issued[2]))) refuse('invalid issue time');
+  if (lines.length === 11) {
+    const exp = iso.exec(lines[10]);
+    if (!exp || exp[1] !== 'Expiration Time' || Number.isNaN(Date.parse(exp[2]))) refuse('invalid expiry');
+  }
 }
 
 // ─── connected-wallet store ───────────────────────────────────────────────────────────────

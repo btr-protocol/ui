@@ -56,3 +56,8 @@ export * from './TokenGlyph';
 export * from './useDismiss';
 export * from './VisuallyHidden';
 export * from './WalletItemButton';
+export { ExportButton, type ExportButtonProps } from './ExportButton';
+export { TabStrip, reorderTabs, type TabStripProps, type StripTab } from './TabStrip';
+export { numCol, textCol } from './tableCols';
+export { CommandPalette, rank, score, type PaletteItem } from './CommandPalette';
+export { MatrixTable, HintLabel, type MatrixRow } from './MatrixTable';

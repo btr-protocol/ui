@@ -98,6 +98,7 @@ const RAW_BUTTON_OK: Record<string, string> = {
   'src/layout/Header.tsx': 'nav items / icon chrome',
   'src/ui/Select.tsx': 'listbox options and picker rows, not actions',
   'src/ui/ClickMenu.tsx': 'menu items (role=menuitem rows)',
+  'src/ui/TabStrip.tsx': 'pin / close glyph buttons inside a tab',
   'src/ui/Expandable.tsx': 'disclosure header',
   'src/ui/InfoBox.tsx': 'inline help trigger glyph',
   'src/ui/MasterDetail.tsx': 'phone Back row',
