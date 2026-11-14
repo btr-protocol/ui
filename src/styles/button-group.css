@@ -113,14 +113,24 @@
   min-height: 0;
 }
 
-/* Touch: every tab in a strip is a full touch target (the kit's touch control floor, --ctl-m = 44 px), also at xs (--ctl-s is 32 there).
-   A standalone button gets its 44 px through the hit-area `::after` (index.css); a tab inside the scroller cannot (the scroller clips it,
-   and the pseudo is zeroed above), so the tab's own box carries the floor. Width: the same floor, for 1-character tabs. */
+/* Touch: every tab in a strip is --tab-touch (38 px, a 40 px strip with its two borders) tall and wide, at xs too (--ctl-s is 28 there). The tab's own box carries this
+   floor: the scroller clips the hit-area `::after` (index.css) to the tab itself, so a group strip's tap target is the 38 px box.
+   An ATTACHED strip reaches the 44 px kit target without growing (still 40 px): its bar (the scroller) holds 3 px of padding, cancelled by a -3 px
+   margin on both sides, and the tab's `::after` takes the 44 px height (vertical only, width 0 extra: no overlap with neighbours,
+   no horizontal scrollWidth). The selected tab is 1 px taller than its siblings (it covers the panel border), so its pseudo reaches the third pixel (tab 38, group border 1, padding 3). */
 @media (pointer: coarse) {
   .btn-group.btn-group-scroll > *, /* two classes: beats Button's `min-w-0` utility */
   .tabs-attached-bar > .btn-group > * {
-    min-height: var(--ctl-m);
-    min-width: var(--ctl-m);
+    min-height: var(--tab-touch);
+    min-width: var(--tab-touch);
+  }
+  .tabs-attached > .tabs-attached-bar {
+    padding-block: 3px;
+    margin-block: -3px;
+    margin-bottom: -4px; /* the bar's own -1px overlap of the panel border, plus the 3px padding */
+  }
+  .tabs-attached-bar > .btn-group > *::after {
+    min-height: 44px;
   }
 }
 

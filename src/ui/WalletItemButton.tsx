@@ -64,7 +64,7 @@ export function WalletItemButton({
   const off = !ariaDisabled && unavailable;
   // Only a row that can start a connection reserves the loader slot; a text-only row (disconnect, copy) or one with its own right icon does not.
   const canConnect = !!icon && !rightIcon;
-  const cls = `w-full flex items-center gap-3 h-12 px-3 border-b border-border disabled:opacity-50 disabled:cursor-not-allowed aria-disabled:opacity-50 aria-disabled:cursor-not-allowed font-title transition-colors ${
+  const cls = `w-full flex items-center gap-3 h-12 coarse:h-[var(--ctl-l)] px-3 border-b border-border disabled:opacity-50 disabled:cursor-not-allowed aria-disabled:opacity-50 aria-disabled:cursor-not-allowed font-title transition-colors ${
     isSelected ? 'bg-bg-primary' : isHighlighted ? 'bg-bg-3' : 'bg-bg-2'
   } ${inert ? 'cursor-default' : 'hover-primary'}`;
   const content = (

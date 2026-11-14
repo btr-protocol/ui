@@ -23,7 +23,7 @@ import { cva } from '../lib/cva';
  *   tone="primary" orange family, same geometry - the quiet row action.
  *   active         selected/current, e.g. the active nav item.
  *
- * Sizes (height token × type; --ctl-s/m/l = 24/32/40 on desktop, 32/44/48 on touch and below lg):
+ * Sizes (height token × type; --ctl-s/m/l = 24/32/40 on desktop, 28/36/44 on touch and below lg):
  *   xs       ctl-s text-xs - dense inline rows ONLY: table/list rows, toasts, chip trios.
  *   sm       ctl-m text-sm - THE standard control height. Every standalone primary,
  *            secondary and ghost button sits here (swap submit, wallet, page CTAs).

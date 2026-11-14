@@ -241,13 +241,13 @@ for (const z of ['xs', 'sm', 'md'])
 
 // Touch hit-area: a tab in the strip takes its own box; every other button keeps the 44 px floor, also a
 // plain ButtonGroup inside an attached panel and one at top level. The panel group also keeps the plain group's flex and white space.
-t('touch: only strip tabs drop the 44 px hit-area; panel and top-level ButtonGroups keep it', () =>
+t('touch: group tabs drop the hit-area, attached tabs keep its 44 px height only; panel and top-level ButtonGroups keep it', () =>
   withMode(390, true, async (page) => {
     const after = (sel: string) => page.evaluate((s) => { const c = getComputedStyle(document.querySelector(s)!, '::after'); return [c.minWidth, c.minHeight]; }, sel);
     expect(await after('#fit-xs [role=group] button')).toEqual(['44px', '44px']);
     expect(await after('#panelgrp [role=tabpanel] [role=group] button')).toEqual(['44px', '44px']);
-    expect(await after('#panelgrp [role=tablist] [role=tab]')).toEqual(['0px', '0px']);
-    expect(await after('#fit-xs [role=tablist] [role=tab]')).toEqual(['0px', '0px']);
+    expect(await after('#panelgrp [role=tablist] [role=tab]')).toEqual(['0px', '44px']); // attached: vertical only, through the bar's padding
+    expect(await after('#fit-xs [role=tablist]:not(.btn-group-attached) [role=tab]')).toEqual(['0px', '0px']); // group: the scroller clips it
         const s = await page.evaluate(() => { const c = getComputedStyle(document.querySelector('#panelgrp [role=tabpanel] [role=group] button:last-child')!); return { grow: c.flexGrow, shrink: c.flexShrink, ws: c.whiteSpace }; });
     // Computed styles: flex 0 1 auto as in any plain ButtonGroup, and the label never wraps (a Button is one line).
     expect(s).toEqual({ grow: '0', shrink: '1', ws: 'nowrap' });
@@ -267,7 +267,7 @@ for (const id of ['over', 'att7'])
   });
 
 // ── 0.12.2 ─────────────────────────────────────────────────────────────────────────────────────
-// Touch: every tab in a strip is as tall as the kit's touch control token (--ctl-m), also at xs; desktop xs stays compact.
+// Touch: every tab in a strip is as tall as --tab-touch (38 px; a 40 px strip), also at xs; desktop xs stays compact.
 const tokenPx = (page: import('playwright-core').Page, v: string) =>
   page.evaluate((v) => { const d = document.createElement('div'); d.style.cssText = `position:absolute;height:var(${v})`; document.body.append(d); const h = d.getBoundingClientRect().height; d.remove(); return h; }, v);
 const tabBoxes = (page: import('playwright-core').Page, z: string) =>
@@ -275,8 +275,8 @@ const tabBoxes = (page: import('playwright-core').Page, z: string) =>
 for (const z of ['xs', 'sm', 'md'])
   t(`touch: ${z} tabs (group and attached) are at least the touch floor tall and wide`, () =>
     withMode(390, true, async (page) => {
-      const floor = await tokenPx(page, '--ctl-m');
-      expect(floor).toBeGreaterThanOrEqual(44);
+      const floor = await tokenPx(page, '--tab-touch');
+      expect(floor).toBe(38);
       const boxes = await tabBoxes(page, z);
       expect(boxes.length).toBe(4);
       for (const b of boxes) {
@@ -335,7 +335,7 @@ for (const theme of ['dark', 'light'])
 // Touch: equal strips keep equal tabs (each at the floor), links and disabled tabs meet the floor too, a ButtonGroup in a panel is untouched.
 t('touch: equal xs strip has equal tabs of at least the floor and still fits', () =>
   withMode(390, true, async (page) => {
-    const floor = await tokenPx(page, '--ctl-m');
+    const floor = await tokenPx(page, '--tab-touch');
     const m = await page.evaluate(() => { const tl = document.querySelector('#eq [role=tablist]') as HTMLElement; return { w: [...tl.children].map((k) => k.getBoundingClientRect().width), sw: tl.scrollWidth, cw: tl.clientWidth, l: tl.hasAttribute('data-l'), r: tl.hasAttribute('data-r') }; });
     expect(m.w.length).toBe(2);
     expect(Math.abs(m.w[0] - m.w[1])).toBeLessThan(0.5);
@@ -345,7 +345,7 @@ t('touch: equal xs strip has equal tabs of at least the floor and still fits', (
   }));
 t('touch: link and disabled tabs meet the floor, group and attached', () =>
   withMode(390, true, async (page) => {
-    const floor = await tokenPx(page, '--ctl-m');
+    const floor = await tokenPx(page, '--tab-touch');
     const m = await page.evaluate(() => [...document.querySelectorAll('#dis [role=tab]')].map((e) => { const r = e.getBoundingClientRect(); return { tag: e.tagName, dis: e.hasAttribute('aria-disabled'), w: r.width, h: r.height }; }));
     expect(m.length).toBe(6);
     expect(m.some((x) => x.tag === 'A')).toBe(true);

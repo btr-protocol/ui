@@ -220,7 +220,8 @@ t('touch 390: every row shares one trailing edge, the x is 44 px and available',
   expect(Math.abs(link.x + link.width - a)).toBeLessThanOrEqual(0.5); // measured: both right edges are exactly the content edge (390 - 44 gutter = 346): the badge and the 16 px link glyph have no inner padding
   const xb = await box(remove(page, 'Ambire'));
   expect(xb.width).toBeGreaterThanOrEqual(44);
-  expect(xb.height).toBeGreaterThanOrEqual(44);
+  expect(xb.height).toBeGreaterThanOrEqual(43); // the 44 px row minus its 1 px divider; the button's ::after hit-area is 44 px
+  expect(await remove(page, 'Ambire').evaluate((e) => getComputedStyle(e, '::after').minHeight)).toBe('44px');
   expect(await remove(page, 'Ambire').evaluate((e) => getComputedStyle(e).opacity)).toBe('1'); // full strength, not CloseButton's 70%
   await remove(page, 'Ambire').tap();
   await page.waitForFunction(() => document.querySelectorAll('[aria-label^="Remove"]').length === 1);

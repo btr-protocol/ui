@@ -43,7 +43,7 @@ export function Expandable({
         onClick={toggle}
         aria-expanded={isExpanded}
         className={`w-full cursor-pointer transition-colors hover:bg-bg-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring ${
-          dense ? 'px-1 py-1 coarse:min-h-[var(--ctl-m)]' : `${px} py-3`
+          dense ? 'px-1 py-1 coarse:min-h-[var(--ctl-l)]' : `${px} py-3`
         } ${isExpanded ? 'text-fg-0' : 'text-fg-2'}`}
       >
         <FormRow
