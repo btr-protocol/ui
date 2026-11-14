@@ -79,6 +79,12 @@ describe('yield and bps follow the axis span too', () => {
     expect(formatter('yield')(0.0368)).toBe('3.68%');
     expect(formatter('yield', 0.5)(0.0368)).toBe('3.68%');
   });
+  test('bps: a non-finite reading is a dash, never "NaN bps"', () => {
+    for (const v of [NaN, Infinity, -Infinity]) {
+      expect(formatter('bps')(v)).toBe('-');
+      expect(formatter('bps', 0.02)(v)).toBe('-');
+    }
+  });
   test('bps: a thin span prints the decimals it needs, no span keeps 2dp', () => {
     const labels = [4.5, 4.52, 4.54].map((v) => trimZeros(formatter('bps', 0.02)(v)));
     expect(new Set(labels).size).toBe(3);

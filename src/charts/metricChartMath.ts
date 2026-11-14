@@ -1,5 +1,6 @@
 import { fmtApr, fmtRatio } from '../lib/metricFormat';
 import { formatCompact, formatCurrencyCompact } from '../lib/format';
+import { DASH } from '../lib/metricPhase';
 import type { MouseEventParams, UTCTimestamp } from 'lightweight-charts';
 
 export type MetricSeriesType = 'area' | 'line' | 'histogram';
@@ -72,7 +73,7 @@ export interface MetricPaneSpec {
 }
 
 /** Basis points to at most 2dp: '4 bps', '0.25 bps'. */
-export const fmtBps = (v: number) => `${Number(v.toFixed(2))} bps`;
+export const fmtBps = (v: number) => (Number.isFinite(v) ? `${Number(v.toFixed(2))} bps` : DASH);
 /** `fmtBps` with the decimals an axis span asks for (more than its 2dp only where the span needs them). */
 const fmtBpsAt = (v: number, decimals: number) =>
   !Number.isFinite(v) || decimals <= 2
