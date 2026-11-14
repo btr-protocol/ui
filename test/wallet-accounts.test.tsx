@@ -366,6 +366,27 @@ describe('WalletModal rows', () => {
     }
   });
 
+  test('nothing detected, WalletConnect off and every popular wallet already installed natively: the install list still shows', async () => {
+    const ua = Object.getOwnPropertyDescriptor(navigator, 'userAgent');
+    Object.defineProperty(navigator, 'userAgent', { configurable: true, get: () => 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)' });
+    const all = WALLETS.flatMap((x) => x.android ?? []);
+    const api = { installed: async () => ({ installed: all }), open: async () => ({ opened: true }) };
+    configureWalletLinks({ native: async () => ({ api }) });
+    (globalThis as { Capacitor?: unknown }).Capacitor = { isNativePlatform: () => true };
+    try {
+      wc('');
+      mount(<WalletModal isOpen onClose={() => {}} />);
+      await until(() => document.body.querySelectorAll('div.uppercase').length > 0);
+      await act(async () => { await new Promise((r) => setTimeout(r, 30)); });
+      expect([...document.body.querySelectorAll('div.uppercase')].map((e) => e.textContent)).toEqual(['Install a wallet']);
+      expect(document.body.querySelectorAll('a').length).toBeGreaterThan(0);
+    } finally {
+      delete (globalThis as { Capacitor?: unknown }).Capacitor;
+      configureWalletLinks({});
+      if (ua) Object.defineProperty(navigator, 'userAgent', ua);
+    }
+  });
+
   test('phone: deep-link rows say Open, and Other does not repeat the wallet apps behind WalletConnect', () => {
     const ua = Object.getOwnPropertyDescriptor(navigator, 'userAgent');
     Object.defineProperty(navigator, 'userAgent', { configurable: true, get: () => 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)' });
