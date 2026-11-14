@@ -24,7 +24,9 @@ import {
   webHref,
 } from '../src';
 import { WALLETS } from '@btr-protocol/sdk/eth/wallets';
+import { walletIcon } from '../src/lib/walletIcon';
 import { WalletModal } from '../src/wallet/WalletModal';
+import { WC_TILE_IDS } from '../src/wallet/walletSections';
 import { WalletGlyph } from '../src/wallet/WalletGlyph';
 import { labelsFrom, WALLET_MODAL_LABELS } from '../src';
 import { act, click, key, mount, until, useDom } from './dom';
@@ -254,6 +256,10 @@ describe('WalletModal', () => {
     act(() => { announce(fakeWallet([SESSION]), 'io.metamask', 'MetaMask'); });
     await until(() => (document.body.textContent ?? '').includes('Mobile wallet'));
     expect(document.body.textContent).toContain('WalletConnect');
+    const tile = document.body.querySelector('button[aria-expanded]') as HTMLElement;
+    expect(tile.textContent).toContain('Scan a QR code with your phone');
+    expect(tile.querySelectorAll('img').length).toBe(WC_TILE_IDS.length);
+    expect(WC_TILE_IDS.every((id) => walletIcon(id))).toBe(true);
   });
 });
 

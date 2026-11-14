@@ -19,6 +19,7 @@ import { TOOLTIP_LINK } from '../ui/InfoBox';
 import { KeyboardShortcutGroup } from '../ui/KeyboardShortcut';
 import { Spinner } from '../ui/Spinner';
 import { WalletItemButton } from '../ui/WalletItemButton';
+import { WalletConnectTile } from './WalletConnectTile';
 import { WalletGlyph, WalletTile } from './WalletGlyph';
 import { WALLET_MODAL_LABELS, type WalletModalLabels } from './labels';
 import { connectError, useWalletConnection } from './connection';
@@ -358,12 +359,13 @@ export function WalletModal({
         {wcOn && (
           <ModalSection title={l.walletConnect} groupId="wm-wc">
             {wcRowShown && (
-              <WalletItemButton
+              <WalletConnectTile
                 name={mobile ? l.otherWallets : l.connectMobile}
-                icon={<WalletTile icon="link" />}
                 caption={mobile ? l.appsCaption : l.qrCaption}
-                isSelected={pairing}
-                isHighlighted={hl('wc')}
+                expanded={pairing}
+                loading={pairing && !uri && !pairError}
+                loadingLabel={l.preparing}
+                highlighted={hl('wc')}
                 onClick={() => setMore(!more)}
               />
             )}
@@ -414,13 +416,16 @@ export function WalletModal({
               <div ref={qrRef} tabIndex={-1} role="group" aria-label={l.qrAlt} className={`flex flex-col gap-4 items-center ${MODAL_PADDING} py-4 outline-none`}>
                 {qr ? (
                   <div className="bg-white p-2 rounded-lg">
-                    <img src={qr} alt={l.qrAlt} className="w-full max-w-60 aspect-square" />
+                    <img src={qr} alt={l.qrAlt} className="w-full max-w-[280px] aspect-square" />
                   </div>
                 ) : qr === '' || pairError ? (
                   <PageState kind="error" message={l.qrFailed} className="py-0" />
                 ) : (
-                  <PageState kind="loading" message={l.qrLoading} className="py-8" />
+                  <div className="flex items-center justify-center w-[280px] max-w-full aspect-square bg-bg-2 rounded-lg">
+                    <PageState kind="loading" message={l.qrLoading} className="py-0" />
+                  </div>
                 )}
+                {qr && <p className="text-sm text-fg-2 text-center max-w-[280px]">{l.qrScan}</p>}
                 <Button disabled={!uri} onClick={copy} leftIcon={copyGlyph}>
                   {copied ? l.copied : l.copyLink}
                 </Button>
