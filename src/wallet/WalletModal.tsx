@@ -209,11 +209,9 @@ export function WalletModal({
   const recentRows = sections.recent.filter((r) => has(r.recent.name));
   const installedRows = sections.installed.filter((w) => has(w.name));
   const empty = injected.length === 0 && !wcOn;
-  // On a phone with WalletConnect, Other would repeat the wallet apps behind the WalletConnect row.
-  const appIds = mobile && wcOn ? mobileWallets().map((w) => w.id) : [];
   // Nothing to connect with and nothing to install from: the popular wallets anyway, never an empty modal.
   const popularDefs = OTHER_IDS.flatMap((id) => WALLETS.find((w) => w.id === id) ?? []).slice(0, OTHER_MAX);
-  const otherRows = empty && sections.other.length === 0 ? popularDefs : sections.other.filter((w) => has(w.name) && !appIds.includes(w.id));
+  const otherRows = empty && sections.other.length === 0 ? popularDefs : sections.other.filter((w) => has(w.name));
   const otherShown = otherRows.length > 0 && !waiting && !(pairing && mobile);
   const wcRowShown = wcOn && !(pairing && mobile) && !waiting;
   const wKey = (w: WalletInfo) => w.uuid ?? w.id;

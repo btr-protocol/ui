@@ -391,7 +391,7 @@ describe('WalletModal rows', () => {
     }
   });
 
-  test('phone: deep-link rows say Open, and Other does not repeat the wallet apps behind WalletConnect', () => {
+  test('phone: deep-link rows say Open, and Other is hidden while the wallet apps list is open', async () => {
     const ua = Object.getOwnPropertyDescriptor(navigator, 'userAgent');
     Object.defineProperty(navigator, 'userAgent', { configurable: true, get: () => 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)' });
     try {
@@ -406,6 +406,12 @@ describe('WalletModal rows', () => {
       wc('public-id');
       mount(<WalletModal isOpen onClose={() => {}} />);
       expect([...document.body.querySelectorAll('div.uppercase')].map((e) => e.textContent)).not.toContain('Other');
+      // a wallet in this browser: the wallet-apps list stays closed, so Other is still offered (deep links)
+      document.body.innerHTML = '';
+      mount(<WalletModal isOpen onClose={() => {}} />);
+      act(() => { window.dispatchEvent(new CustomEvent('eip6963:announceProvider', { detail: { info: { uuid: 'u', name: 'Rabby Wallet', icon: '', rdns: 'io.rabby' }, provider: fakeWallet([SESSION]) } })); });
+      await until(() => [...document.body.querySelectorAll('div.uppercase')].some((e) => e.textContent === 'Other'));
+      expect([...document.body.querySelectorAll('div.uppercase')].map((e) => e.textContent)).toEqual(['This browser', 'WalletConnect', 'Other']);
     } finally {
       if (ua) Object.defineProperty(navigator, 'userAgent', ua);
       else delete (navigator as unknown as { userAgent?: string }).userAgent;
