@@ -279,23 +279,19 @@ export function WalletModal({
   const recentRow = ({ recent, wallet }: RecentRow<WalletInfo>) => {
     const def = wallet ? undefined : mobileWallets().find((w) => w.id === recent.id);
     return (
-      <div key={wallet ? wKey(wallet) : `wc-${recent.id}`} className="flex items-stretch">
-        <div className="flex-1 min-w-0">
-          {wallet ? (
-            injectedRow(wallet)
-          ) : (
-            <WalletItemButton
-              name={recent.name}
-              icon={def ? <WalletGlyph id={def.id} name={def.name} size={28} /> : <WalletTile icon="link" />}
-              caption={l.viaWalletConnect}
-              isHighlighted={hl(`wc-${recent.id}`)}
-              onClick={(e) => (mobile && uri && def ? launch(def, e) : setMore(true))}
-            />
-          )}
-        </div>
-        <div className="w-10 shrink-0 flex items-center justify-center border-b border-border bg-bg-2 text-fg-2">
-          <CloseButton size={16} aria-label={fill(l.removeRecent, recent.name)} onClick={() => setRecents(removeRecent(recent.id))} />
-        </div>
+      <div key={wallet ? wKey(wallet) : `wc-${recent.id}`} className="row-x">
+        {wallet ? (
+          injectedRow(wallet)
+        ) : (
+          <WalletItemButton
+            name={recent.name}
+            icon={def ? <WalletGlyph id={def.id} name={def.name} size={28} /> : <WalletTile icon="link" />}
+            caption={l.viaWalletConnect}
+            isHighlighted={hl(`wc-${recent.id}`)}
+            onClick={(e) => (mobile && uri && def ? launch(def, e) : setMore(true))}
+          />
+        )}
+        <CloseButton className="row-x-btn text-fg-2" size={16} aria-label={fill(l.removeRecent, recent.name)} onClick={() => setRecents(removeRecent(recent.id))} />
       </div>
     );
   };

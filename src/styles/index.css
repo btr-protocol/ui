@@ -198,7 +198,8 @@ select[aria-invalid="true"]:focus {
 }
 
 @media (hover: hover) {
-  .hover-primary:hover:not(:disabled) {
+  .hover-primary:hover:not(:disabled),
+  .row-x:hover > .hover-primary:not(:disabled) {
     background-color: var(--bg-primary) !important;
     border-color: var(--border-color-primary) !important;
     color: var(--fg-primary);
@@ -207,6 +208,49 @@ select[aria-invalid="true"]:focus {
 
 .hover-primary:active:not(:disabled) {
   background-color: var(--bg-4) !important;
+}
+
+/* A row with a trailing remove button (connect modal, Recent): ONE surface. The button overlays the row's inline end, so
+   the row's hover / selected / focus background and border span it. Touch (no hover): always shown, its space reserved.
+   Hover-capable pointers: hidden at rest (no space, so the row's tag aligns with the other sections); on hover or focus
+   inside the button appears and the row's end padding grows to make room (the tag slides inline-start). */
+.row-x {
+  position: relative;
+}
+.row-x > :not(.row-x-btn) {
+  padding-inline-end: 2.5rem;
+}
+.row-x > .row-x-btn {
+  position: absolute;
+  inset-block: 0 1px;
+  inset-inline-end: 0.25rem;
+  display: flex;
+  align-items: center;
+  padding-inline: 0.5rem;
+}
+.row-x > .row-x-btn:focus-visible {
+  outline-offset: -2px;
+}
+@media (hover: hover) {
+  .row-x > :not(.row-x-btn) {
+    padding-inline-end: 0.75rem;
+  }
+  .row-x > .row-x-btn {
+    opacity: 0;
+  }
+  .row-x:hover > :not(.row-x-btn),
+  .row-x:focus-within > :not(.row-x-btn) {
+    padding-inline-end: 2.5rem;
+  }
+  .row-x:hover > .row-x-btn,
+  .row-x:focus-within > .row-x-btn {
+    opacity: 1;
+  }
+}
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .row-x > :not(.row-x-btn) {
+    transition: padding-inline-end var(--dur-2), background-color var(--dur-2), border-color var(--dur-2), color var(--dur-2);
+  }
 }
 
 /* Pseudo-element chrome shared by call sites (cheaper than `before:`/`after:` utilities, which each
