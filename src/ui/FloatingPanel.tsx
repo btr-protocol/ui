@@ -22,6 +22,8 @@ export interface FloatingPanelProps {
   tooltipMode?: boolean;
   /** Panel carries links: stays hoverable past the trigger, clicks inside survive. */
   interactive?: boolean;
+  /** Panel of full-bleed rows (a menu): no panel padding, rows span edge to edge and carry their own. */
+  flush?: boolean;
   /** Classes on the trigger wrapper. */
   wrapClass?: string;
 }
@@ -41,6 +43,7 @@ export function FloatingPanel({
   maxWidth = 'auto',
   tooltipMode = false,
   interactive = false,
+  flush = false,
   wrapClass,
 }: FloatingPanelProps) {
   const [visible, setVisible] = useState(false);
@@ -191,6 +194,7 @@ export function FloatingPanel({
   // sentences), which wrap at a default width.
   const panelClassName = cn(
     'floating-panel',
+    flush && 'floating-flush',
     tooltipMode &&
       cn(
         'rounded-xs font-medium',

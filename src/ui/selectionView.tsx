@@ -8,6 +8,7 @@ import { useKeyboardNav } from '../lib/useKeyboardNav';
 import { MODAL_PADDING } from './BaseModal';
 import { PageState } from './Feedback';
 import { Icon } from './Icon';
+import { SelectedCheck } from './SelectedCheck';
 import { DATA_TABLE_HEADER, type SortDir, SortHeader, compareSorted } from './Table';
 
 /** Every fixed string of the modal, so a host can translate it. */
@@ -118,6 +119,8 @@ export interface SelectionViewProps {
   emptyMessage?: string;
   onResetFilters?: () => void;
   hasActiveFilters?: boolean;
+  /** Several rows can be on (`aria-pressed` per row) or one (`aria-current` on the picked row). Default single. */
+  multi?: boolean;
   /** Fixed strings (`reset`, `noteSep`) a host translates. */
   labels?: Partial<Pick<SelectionLabels, 'reset' | 'noteSep'>>;
 }
@@ -128,7 +131,7 @@ export interface SelectionViewProps {
 /** THE selection list of the design system, as parts: the sortable header and the rows, in the front's multiselect-modal look
  *  (label + caption, right-aligned figures, state mark). `SelectionModal` hosts them in a modal, `SelectionList` inline. */
 export function useSelectionView(p: SelectionViewProps) {
-  const { items, search, selected, onToggle, onToggleMany, onOpen, activeId, mark, filterFn = matches, sortColumns, primaryColumnLabel = 'Asset', initialSort, resetKey, groups, enabled = true, emptyMessage = 'No items found', onResetFilters, hasActiveFilters = false, labels } = p;
+  const { items, search, selected, onToggle, onToggleMany, onOpen, activeId, mark, filterFn = matches, sortColumns, primaryColumnLabel = 'Asset', initialSort, resetKey, groups, enabled = true, emptyMessage = 'No items found', onResetFilters, hasActiveFilters = false, labels, multi = false } = p;
   const L = { ...SELECTION_LABELS, ...labels };
   const [sort, setSort] = useState<{ key: string | null; dir: SortDir }>({ key: initialSort?.key ?? null, dir: initialSort?.dir ?? null });
   useEffect(() => setSort({ key: initialSort?.key ?? null, dir: initialSort?.dir ?? null }), [resetKey]);
@@ -167,7 +170,7 @@ export function useSelectionView(p: SelectionViewProps) {
           {head(c.label, c.key, 'right', c.headClassName)}
         </div>
       ))}
-      {mark && <span className="w-5 shrink-0" aria-hidden="true" />}
+      {mark ? <span className="w-5 shrink-0" aria-hidden="true" /> : <span className="w-4 shrink-0" aria-hidden="true" />}
     </div>
   ) : null;
 
@@ -177,7 +180,7 @@ export function useSelectionView(p: SelectionViewProps) {
     const off = !!item.disabled;
     const click = () => (mark && onOpen ? onOpen(item.id) : onToggle(item.id));
     const cls = cn(
-          `flex w-full cursor-pointer items-center py-2 text-left transition-colors coarse:min-h-14 ${mark ? 'gap-2 px-3' : `gap-3 ${MODAL_PADDING}`}`,
+          `flex w-full cursor-pointer items-center py-2 text-left transition-colors focus-visible:-outline-offset-2 coarse:min-h-14 ${mark ? 'gap-2 px-3' : `gap-3 ${MODAL_PADDING}`}`,
           off ? 'cursor-not-allowed opacity-60' : idx === selectedIndex ? 'bg-bg-2' : 'hover:bg-bg-2',
           open ? 'bg-bg-primary text-primary' : on && (mark ? 'bg-bg-3' : 'bg-bg-primary'),
         );
@@ -205,22 +208,24 @@ export function useSelectionView(p: SelectionViewProps) {
             ),
         )}
         {item.badge}
+        {/* Trailing selected mark; the slot is reserved on every row so a figure never shifts when a row is picked. */}
+        {!mark && <span className="flex h-4 w-4 shrink-0 items-center justify-center">{on && <SelectedCheck />}</span>}
       </>
     );
     // With a mark the row is a plain div holding TWO sibling controls (the open button fills the row, the mark toggles): no nested interactive.
     if (mark)
       return (
         <div key={item.id} className={cls}>
-          <button type="button" disabled={off} aria-current={open || undefined} title={item.id} onClick={click} className="flex min-w-0 flex-1 items-center gap-2 self-stretch text-left outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring disabled:cursor-not-allowed">
+          <button type="button" data-sel-row="" disabled={off} aria-current={open || undefined} title={item.id} onClick={click} className="flex min-w-0 flex-1 items-center gap-2 self-stretch text-left outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring disabled:cursor-not-allowed">
             {body}
           </button>
           <button type="button" disabled={off} aria-label={on ? `Remove ${item.label}` : `Add ${item.label}`} aria-pressed={on} onClick={(e) => toggle(e, item.id)} className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-xs hover:bg-bg-4 disabled:cursor-not-allowed">
-            <Icon name={on ? 'check' : 'plus'} className={cn('h-3.5 w-3.5', on ? 'text-primary' : 'text-fg-2')} />
+            {on ? <SelectedCheck /> : <Icon name="plus" className="h-4 w-4 text-fg-2" />}
           </button>
         </div>
       );
     return (
-      <button key={item.id} type="button" disabled={off} aria-current={open || undefined} onClick={off ? undefined : click} className={cls}>
+      <button key={item.id} type="button" data-sel-row="" disabled={off} aria-current={open || (!multi && on) || undefined} aria-pressed={multi ? on : undefined} onClick={off ? undefined : click} className={cls}>
         {body}
       </button>
     );

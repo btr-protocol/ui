@@ -208,6 +208,12 @@ export default {
           'box-shadow': '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)',
         },
 
+        // A panel of rows (menu): the rows own their padding so a highlighted row spans edge to edge.
+        '.floating-panel.floating-flush': {
+          padding: '0',
+          overflow: 'hidden',
+        },
+
         // Typography
         '.font-numeric': {
           'font-family': 'var(--font-numbers)',

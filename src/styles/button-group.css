@@ -53,6 +53,14 @@
 .btn-group-wrap > * {
   flex: 1 1 auto;
 }
+/* Icon-only cells (copy, cancel, re-simulate) are compact squares, never stretched; the primary takes the spare width. A Tooltip
+   or Dropdown wrapper counts as its trigger (`:has`). Wrap groups ONLY: a group a caller splits itself (`[&>*]:flex-1`) is theirs. */
+.btn-group-wrap > :is([data-icon-only], :has(> [data-icon-only])) {
+  flex: none;
+}
+.btn-group-wrap > :is([data-primary], :has(> [data-primary])) {
+  flex: 100 1 auto;
+}
 .btn-group-wrap > :not([hidden]) ~ :not([hidden]),
 .btn-group-wrap > :first-child {
   border-inline-start-width: 0;
@@ -95,6 +103,10 @@
    the first (the `border-inline-start` divider), and its own 44 px minimum then pokes out by half that px at the floor (measured: scrollWidth 89 over
    clientWidth 88 on an equal xs strip, a range strip scrolled 3 px). The scroller clips that pseudo anyway, so inside a strip it takes the
    tab's own box. Both rules name the strip itself (a direct child of the bar), so a ButtonGroup inside an attached panel is a plain one. */
+.btn-group.btn-group-scroll > *,
+.tabs-attached-bar > .btn-group > * {
+  max-width: none; /* Button's `max-w-full` would truncate a long tab; a strip scrolls instead */
+}
 .btn-group-scroll > *::after,
 .tabs-attached-bar > .btn-group > *::after {
   min-width: 0;
@@ -105,7 +117,7 @@
    A standalone button gets its 44 px through the hit-area `::after` (index.css); a tab inside the scroller cannot (the scroller clips it,
    and the pseudo is zeroed above), so the tab's own box carries the floor. Width: the same floor, for 1-character tabs. */
 @media (pointer: coarse) {
-  .btn-group-scroll > *,
+  .btn-group.btn-group-scroll > *, /* two classes: beats Button's `min-w-0` utility */
   .tabs-attached-bar > .btn-group > * {
     min-height: var(--ctl-m);
     min-width: var(--ctl-m);
