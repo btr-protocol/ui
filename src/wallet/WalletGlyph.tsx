@@ -6,7 +6,7 @@ import type { ProviderInfo } from './wallet';
 
 /**
  * A wallet mark, one degradation order: the bundled btr.markets raster for a catalog id (`metamask`, `rabby`, …), then
- * the icon the wallet ANNOUNCED (EIP-6963 data URI: attacker-controlled, so `<img src>` only), then its initial on a tile.
+ * the icon the wallet ANNOUNCED (EIP-6963 data URI: attacker-controlled, so `<img src>` only), then the generic wallet glyph. The glyph tile is always drawn under the image, so a slow or failed load is never an empty square.
  */
 export function WalletGlyph({
   info,
@@ -24,27 +24,33 @@ export function WalletGlyph({
 }) {
   const raster = id ? walletIcon(id) : undefined;
   const [stage, setStage] = useState(0);
-  useEffect(() => setStage(0), [id, announcedIcon]);
-  const box = { width: size, height: size };
+  const [loaded, setLoaded] = useState(false);
+  useEffect(() => {
+    setStage(0);
+    setLoaded(false);
+  }, [id, announcedIcon]);
   const src = stage === 0 && raster ? raster[0] : stage <= 1 && announcedIcon ? announcedIcon : undefined;
-  if (src)
-    return (
-      <img
-        src={src}
-        srcSet={stage === 0 && raster ? `${raster[0]} 1x, ${raster[1]} 2x` : undefined}
-        alt=""
-        style={box}
-        className="shrink-0 rounded-xs ring-1 ring-bg-0"
-        onError={() => setStage(stage === 0 && raster ? 1 : 2)}
-      />
-    );
+  // The tile (generic wallet glyph) is always there: a slow, missing or blocked image never leaves an empty square.
   return (
     <span
-      style={box}
+      style={{ width: size, height: size }}
       aria-hidden="true"
-      className="flex shrink-0 items-center justify-center rounded-xs bg-bg-3 text-xs font-semibold text-fg-1"
+      className="relative flex shrink-0 items-center justify-center rounded-xs bg-bg-3 text-fg-2 ring-1 ring-bg-0"
     >
-      {name.charAt(0).toUpperCase()}
+      <Icon name="wallet" className="w-4 h-4" />
+      {src && (
+        <img
+          src={src}
+          srcSet={stage === 0 && raster ? `${raster[0]} 1x, ${raster[1]} 2x` : undefined}
+          alt=""
+          className={`absolute inset-0 h-full w-full rounded-xs ${loaded ? '' : 'opacity-0'}`}
+          onLoad={() => setLoaded(true)}
+          onError={() => {
+            setLoaded(false);
+            setStage(stage === 0 && raster ? 1 : 2);
+          }}
+        />
+      )}
     </span>
   );
 }

@@ -25,6 +25,7 @@ import {
 } from '../src';
 import { WALLETS } from '@btr-protocol/sdk/eth/wallets';
 import { WalletModal } from '../src/wallet/WalletModal';
+import { WalletGlyph } from '../src/wallet/WalletGlyph';
 import { labelsFrom, WALLET_MODAL_LABELS } from '../src';
 import { act, click, key, mount, until, useDom } from './dom';
 import { readRecent } from '../src/wallet/recentWallets';
@@ -409,6 +410,24 @@ describe('WalletModal rows', () => {
       if (ua) Object.defineProperty(navigator, 'userAgent', ua);
       else delete (navigator as unknown as { userAgent?: string }).userAgent;
     }
+  });
+});
+
+describe('WalletGlyph', () => {
+  test('never an empty tile: generic glyph without an image, glyph under a loading image, glyph again after an error', () => {
+    const none = mount(<WalletGlyph id="no-such-wallet" name="Zed" />);
+    expect(document.body.querySelector('svg')).toBeTruthy();
+    expect(document.body.querySelector('img')).toBeNull();
+    none.unmount();
+    mount(<WalletGlyph id="no-such-wallet" name="Zed" announcedIcon="data:image/svg+xml,%3Csvg/%3E" />);
+    const img = document.body.querySelector('img') as HTMLImageElement;
+    expect(document.body.querySelector('svg')).toBeTruthy(); // under the image while it loads
+    expect(img.className).toContain('opacity-0');
+    act(() => { img.dispatchEvent(new Event('load')); });
+    expect((document.body.querySelector('img') as HTMLImageElement).className).not.toContain('opacity-0');
+    act(() => { (document.body.querySelector('img') as HTMLImageElement).dispatchEvent(new Event('error')); });
+    expect(document.body.querySelector('img')).toBeNull();
+    expect(document.body.querySelector('svg')).toBeTruthy();
   });
 });
 
