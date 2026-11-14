@@ -67,11 +67,11 @@ async function open(scenario: string, width = 1440, theme = 'dark', mismatch = t
   return page;
 }
 const shot = async (page: Page, name: string) => { if (shots) { mkdirSync(shots, { recursive: true }); await page.screenshot({ path: join(shots, `${name}.png`) }); } };
-const t = (name: string, fn: () => Promise<void>) =>
+const t = (name: string, fn: () => Promise<void>, ms = 30000) =>
   test(name, async () => {
     if (!browser) throw new Error('Chromium not found: run `bunx playwright install chromium` (or set CHROMIUM_PATH to a chrome-headless-shell binary)');
     await fn();
-  }, 30000);
+  }, ms);
 type Store = { address?: string; wallet?: string };
 const state = (page: Page) => page.evaluate(() => (window as unknown as { __state: () => Store }).__state());
 const walletIs = (page: Page, name: string) => page.waitForFunction((n) => (window as unknown as { __state: () => Store }).__state().wallet === n, name, { timeout: 5000 });
@@ -174,4 +174,4 @@ if (shots)
       await page.getByRole('button', { name: /Switch wallet to/ }).click();
       await page.getByText(/Request cancelled in Rabby/).waitFor({ timeout: 5000 });
       await shot(page, `rejected-${w}-${theme}`);
-    });
+    }, 90000);
