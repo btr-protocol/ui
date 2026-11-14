@@ -71,7 +71,9 @@ export function Empty({
 }
 
 export type NoticeTone = 'default' | Severity;
-export type NoticeSize = 'bar' | 'note';
+/** `bar`: the page notice (a bordered card). `note`: a dense hint under a field. `row`: one row of a list (an `li`: the list's edges, padding and
+ *  divider, a tinted fill, no card), its action below the text. */
+export type NoticeSize = 'bar' | 'note' | 'row';
 
 const NEUTRAL: ReadonlySet<NoticeTone> = new Set<NoticeTone>(['default', 'debug', 'info']);
 
@@ -101,7 +103,7 @@ const isActionSpec = (a: unknown): a is NoticeActionProps =>
 export function NoticeAction({ label, onClick, disabled, pressed, ariaLabel }: NoticeActionProps) {
   return (
     <button type="button" className="notice-action" onClick={onClick} disabled={disabled} aria-pressed={pressed} aria-label={ariaLabel}>
-      {label}
+      <span className="truncate">{label}</span>
     </button>
   );
 }
@@ -137,6 +139,8 @@ export function Notice({ label, tone = 'default', size = 'bar', icon, role, chil
   const neutral = NEUTRAL.has(tone);
   const color = tone === 'default' ? undefined : SEVERITY_COLOR[tone];
   const note = size === 'note';
+  const row = size === 'row';
+  const Root = (row ? 'li' : 'div') as 'div';
   const body = children != null && children !== false && children !== '';
   const glyph =
     icon === false || (note && icon === undefined)
@@ -144,19 +148,23 @@ export function Notice({ label, tone = 'default', size = 'bar', icon, role, chil
       : (icon ?? (tone === 'default' ? 'info' : SEVERITY_ICON[tone]));
   const tint = neutral ? undefined : color;
   return (
-    <div
+    <Root
       className={cn(
         'flex flex-wrap items-start',
         note
           ? 'mt-1 gap-1.5 px-1 text-2xs leading-snug'
-          : cn('surface min-h-[calc(var(--ctl-m)+1.5rem)] gap-x-3 gap-y-2 rounded-lg border px-4 py-3 text-sm leading-6', neutral && 'text-fg-2'),
+          : row
+            ? 'gap-x-3 gap-y-2 border-b border-border bg-bg-2 px-3 py-3 text-sm leading-6 text-fg-1'
+            : cn('surface min-h-[calc(var(--ctl-m)+1.5rem)] gap-x-3 gap-y-2 rounded-lg border px-4 py-3 text-sm leading-6', neutral && 'text-fg-2'),
         neutral && (note ? 'text-fg-2' : 'border-border bg-bg-2'),
         className,
       )}
       style={
         note
           ? tint && { color: tint }
-          : {
+          : row
+            ? { '--nt': tint ?? 'var(--fg-1)', ...(tint && { backgroundColor: `color-mix(in srgb, ${tint} 8%, var(--bg-2))` }) }
+            : {
               '--nt': tint ?? 'var(--fg-1)',
               ...(tint && {
                 color: tint,
@@ -206,11 +214,11 @@ export function Notice({ label, tone = 'default', size = 'bar', icon, role, chil
       </div>
       )}
       {action && (
-        <span className={cn('notice-slot ml-auto shrink-0 self-center', !note && 'max-sm:pl-8')}>
+        <span className={cn('notice-slot', row ? 'w-full min-w-0 pl-8' : 'ml-auto shrink-0 self-center', !note && !row && 'max-sm:pl-8')}>
           {isActionSpec(action) ? <NoticeAction {...action} /> : (action as ComponentChildren)}
         </span>
       )}
-    </div>
+    </Root>
   );
 }
 

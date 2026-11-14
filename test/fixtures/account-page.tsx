@@ -30,7 +30,11 @@ function wallet(exposed: string[], o: { reject?: boolean } = {}) {
   };
 }
 
-const mode = location.hash.slice(1);
+const hash = location.hash.slice(1);
+const fr = hash.endsWith('-fr');
+const mode = hash.replace(/-fr$/, '');
+// The longest French copy the Safe app used to ship: the actions must still be one line at 360 px.
+const FR = { mismatch: 'Votre portefeuille est sur {active}, mais vous êtes connecté en {session}. Signer maintenant échouerait.', switchTo: 'Passer le portefeuille sur {addr}', useInstead: 'Utiliser {addr} à la place' };
 const ambire = { info: { uuid: 'a', name: 'Ambire', rdns: 'test.wallet.ambire', icon: icon('#ff00ff') }, provider: wallet([AMBIRE]) };
 const rabby = { info: { uuid: 'r', name: 'Rabby', rdns: 'test.wallet.rabby', icon: icon('#00ffff') }, provider: wallet(mode === 'reject' ? [] : [RABBY], { reject: mode === 'reject' }) };
 // #match: the session account IS the connected wallet's; the other account is listed (the session's list also shows the other signer).
@@ -47,7 +51,7 @@ void connectWallet(ambire).then(() =>
         <Button size="sm" id="ref-secondary">Reference</Button>
       </div>
       <div style={{ display: 'flex', gap: 8 }}>
-        <WalletButton address={mode === 'match' ? AMBIRE : RABBY} sessionAddress={mode === 'match' ? AMBIRE : RABBY} chains={chains} chainId={143} signers={[RABBY, AMBIRE]} accounts={mode === 'match' ? [AMBIRE, RABBY] : undefined} onSwitchAccount={() => true} />
+        <WalletButton address={mode === 'match' ? AMBIRE : RABBY} sessionAddress={mode === 'match' ? AMBIRE : RABBY} chains={chains} chainId={143} signers={[RABBY, AMBIRE]} accounts={mode === 'match' ? [AMBIRE, RABBY] : undefined} onSwitchAccount={() => true} labels={fr ? FR : undefined} />
       </div>
     </main>,
     document.body,

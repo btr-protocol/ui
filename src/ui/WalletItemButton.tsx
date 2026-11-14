@@ -71,7 +71,7 @@ export function WalletItemButton({
     <>
       {icon}
       <FormRow
-        className="flex-1"
+        className="flex-1 min-w-0"
         gap="md"
         label={
           <span className="flex flex-col flex-1 min-w-0 text-left">

@@ -4,18 +4,12 @@
 // made IN the wallet (its account picker) and the app follows its `accountsChanged`.
 import type { ComponentChildren } from 'preact';
 import { shortAddr } from '../lib/address';
-import { SEVERITY_COLOR, SEVERITY_ICON } from '../lib/severity';
 import { ModalSection } from '../ui/BaseModal';
 import { Badge } from '../ui/Badge';
-import { Button } from '../ui/Button';
-import { Icon } from '../ui/Icon';
-import { Notice } from '../ui/Feedback';
 import { WalletItemButton } from '../ui/WalletItemButton';
 import { WalletTile } from './WalletGlyph';
 import { ACCOUNT_LABELS, type AccountLabels } from './accountLabels';
 import { accountMismatch, sameAddress } from './wallet';
-
-const fill = (s: string, v: Record<string, string>) => s.replace(/\{(\w+)\}/g, (_, k: string) => v[k] ?? '');
 
 /** The one account picture both the modal and a signing card read: who signs vs who is expected. */
 export interface AccountGate {
@@ -31,70 +25,6 @@ export const accountGate = (active?: string | null, expected?: string | null): A
   mismatch: accountMismatch(active, expected),
 });
 
-/** The wrong-account banner: the primary action brings the wallet to the expected account, the secondary re-auths as the active one. */
-export function WrongAccountNotice({
-  active,
-  expected,
-  onSwitch,
-  onUseActive,
-  busy,
-  labels,
-  className,
-}: {
-  active: string;
-  expected: string;
-  onSwitch: () => void;
-  onUseActive?: () => void;
-  busy?: boolean;
-  labels?: Partial<AccountLabels>;
-  className?: string;
-}) {
-  const l = { ...ACCOUNT_LABELS, ...labels };
-  return (
-    <Notice tone="warning" role="alert" className={className}>
-      <span className="block">{fill(l.mismatch, { active: shortAddr(active), session: shortAddr(expected) })}</span>
-      <span className="mt-2 flex flex-wrap gap-2">
-        <Button size="sm" variant="primary" disabled={busy} onClick={onSwitch}>
-          {fill(l.switchTo, { addr: shortAddr(expected) })}
-        </Button>
-        {onUseActive && (
-          <Button size="sm" disabled={busy} onClick={onUseActive}>
-            {fill(l.useInstead, { addr: shortAddr(active) })}
-          </Button>
-        )}
-      </span>
-    </Notice>
-  );
-}
-
-/** A message as a ROW of the account list: the surface, edges, padding and divider of an account row, the tone's glyph in the icon
- *  column, wrapping text, and the row's actions below the text (kit `Button`s). Tone = the kit's semantic colour. */
-export function AccountNoticeRow({
-  tone,
-  role,
-  children,
-  actions,
-}: {
-  tone: 'warning' | 'error' | 'info';
-  role?: 'alert' | 'status';
-  children: ComponentChildren;
-  actions?: ComponentChildren;
-}) {
-  const color = SEVERITY_COLOR[tone];
-  return (
-    <div
-      className="flex w-full items-start gap-3 border-b border-border bg-bg-2 px-3 py-3 font-title text-sm leading-5 text-fg-1"
-      style={{ backgroundColor: `color-mix(in srgb, ${color} 8%, var(--bg-2))` }}
-    >
-      <Icon name={SEVERITY_ICON[tone]} className="h-5 w-5 shrink-0" style={{ color }} />
-      <div className="min-w-0 flex-1">
-        <div role={role}>{children}</div>
-        {actions && <div className="mt-2 flex flex-wrap gap-2">{actions}</div>}
-      </div>
-    </div>
-  );
-}
-
 export interface AccountListProps {
   /** Accounts the wallet exposes, active first. */
   accounts: readonly string[];
@@ -108,7 +38,7 @@ export interface AccountListProps {
   onConnectOther?: () => void;
   busy?: string;
   labels?: Partial<AccountLabels>;
-  /** Rows (`AccountNoticeRow`) listed above the accounts, in the same list. */
+  /** `Notice size="row"` items listed above the accounts, in the same list. */
   notices?: ComponentChildren;
 }
 
@@ -130,7 +60,7 @@ export function AccountList({ accounts, active, session, signers = [], onSelect,
   return (
     <ModalSection title={l.accounts}>
       <div onKeyDown={onKeyDown}>
-      {notices}
+      {notices && <ul className="m-0 list-none p-0">{notices}</ul>}
       {rows.map((a) => {
         const isActive = sameAddress(a, active);
         const isSession = sameAddress(a, session);

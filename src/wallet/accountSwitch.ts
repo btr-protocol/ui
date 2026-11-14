@@ -1,10 +1,9 @@
 // Make an account the active one, wherever it lives. The connected wallet can only sign as ITS accounts, so an account that belongs
-// to another installed wallet is reached by making that wallet the connected one. Generic: every announced EIP-6963 provider is
-// probed with the prompt-free `eth_accounts`; a request (which may prompt) is only ever sent on a user's click, to one wallet.
-// Nothing here trusts an address beyond display: the app's signature-based sign-in still proves who the user is.
+// to another installed wallet is reached by making that wallet the connected one. Generic: every announced EIP-6963 provider is probed
+// with the prompt-free `eth_accounts`; a request (which may prompt) only ever goes out on a user's click, to ONE wallet, and only when
+// the choice is unambiguous. Nothing here trusts an address beyond display: the app's signature-based sign-in still proves who the user is.
 import type { Address } from '../lib/address';
 import { requestAccountPicker, sameAddress } from './accounts';
-import { rememberAccounts, walletOf } from './recentWallets';
 import { isWalletConnectProvider } from './walletConnectShell';
 import {
   type Eip1193Provider,
@@ -13,14 +12,25 @@ import {
   accountList,
   adoptWallet,
   discoverProviders,
+  walletAccounts,
   walletEntry,
+  walletGeneration,
 } from './wallet';
 
-/** `rejected`: the user closed the wallet's prompt; `not-shared`: the wallet answered but does not expose the account to this
- *  site; `none`: no wallet we can reach has it; `cancelled`: the caller aborted (modal closed), nothing to show. */
+/** `rejected`: the user closed the wallet's prompt; `not-shared`: the wallet answered but does not expose the account to this site (or
+ *  did not keep it); `ambiguous`: no single wallet can be chosen, so none is bound (the user picks one in "Add or switch wallet");
+ *  `cancelled`: superseded, aborted or the wallet state changed under us, nothing was bound and there is nothing to show. */
+export type ActivateFailure = 'rejected' | 'not-shared' | 'ambiguous' | 'cancelled';
 export type ActivateResult =
-  | { ok: true; entry: ProviderEntry; accounts: Address[] }
-  | { ok: false; reason: 'rejected' | 'not-shared' | 'none' | 'cancelled'; wallet?: ProviderInfo };
+  | {
+      ok: true;
+      entry: ProviderEntry;
+      accounts: Address[];
+      /** Put the previous connected wallet back (the app's own step after the switch failed). A no-op unless this activation is still the
+       *  connected wallet, and for an account change inside the same wallet (the wallet itself holds that state). */
+      undo: () => Promise<void>;
+    }
+  | { ok: false; reason: ActivateFailure; wallet?: ProviderInfo };
 
 export interface ActivateOptions {
   /** Announced wallets to search (default: EIP-6963 discovery). */
@@ -31,9 +41,10 @@ export interface ActivateOptions {
   probeMs?: number;
 }
 
-const idOf = (e: ProviderEntry) => (e.info.rdns ?? e.info.id ?? '').toLowerCase();
+const keyOf = (e: ProviderEntry) => (e.info.rdns || e.info.id || e.info.uuid || '').toLowerCase();
 const isRejection = (e: unknown) => (e as { code?: number })?.code === 4001;
 const aborted = () => Object.assign(new Error('aborted'), { name: 'AbortError' });
+const isAbort = (e: unknown) => (e as Error)?.name === 'AbortError';
 
 /** `p` settled unless `signal` aborts first. */
 const unlessAborted = <T>(p: Promise<T>, signal?: AbortSignal): Promise<T> =>
@@ -61,23 +72,43 @@ async function probe(p: Eip1193Provider, ms: number, signal?: AbortSignal): Prom
   }
 }
 
+/** The newest activation wins: an older one that is still awaiting binds nothing. */
+let latest = 0;
+
 /**
  * Click on an account: find the wallet that holds `target` and make it, with that account, the connected wallet.
- *  1. Silent probe of the connected wallet and every other announced one, in parallel (a WalletConnect session is one provider: no probe).
- *  2. A wallet that already exposes it: becomes the connected wallet, no prompt. If it is not that wallet's active account, its own
- *     account picker opens (a wallet signs only as its active account; EIP-1193 has no silent "set active").
- *  3. None does: the remembered wallet of that address (else the only other wallet) is asked, `eth_requestAccounts` then its picker,
- *     so the user can share the account. With no other wallet the connected one's picker opens (multi-account wallets).
- *  4. Refused / still not shared / nobody to ask: a reason the panel shows as a row, never a silent no-op.
+ *  1. Already the connected wallet's ACTIVE account (live read): done, nothing else is touched.
+ *  2. Silent probe of every other announced wallet, in parallel (a WalletConnect session is one provider: no search).
+ *  3. Exactly ONE wallet exposes it (and its rdns is announced once): that wallet. Several do, a rdns is announced twice, or the
+ *     candidates cannot be told apart: nothing is bound (`ambiguous`), never the first match. If it is authorised but not that wallet's
+ *     active account, its own picker opens (EIP-1193 has no silent "set active").
+ *  4. Nobody exposes it: with no other wallet the connected one's picker opens (multi-account wallets); with exactly one other wallet it
+ *     gets `eth_requestAccounts`, then its picker; with several, `ambiguous`.
+ *  5. Bind only if nothing changed meanwhile (disconnect, `accountsChanged`, a newer click, abort); then re-read `eth_accounts` on the
+ *     bound provider: its first account must be `target`, else the previous wallet is restored (`not-shared`). That re-read is the
+ *     last step before the caller's own step.
  */
 export async function activateAccount(target: string, o: ActivateOptions = {}): Promise<ActivateResult> {
   const cur = walletEntry.peek();
-  if (!cur) return { ok: false, reason: 'none' };
+  if (!cur) return { ok: false, reason: 'not-shared' };
   const { signal } = o;
+  const ms = o.probeMs ?? 3000;
+  const mine = ++latest;
+  const gen = walletGeneration();
+  const before = { entry: cur, accounts: [...walletAccounts.peek()] };
+  const stale = (sameWallet = false) =>
+    mine !== latest ||
+    !!signal?.aborted ||
+    walletEntry.peek() !== cur ||
+    walletGeneration() !== gen ||
+    (!sameWallet && walletAccounts.peek().join() !== before.accounts.join());
+  // Back to the wallet that was connected, but only while the one we bound is still the connected one (a user's own change stays).
+  const restoreFrom = (bound: ProviderEntry) => async () => {
+    if (bound !== cur && walletEntry.peek() === bound) await adoptWallet(before.entry, before.accounts);
+  };
   try {
     const wc = isWalletConnectProvider(cur.provider);
-    const ms = o.probeMs ?? 3000;
-    // All probes run at once: the connected wallet's, and (once discovery answered) every other announced wallet's.
+    // The connected wallet's live read and (once discovery answered) every other wallet's run at once.
     let settled = false;
     const liveP = probe(cur.provider, ms, signal);
     const foundP: Promise<readonly ProviderEntry[]> = wc ? Promise.resolve([]) : o.entries ? Promise.resolve(o.entries) : unlessAborted(discoverProviders(), signal);
@@ -86,49 +117,53 @@ export async function activateAccount(target: string, o: ActivateOptions = {}): 
       return settled ? [[], []] : [others, await Promise.all(others.map((e) => probe(e.provider, ms, signal)))];
     });
     othersP.catch(() => {}); // an abort rejects both; the awaited one reports it
-    // Already the connected wallet's ACTIVE account (live read): nothing to search, nothing to prompt.
     const live = await liveP;
-    if (live && sameAddress(live[0], target) && !signal?.aborted) {
+    if (live && sameAddress(live[0], target) && !stale(true)) {
       settled = true;
-      rememberAccounts(idOf(cur), live);
-      await adoptWallet(cur, live);
-      return { ok: true, entry: cur, accounts: live };
+      return { ok: true, entry: cur, accounts: live, undo: async () => {} };
     }
-    const [more, moreSeen] = await othersP;
-    const all = [cur, ...more];
-    const seen = [live, ...moreSeen];
-    all.forEach((e, i) => seen[i] && rememberAccounts(idOf(e), seen[i]));
-    const bind = async (entry: ProviderEntry, accounts: Address[]): Promise<ActivateResult> => {
-      if (signal?.aborted) return { ok: false, reason: 'cancelled' };
-      await adoptWallet(entry, accounts);
-      return { ok: true, entry, accounts };
-    };
-    // Ask `entry` for the account: its authorised list first, then its picker; the account must end up ACTIVE.
-    const ask = async (entry: ProviderEntry, list: Address[] | null): Promise<ActivateResult> => {
-      try {
-        let accounts = list ?? accountList(await unlessAborted(entry.provider.request({ method: 'eth_requestAccounts' }), signal));
-        if (!sameAddress(accounts[0], target)) accounts = await unlessAborted(requestAccountPicker(entry.provider), signal);
-        rememberAccounts(idOf(entry), accounts);
-        return sameAddress(accounts[0], target) ? await bind(entry, accounts) : { ok: false, reason: 'not-shared', wallet: entry.info };
-      } catch (e) {
-        if ((e as Error)?.name === 'AbortError') throw e;
-        return { ok: false, reason: isRejection(e) ? 'rejected' : 'not-shared', wallet: entry.info };
-      }
-    };
+    const [others, seen] = await othersP;
+    if (signal?.aborted) return { ok: false, reason: 'cancelled' };
+    const all = [cur, ...others];
+    const lists = [live, ...seen];
+    const keys = all.map(keyOf);
+    const duplicated = (i: number) => keys.filter((k) => k === keys[i]).length > 1;
+    const claims = all.map((_, i) => i).filter((i) => lists[i]?.some((a) => sameAddress(a, target)));
 
-    const holds = all.map((_, i) => !!seen[i]?.some((a) => sameAddress(a, target)));
-    const hit = all.findIndex((_, i) => holds[i] && sameAddress(seen[i]?.[0], target));
-    const any = hit >= 0 ? hit : holds.indexOf(true);
-    if (any >= 0) return await ask(all[any], seen[any]);
+    let pick = -1;
+    let list: Address[] | null = null;
+    if (claims.length > 1) return { ok: false, reason: 'ambiguous' };
+    if (claims.length === 1) {
+      pick = claims[0];
+      list = lists[pick];
+    } else if (others.length === 0) pick = 0;
+    else if (others.length === 1) pick = 1;
+    else return { ok: false, reason: 'ambiguous' };
+    if (duplicated(pick)) return { ok: false, reason: 'ambiguous' };
+    const entry = all[pick];
 
-    const others = all.filter((e) => e !== cur);
-    const remembered = walletOf(target);
-    const likely = (remembered && all.find((e) => idOf(e) === remembered)) || (others.length === 1 ? others[0] : undefined);
-    if (likely) return await ask(likely, null);
-    if (others.length === 0) return await ask(cur, null);
-    return { ok: false, reason: 'none' };
+    // Ask the chosen wallet for the account: its authorised list first, then its picker; the account must end up ACTIVE.
+    let accounts: Address[];
+    try {
+      accounts = list ?? accountList(await unlessAborted(entry.provider.request({ method: 'eth_requestAccounts' }), signal));
+      if (!sameAddress(accounts[0], target)) accounts = await unlessAborted(requestAccountPicker(entry.provider), signal);
+    } catch (e) {
+      if (isAbort(e)) throw e;
+      return { ok: false, reason: isRejection(e) ? 'rejected' : 'not-shared', wallet: entry.info };
+    }
+    if (!sameAddress(accounts[0], target)) return { ok: false, reason: 'not-shared', wallet: entry.info };
+
+    if (stale(entry === cur)) return { ok: false, reason: 'cancelled' };
+    await adoptWallet(entry, accounts);
+    // Re-verify on the bound provider: what the wallet says NOW, not what it said a moment ago.
+    const again = await probe(entry.provider, ms, signal);
+    if (!again || !sameAddress(again[0], target) || mine !== latest || signal?.aborted) {
+      await restoreFrom(entry)();
+      return { ok: false, reason: again && mine === latest && !signal?.aborted ? 'not-shared' : 'cancelled', wallet: entry.info };
+    }
+    return { ok: true, entry, accounts: again, undo: restoreFrom(entry) };
   } catch (e) {
-    if ((e as Error)?.name === 'AbortError') return { ok: false, reason: 'cancelled' };
-    return { ok: false, reason: 'none' };
+    if (isAbort(e)) return { ok: false, reason: 'cancelled' };
+    return { ok: false, reason: 'not-shared' };
   }
 }

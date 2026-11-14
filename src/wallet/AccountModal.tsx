@@ -7,13 +7,13 @@ import { MODAL_PADDING } from '../ui/BaseModal';
 import type { ChainItem } from '../ui/ChainSelect';
 import { ChainSelectModal } from '../ui/ChainSelectModal';
 import { Button } from '../ui/Button';
+import { Notice, NoticeAction } from '../ui/Feedback';
 import { Tooltip } from '../ui/FloatingPanel';
 import { Icon } from '../ui/Icon';
 import { FormRow } from '../ui/Primitives';
-import { AccountList, AccountNoticeRow, accountGate } from './AccountPanel';
+import { AccountList, accountGate } from './AccountPanel';
 import { shortAddr } from '../lib/address';
-import { type ActivateResult, activateAccount } from './accountSwitch';
-import { walletOf } from './recentWallets';
+import { activateAccount } from './accountSwitch';
 import { useProviders } from './useProviders';
 import { sameAddress, walletAddress, walletEntry } from './wallet';
 import { ACCOUNT_LABELS, type AccountLabels } from './accountLabels';
@@ -71,13 +71,12 @@ export function AccountModal({
   const [busy, setBusy] = useState<string>();
   const [err, setErr] = useState('');
   const l = { ...ACCOUNT_LABELS, ...labels };
-  const [hint, setHint] = useState<{ address: string; reason: 'rejected' | 'not-shared' | 'none'; wallet?: string }>();
+  const [hint, setHint] = useState<{ address: string; kind: 'rejected' | 'not-shared' | 'ambiguous' | 'failed'; wallet?: string }>();
   const announced = useProviders();
   const abort = useRef<AbortController>();
   const gate = accountGate(activeAddress, sessionAddress);
-  // The glyph is the wallet that HOLDS the address shown: the connected wallet's, or (the session account lives elsewhere) the
-  // remembered wallet's when it is announced, else the generic wallet icon, never another wallet's mark.
-  const holder = !activeAddress || sameAddress(address, activeAddress) ? wallet : announced.find((e) => (e.info.rdns ?? e.info.id)?.toLowerCase() === walletOf(address))?.info;
+  // The connected wallet's mark only while it exposes the address shown; otherwise the generic wallet icon (never another wallet's mark).
+  const holder = !activeAddress || sameAddress(address, activeAddress) || accounts.some((a) => sameAddress(a, address)) ? wallet : undefined;
   useEffect(() => () => abort.current?.abort(), []);
   const close = () => {
     abort.current?.abort();
@@ -96,49 +95,62 @@ export function AccountModal({
       setBusy(undefined);
     }
   };
-  // One click on an account: the kit finds the wallet that holds it and makes that wallet the connected one (no-op when it already is),
-  // THEN the app's own step runs (e.g. its sign-in as that account). A failed lookup is a row in the list, never a silent no-op.
+  // One click on an account. 1) The kit makes the wallet that holds it the connected one (nothing to do when it already is; a miss or an
+  // ambiguity is a row, never a silent no-op). 2) THEN the app's own step (e.g. its sign-in as that account), never after the modal closed
+  // or a newer click. 3) If that step fails, the previous wallet is put back and a row says so.
   const pick = (a: string) =>
     void run(a, async () => {
       setHint(undefined);
+      abort.current?.abort();
+      const ac = (abort.current = new AbortController());
+      let undo: (() => Promise<void>) | undefined;
       if (walletEntry.value && !sameAddress(a, walletAddress.value)) {
-        abort.current = new AbortController();
-        const r: ActivateResult = await activateAccount(a, { entries: announced.length ? announced : undefined, signal: abort.current.signal });
-        if (!r.ok) return r.reason === 'cancelled' ? undefined : setHint({ address: a, reason: r.reason, wallet: r.wallet?.name });
+        const r = await activateAccount(a, { entries: announced.length ? announced : undefined, signal: ac.signal });
+        if (!r.ok) return r.reason === 'cancelled' ? undefined : setHint({ address: a, kind: r.reason, wallet: r.wallet?.name });
+        undo = r.undo;
       }
-      if ((await onSwitchAccount(a)) !== false) close();
+      if (ac.signal.aborted) return void (await undo?.());
+      let done = false;
+      try {
+        done = (await onSwitchAccount(a)) !== false;
+      } catch {}
+      if (ac.signal.aborted) return;
+      if (done) return close();
+      await undo?.();
+      setHint({ address: a, kind: 'failed' });
     });
-  const hintText = hint && fill(l[hint.reason === 'rejected' ? 'hintRejected' : hint.reason === 'none' ? 'hintNone' : 'hintNotShared'], { addr: shortAddr(hint.address), wallet: hint.wallet ?? l.wallet });
+  const hintKey = { rejected: 'hintRejected', 'not-shared': 'hintNotShared', ambiguous: 'hintAmbiguous', failed: 'hintFailed' } as const;
+  const hintText = hint && fill(l[hintKey[hint.kind]], { addr: shortAddr(hint.address), wallet: hint.wallet ?? l.wallet, action: l.connectOther });
   const busyNow = busy !== undefined;
+  const hasNotices = !!err || !!hintText || (gate.mismatch && !!gate.active && !!gate.expected);
+  // The visible label (addresses middle-truncated) leads the accessible name, which adds the full address.
+  const named = (tpl: string, addr: string) => ({ label: fill(tpl, { addr: shortAddr(addr) }), ariaLabel: `${fill(tpl, { addr: shortAddr(addr) })} (${addr})` });
   const notices = (
     <>
       {err && (
-        <AccountNoticeRow tone="error" role="alert">
+        <Notice size="row" tone="error" role="alert">
           {err}
-        </AccountNoticeRow>
+        </Notice>
       )}
       {hintText && (
-        <AccountNoticeRow tone="warning" role="alert">
+        <Notice size="row" tone="warning" role="alert">
           {hintText}
-        </AccountNoticeRow>
+        </Notice>
       )}
       {gate.mismatch && gate.active && gate.expected && (
-        <AccountNoticeRow
+        <Notice
+          size="row"
           tone="warning"
           role="alert"
-          actions={
-            <>
-              <Button size="sm" variant="primary" disabled={busyNow} title={fill(l.switchTo, { addr: gate.expected })} aria-label={fill(l.switchTo, { addr: gate.expected })} onClick={() => gate.expected && pick(gate.expected)}>
-                {fill(l.switchTo, { addr: shortAddr(gate.expected) })}
-              </Button>
-              <Button size="sm" disabled={busyNow} title={fill(l.useInstead, { addr: gate.active })} aria-label={fill(l.useInstead, { addr: gate.active })} onClick={() => gate.active && pick(gate.active)}>
-                {fill(l.useInstead, { addr: shortAddr(gate.active) })}
-              </Button>
-            </>
+          action={
+            <span className="flex min-w-0 flex-wrap gap-2">
+              <NoticeAction {...named(l.switchTo, gate.expected)} disabled={busyNow} onClick={() => gate.expected && pick(gate.expected)} />
+              <NoticeAction {...named(l.useInstead, gate.active)} disabled={busyNow} onClick={() => gate.active && pick(gate.active)} />
+            </span>
           }
         >
           {fill(l.mismatch, { active: shortAddr(gate.active), session: shortAddr(gate.expected) })}
-        </AccountNoticeRow>
+        </Notice>
       )}
     </>
   );
@@ -165,22 +177,21 @@ export function AccountModal({
             <CopyAddressButton value={address} copiedMessage={l.copied} />
             {explorer ?? <ExplorerButton href={explorerHref?.(address)} />}
             <Tooltip content={l.disconnect} side="bottom">
-              <button
-                type="button"
+              <Button
+                variant="ghost"
+                size="sm"
+                aria-label={l.disconnect}
+                leftIcon={<Icon name="sign-out" />}
                 onClick={() => {
                   onDisconnect();
                   close();
                 }}
-                aria-label={l.disconnect}
-                className="p-1.5 hover:text-primary transition-colors"
-              >
-                <Icon name="sign-out" className="w-4 h-4 text-fg-3" />
-              </button>
+              />
             </Tooltip>
           </div>
         }
       />
-      {(accounts.length > 0 || !!sessionAddress || !!err || !!hint) && (
+      {(accounts.length > 0 || !!sessionAddress || hasNotices) && (
         <AccountList
           accounts={accounts}
           active={activeAddress}
@@ -188,7 +199,7 @@ export function AccountModal({
           signers={signers}
           busy={busy}
           labels={labels}
-          notices={notices}
+          notices={hasNotices ? notices : undefined}
           onSelect={pick}
           onConnectOther={
             onConnectOther &&

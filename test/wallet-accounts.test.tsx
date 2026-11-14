@@ -713,14 +713,17 @@ describe('review fixes', () => {
 
   test('account rows: arrow keys move focus; a busy list keeps focus (aria-disabled, not disabled)', async () => {
     const { AccountList } = await import('../src');
-    const { host } = mount(<AccountList accounts={[SESSION, OTHER, THIRD]} busy={OTHER} onSelect={() => {}} />);
+    const { host } = mount(<AccountList accounts={[SESSION, OTHER, THIRD]} active={SESSION} busy={OTHER} onSelect={() => {}} />);
+    // the current account (SESSION) is a plain row, not a tab stop; the other two are the arrow order
+    expect(host.querySelector('[aria-current=true]')?.tagName).toBe('DIV');
     const rows = [...host.querySelectorAll('button')].filter((b) => /0x/.test(b.textContent ?? ''));
+    expect(rows).toHaveLength(2);
     expect(rows.every((b) => !b.disabled && b.getAttribute('aria-disabled') === 'true')).toBe(true);
     rows[0]!.focus();
     act(() => { rows[0]!.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true })); });
     expect(document.activeElement).toBe(rows[1]!);
-    act(() => { rows[1]!.dispatchEvent(new KeyboardEvent('keydown', { key: 'End', bubbles: true })); });
-    expect(document.activeElement).toBe(rows[2]!);
+    act(() => { rows[1]!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Home', bubbles: true })); });
+    expect(document.activeElement).toBe(rows[0]!);
   });
 
   test('add / switch wallet is one more row in the arrow order, no wallet brand icon, and there is no "choose account" row', async () => {

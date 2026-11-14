@@ -61,7 +61,7 @@ async function open(scenario: string, width = 1440, theme = 'dark', mismatch = t
   await page.goto(`file://${join(cache, 'index.html')}#${scenario}`);
   if (theme === 'light') await page.evaluate(() => document.documentElement.classList.add('light'));
   await page.getByRole('button', { name: /open account/ }).click();
-  if (mismatch) await page.getByText('Signing now would fail').waitFor({ timeout: 5000 });
+  if (mismatch) await page.locator('[role=dialog] .notice-action').first().waitFor({ timeout: 5000 });
   else await page.getByText('Accounts', { exact: true }).waitFor({ timeout: 5000 });
   await settled(page);
   return page;
@@ -83,11 +83,11 @@ t('the warning is a row of the account list: same edges, same divider, no card; 
   const page = await open('share', 390);
   const m = await page.evaluate(() => {
     const dlg = document.querySelector('[role=dialog]')!;
-    const row = [...dlg.querySelectorAll('div')].find((d) => d.textContent?.startsWith('Your wallet is on') && d.classList.contains('border-b') && d.classList.contains('px-3'))!;
+    const row = [...dlg.querySelectorAll('li')].find((d) => d.textContent?.startsWith('Your wallet is on') && d.classList.contains('border-b') && d.classList.contains('px-3'))!;
     const acct = [...dlg.querySelectorAll('button')].find((b) => b.textContent?.includes('0xaB7B…0760') && b.classList.contains('border-b'))!;
     const a = row.getBoundingClientRect(), b = acct.getBoundingClientRect();
     const cs = getComputedStyle(row), cb = getComputedStyle(acct);
-    return { left: [a.left, b.left], right: [a.right, b.right], radius: cs.borderRadius, bw: [cs.borderTopWidth, cs.borderBottomWidth, cb.borderBottomWidth], overflow: row.scrollWidth > row.clientWidth, px: [cs.paddingLeft, cb.paddingLeft], icon: !!row.querySelector('svg'), nestedSurface: !!row.closest('.surface')?.parentElement?.closest('.surface') };
+    return { left: [a.left, b.left], right: [a.right, b.right], radius: cs.borderRadius, bw: [cs.borderTopWidth, cs.borderBottomWidth, cb.borderBottomWidth], overflow: row.scrollWidth > row.clientWidth, px: [cs.paddingLeft, cb.paddingLeft], icon: !!row.querySelector('svg'), tag: row.tagName, inList: row.parentElement?.tagName, nestedSurface: !!row.closest('.surface')?.parentElement?.closest('.surface') };
   });
   expect(m.left[0]).toBe(m.left[1]);
   expect(m.right[0]).toBe(m.right[1]);
@@ -97,17 +97,28 @@ t('the warning is a row of the account list: same edges, same divider, no card; 
   expect(m.overflow).toBe(false);
   expect(m.icon).toBe(true);
   expect(m.nestedSurface).toBe(false);
+  expect([m.tag, m.inList]).toEqual(['LI', 'UL']);
 });
 
-for (const w of [1440, 390, 360])
-  t(`both actions are kit Buttons: same radius, height and look as a reference Button (${w}px)`, async () => {
-    const page = await open('share', w);
-    // The refs sit in one `.surface`, as the modal's rows do: the kit nests control radii by surface depth.
-    const get = (sel: string) => page.evaluate((s) => { const el = (document.querySelector(s) ?? [...document.querySelectorAll('[role=dialog] button')].find((b) => b.textContent?.startsWith(s)))!; const c = getComputedStyle(el); return { r: c.borderRadius, h: el.getBoundingClientRect().height, f: `${c.fontSize} ${c.fontFamily} ${c.fontWeight}`, bg: c.backgroundColor, bd: c.borderColor }; }, sel);
-    const refP = await get('#ref-primary'), refS = await get('#ref-secondary');
-    const sw = await get('Switch wallet to'), use = await get('Use ');
-    expect(sw).toEqual(refP);
-    expect(use).toEqual(refS);
+// The row's actions are the kit's NoticeAction: the control height and radius of a kit Button, the tone's tint, ONE line whatever the copy.
+for (const [w, sc] of [[1440, 'share'], [390, 'share'], [360, 'share'], [360, 'share-fr']] as const)
+  t(`both actions: a Button's height and radius, one line, inside the row (${w}px, ${sc})`, async () => {
+    const page = await open(sc, w);
+    const m = await page.evaluate(() => {
+      const geo = (el: Element) => { const c = getComputedStyle(el), r = el.getBoundingClientRect(); return { r: c.borderRadius, h: r.height, right: r.right, ws: c.whiteSpace }; };
+      const ref = geo(document.querySelector('#ref-secondary')!);
+      const dlg = document.querySelector('[role=dialog]')!;
+      const row = [...dlg.querySelectorAll('li')].find((d) => d.classList.contains('border-b') && d.querySelector('.notice-action'))!;
+      return { ref, row: row.getBoundingClientRect().right, acts: [...row.querySelectorAll('.notice-action')].map((b) => ({ ...geo(b), overflowing: b.scrollWidth > b.clientWidth, label: b.textContent, aria: b.getAttribute('aria-label') })) };
+    });
+    expect(m.acts).toHaveLength(2);
+    for (const a of m.acts) {
+      expect(a.h).toBe(m.ref.h);
+      expect(a.r).toBe(m.ref.r);
+      expect(a.ws).toBe('nowrap');
+      expect(a.right).toBeLessThanOrEqual(m.row);
+      expect(a.aria?.startsWith(a.label ?? '?')).toBe(true); // the visible label leads the accessible name
+    }
   });
 
 t('clicking the account row activates the wallet that holds it: no mismatch row, header mark is that wallet\'s', async () => {
@@ -129,7 +140,7 @@ t('rejected in the other wallet: a list row names it; nothing is switched', asyn
   await page.getByText(/Request cancelled in Rabby/).waitFor({ timeout: 5000 });
   const m = await page.evaluate(() => {
     const dlg = document.querySelector('[role=dialog]')!;
-    const row = [...dlg.querySelectorAll('div')].find((d) => d.textContent?.startsWith('Request cancelled') && d.classList.contains('border-b'))!;
+    const row = [...dlg.querySelectorAll('li')].find((d) => d.textContent?.startsWith('Request cancelled') && d.classList.contains('border-b'))!;
     return { radius: getComputedStyle(row).borderRadius, alert: row.querySelector('[role=alert]') !== null };
   });
   expect(m).toEqual({ radius: '0px', alert: true });
@@ -154,24 +165,18 @@ t('keyboard: the account row takes focus and Enter activates it', async () => {
 });
 
 if (shots)
-  for (const [w, theme] of [[1440, 'dark'], [1440, 'light'], [390, 'dark'], [390, 'light']] as const)
+  for (const [w, theme] of [[1440, 'dark'], [1440, 'light'], [390, 'dark'], [390, 'light'], [360, 'dark'], [360, 'light']] as const)
     t(`screenshots ${w} ${theme}`, async () => {
       let page = await open('share', w, theme);
-      await shot(page, `mismatch-${w}-${theme}`);
-      console.log('HEIGHTS', w, theme, JSON.stringify(await page.evaluate(() => {
-        const h = (el?: Element | null) => Math.round((el?.getBoundingClientRect().height ?? 0) * 10) / 10;
-        const dlg = document.querySelector('[role=dialog]')!;
-        const btn = [...dlg.querySelectorAll('button')];
-        return { accountRow: h(btn.find((b) => b.classList.contains('border-b') && b.textContent?.includes('0xaB7B'))), switchBtn: h(btn.find((b) => b.textContent?.startsWith('Switch wallet to'))), useBtn: h(btn.find((b) => b.textContent?.startsWith('Use '))), warnRow: h([...dlg.querySelectorAll('div')].find((d) => d.textContent?.startsWith('Your wallet is on') && d.classList.contains('border-b'))), addRow: h(btn.find((b) => b.textContent?.includes('Add or switch'))), refBtn: h(document.querySelector('#ref-primary')) };
-      })));
+      await shot(page, `r2-mismatch-${w}-${theme}`);
       await accountRow(page).click();
       await page.getByRole('dialog').waitFor({ state: 'detached', timeout: 5000 });
       await page.getByRole('button', { name: /open account/ }).click();
       await page.getByText('Accounts', { exact: true }).waitFor({ timeout: 5000 });
       await settled(page);
-      await shot(page, `after-${w}-${theme}`);
+      await shot(page, `r2-after-${w}-${theme}`);
       page = await open('reject', w, theme);
       await page.getByRole('button', { name: /Switch wallet to/ }).click();
       await page.getByText(/Request cancelled in Rabby/).waitFor({ timeout: 5000 });
-      await shot(page, `rejected-${w}-${theme}`);
+      await shot(page, `r2-rejected-${w}-${theme}`);
     }, 90000);
