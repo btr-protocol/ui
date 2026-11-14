@@ -18,12 +18,15 @@ export function WalletGlyph({
   name = info?.name ?? id ?? '?',
   announcedIcon = info?.icon,
   size = 28,
+  bare = false,
 }: {
   info?: Pick<ProviderInfo, 'name' | 'icon' | 'id' | 'rdns'>;
   id?: string;
   name?: string;
   announcedIcon?: string;
   size?: number;
+  /** Only the mark: no backing tile, no ring, no generic glyph behind the image (a grid of marks). */
+  bare?: boolean;
 }) {
   const raster = id ? walletIcon(id) : undefined;
   const [stage, setStage] = useState(0);
@@ -37,9 +40,9 @@ export function WalletGlyph({
     <span
       style={{ width: size, height: size }}
       aria-hidden="true"
-      className="relative flex shrink-0 items-center justify-center rounded-xs bg-bg-3 text-fg-2 ring-1 ring-bg-0"
+      className={`relative flex shrink-0 items-center justify-center rounded-xs ${bare ? '' : 'bg-bg-3 text-fg-2 ring-1 ring-bg-0'}`}
     >
-      <Icon name="wallet" className="w-4 h-4" />
+      {!bare && <Icon name="wallet" className="w-4 h-4" />}
       {src && (
         <img
           src={src}

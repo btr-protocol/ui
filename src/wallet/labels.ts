@@ -21,6 +21,8 @@ export interface WalletModalLabels {
   /** Caption of a recent wallet reached through WalletConnect. */
   viaWalletConnect: string;
   qrCaption: string;
+  /** Under the QR code. */
+  qrScan: string;
   appsCaption: string;
   thisBrowser: string;
   /** `{name}` = the wallet. */
@@ -68,6 +70,7 @@ export const WALLET_MODAL_LABELS: WalletModalLabels = {
   removeRecent: 'Remove {name} from recent wallets',
   viaWalletConnect: 'WalletConnect',
   qrCaption: 'Scan a QR code with your phone',
+  qrScan: 'Scan this QR code with your mobile wallet to connect',
   appsCaption: 'Open a wallet app',
   thisBrowser: 'This browser',
   connectInBrowser: 'Connect {name} (this browser)',

@@ -6,6 +6,8 @@ import { type RecentWallet, RECENT_SHOWN, rankRecent } from './recentWallets';
 /** Popular wallets offered for install, in this order (the btr.markets "Discover" list), none that this browser already has. */
 export const OTHER_IDS = ['metamask', 'rabby', 'base', 'rainbow', 'trust', 'phantom', 'okx'] as const;
 export const OTHER_MAX = 5;
+/** Wallets WalletConnect reaches, the grid behind the WalletConnect tile (6 x 4, the btr.markets set before 8e175e318): every id has a bundled mark. */
+export const WC_TILE_IDS = ['metamask', 'rainbow', 'phantom', 'trust', 'base', 'safe', 'ledger', 'trezor', 'tangem', 'copper', 'bitgo', 'fireblocks', 'binance', 'okx', 'bitget', 'gate', 'bybit', 'kucoin', 'family', '1inch', 'uniswap', 'imtoken', 'safepal', 'argent'] as const;
 
 interface Detected {
   id: string;
