@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.12.1
+- Tabs: a group that fits no longer fades its last label. On touch (`pointer: coarse`) the 44 px hit-area `::after` of each tab counted as scrollable overflow of the tab scroller (two xs tabs, `$` and `APR`: scrollWidth 66 over clientWidth 64), so `data-r` was set and the edge fade masked the end of the strip. Inside a tab strip that pseudo now takes the tab's own box (`min-width` / `min-height` 0; the scroller clipped it already), which also ends a vertical scroll of about 6 px the xs strip had on touch. Real overflow is unchanged.
+- SCOPE CHANGE: the strip rules (`flex: none; white-space: nowrap`, and the hit-area above) now name the strip itself (`.tabs-attached-bar > .btn-group`). In 0.12.0 they also matched a plain `ButtonGroup` placed inside an attached tab's panel: its buttons did not wrap. They now behave like any plain `ButtonGroup`, so such a group may wrap its text where it did not. Standalone `ButtonGroup`s are unchanged (same width and height).
+- Test: `test/tabs.browser.test.tsx`, 2 short tabs at xs / sm / md, group and attached, touch and not; plus the panel `ButtonGroup` hit-area and a width / height comparison against a plain group on the same page.
+
 ## 0.12.0
 - Tabs on ButtonGroup. `SegmentedControl` (the kit's tab selector) is now a `ButtonGroup` of `Button`s: height, line height, padding, radius, border and dividers are the group's, so a tab row and a button group in one toolbar are pixel-identical. The pill container and its own tab styles are gone. API unchanged for existing call sites.
 - SIZE CHANGE: `size="sm"` (and the default) now equals the standard ButtonGroup height (Button sm: 32 px on desktop, 44 px on touch, text-sm) plus the group's 1 px border, 34 px in all. It used to be compact (text-xs, 24 px tab inside a 30 px pill). New `size="xs"` is the compact one (Button xs). Rows that put tabs beside Inputs, Selects or Buttons now line up; check dense rows that relied on the old height.

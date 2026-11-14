@@ -1,6 +1,6 @@
 // Real-browser checks (Chromium via playwright-core): geometry cannot be asserted in a DOM emulation.
 // Needs Chromium (`bunx playwright install chromium`): without one every test here fails with that instruction.
-import { afterAll, beforeAll, expect, test } from 'bun:test';
+import { afterAll, afterEach, beforeAll, expect, test } from 'bun:test';
 import { existsSync, mkdirSync, readdirSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
@@ -24,8 +24,10 @@ function chromium(): string | undefined {
 const exe = chromium();
 let browser: import('playwright-core').Browser | undefined;
 
-beforeAll(async () => {
-  if (!exe) return;
+// The launch PROMISE is kept: afterAll awaits it, so a hook that timed out mid-launch still gets its browser closed.
+let launching: Promise<import('playwright-core').Browser | undefined> | undefined;
+async function setup() {
+  if (!exe) return undefined;
   mkdirSync(cache, { recursive: true });
   const built = await Bun.build({ entrypoints: [join(root, 'test/fixtures/tabs-page.tsx')], outdir: cache, naming: 'page.js', format: 'iife', target: 'browser' });
   if (!built.success) throw new Error(built.logs.join('\n'));
@@ -35,15 +37,39 @@ beforeAll(async () => {
   if (tw.exitCode) throw new Error(tw.stderr.toString());
   writeFileSync(join(cache, 'index.html'), '<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><link rel="stylesheet" href="page.css"></head><body><script src="page.js"></script></body></html>');
   const { chromium: pw } = await import('playwright-core');
-  browser = await pw.launch({ executablePath: exe });
-});
-afterAll(async () => { await browser?.close(); });
+  return pw.launch({ executablePath: exe });
+}
+// Build + tailwind + Chromium launch take longer than bun's 5 s hook default.
+beforeAll(async () => {
+  launching = setup();
+  browser = await launching;
+}, 120000);
+afterAll(async () => { await (await launching?.catch(() => undefined))?.close(); }, 30000);
+
+// Every page `open()` hands out is closed here, also when its test throws.
+const pages: import('playwright-core').Page[] = [];
+afterEach(async () => { for (const p of pages.splice(0)) await p.close().catch(() => {}); });
+
+// The edge effect and its ResizeObserver run after mount: wait until they have measured. A one-shot observer on every
+// fade scroller is delivered after the component's own (created first, same frame), then two frames of slack.
+async function settled(page: import('playwright-core').Page) {
+  await page.evaluate(() => new Promise<void>((done, fail) => {
+    setTimeout(() => fail(new Error('settled(): no resize notification within 5 s')), 5000);
+    const els = [...document.querySelectorAll('.seg-fade')];
+    const frames = () => requestAnimationFrame(() => requestAnimationFrame(() => done()));
+    if (!els.length) return frames();
+    const ro = new ResizeObserver(() => { ro.disconnect(); frames(); });
+    els.forEach((e) => ro.observe(e));
+  }));
+}
 
 async function open(width: number, theme = 'dark') {
   const page = await browser!.newPage({ viewport: { width, height: 900 } });
+  pages.push(page);
   await page.goto(`file://${join(cache, 'index.html')}`);
   if (theme === 'light') await page.evaluate(() => document.documentElement.classList.add('light'));
   await page.waitForSelector('#cmp [role=tab]');
+  await settled(page);
   return page;
 }
 // No Chromium = a FAILING test, never a silent pass or skip: geometry is only asserted in a real browser.
@@ -81,6 +107,7 @@ t('xs tabs are exactly an xs ButtonGroup', async () => {
 for (const w of [360, 390])
   t(`${w}px: 7 group tabs scroll and the active tab is centred (or clamped at the end)`, async () => {
     const page = await open(w);
+    await page.waitForFunction(() => document.querySelector('#over [role=tablist]')!.hasAttribute('data-l')); // the effect centred the active tab: content is hidden on the left
     const m = await page.evaluate(() => {
       const c = document.querySelector('#over [role=tablist]') as HTMLElement;
       const a = c.querySelector('[aria-selected=true]') as HTMLElement;
@@ -100,7 +127,11 @@ t('selecting a tab re-centres it', async () => {
   await page.waitForFunction(() => document.querySelector('#over [role=tablist]')!.scrollLeft < 2);
   await page.click('#over [role=tab]:has-text("Orders")');
   await page.waitForFunction(() => document.querySelector('#over [role=tablist]')!.scrollLeft > 2);
-  await page.waitForTimeout(100);
+  await page.waitForFunction(() => {
+    const c = document.querySelector('#over [role=tablist]')!, a = c.querySelector('[aria-selected=true]')!;
+    const cr = c.getBoundingClientRect(), ar = a.getBoundingClientRect();
+    return a.textContent === 'Orders' && Math.abs(ar.left + ar.width / 2 - (cr.left + cr.width / 2)) < 2;
+  });
   const mid = await page.evaluate(() => {
     const c = document.querySelector('#over [role=tablist]')!, a = c.querySelector('[aria-selected=true]')!;
     const cr = c.getBoundingClientRect(), ar = a.getBoundingClientRect();
@@ -149,3 +180,83 @@ t('manual activation: arrows move focus only, Enter selects', async () => {
   expect(await page.evaluate(() => document.querySelector('#manual [aria-selected=true]')!.textContent)).toBe('Risk');
   await page.close();
 });
+
+// A group that fits must not overflow its own scroller: no scrollable extent, so no edge fade (`data-l` / `data-r`).
+const fitModes = [
+  { name: 'desktop, fine pointer', w: 1440, touch: false },
+  { name: '390px touch (coarse pointer)', w: 390, touch: true },
+  { name: '1440px coarse pointer', w: 1440, touch: true },
+];
+async function withMode<R>(w: number, touch: boolean, fn: (page: import('playwright-core').Page) => Promise<R>): Promise<R> {
+  const ctx = await browser!.newContext({ viewport: { width: w, height: 900 }, hasTouch: touch, isMobile: touch });
+  try {
+    const page = await ctx.newPage();
+    await page.goto(`file://${join(cache, 'index.html')}`);
+    await page.waitForSelector('#fit [role=tab]');
+    await settled(page);
+    expect(await page.evaluate(() => matchMedia('(pointer: coarse)').matches)).toBe(touch);
+    return await fn(page);
+  } finally {
+    await ctx.close();
+  }
+}
+for (const mode of fitModes)
+  for (const z of ['xs', 'sm', 'md'])
+    t(`fit: 2 short ${z} tabs do not overflow their scroller (${mode.name})`, () =>
+      withMode(mode.w, mode.touch, async (page) => {
+        const m = await page.evaluate((z) =>
+          [...document.querySelectorAll(`#fit-${z} [role=tablist]`)].map((tl) => {
+            const sc = (tl.parentElement!.classList.contains('tabs-attached-bar') ? tl.parentElement! : tl) as HTMLElement;
+            return { sw: sc.scrollWidth, cw: sc.clientWidth, sh: sc.scrollHeight, ch: sc.clientHeight, l: sc.hasAttribute('data-l'), r: sc.hasAttribute('data-r') };
+          }), z);
+        expect(m.length).toBe(2);
+        for (const x of m) {
+          expect(x.sw).toBeLessThanOrEqual(x.cw);
+          expect(x.sh).toBeLessThanOrEqual(x.ch);
+          expect(x.l).toBe(false);
+          expect(x.r).toBe(false);
+        }
+      }));
+
+// A plain ButtonGroup (same labels, same size) is the reference on the SAME page, so font metrics cancel out:
+// the strip is as wide as it (0.5 px) and its height is the token height, 26 (xs) / 34 (sm, md) px.
+const HEIGHT: Record<string, number> = { xs: 26, sm: 34, md: 34 };
+for (const z of ['xs', 'sm', 'md'])
+  t(`ButtonGroup ${z}: token height, and the tab strip matches it`, async () => {
+    const page = await open(1440);
+    const m = await page.evaluate((z) => {
+      const g = document.querySelector(`#fit-${z} [role=group]`)!.getBoundingClientRect();
+      const s = document.querySelector(`#fit-${z} [role=tablist]`)!.getBoundingClientRect();
+      return { gw: g.width, gh: g.height, sw: s.width, sh: s.height };
+    }, z);
+    expect(m.gh).toBe(HEIGHT[z]);
+    expect(m.sh).toBe(HEIGHT[z]);
+    expect(Math.abs(m.sw - m.gw)).toBeLessThan(0.5);
+  });
+
+// Touch hit-area: a tab in the strip takes its own box; every other button keeps the 44 px floor, also a
+// plain ButtonGroup inside an attached panel and one at top level. The panel group also keeps the plain group's flex and white space.
+t('touch: only strip tabs drop the 44 px hit-area; panel and top-level ButtonGroups keep it', () =>
+  withMode(390, true, async (page) => {
+    const after = (sel: string) => page.evaluate((s) => { const c = getComputedStyle(document.querySelector(s)!, '::after'); return [c.minWidth, c.minHeight]; }, sel);
+    expect(await after('#fit-xs [role=group] button')).toEqual(['44px', '44px']);
+    expect(await after('#panelgrp [role=tabpanel] [role=group] button')).toEqual(['44px', '44px']);
+    expect(await after('#panelgrp [role=tablist] [role=tab]')).toEqual(['0px', '0px']);
+    expect(await after('#fit-xs [role=tablist] [role=tab]')).toEqual(['0px', '0px']);
+        const s = await page.evaluate(() => { const c = getComputedStyle(document.querySelector('#panelgrp [role=tabpanel] [role=group] button:last-child')!); return { grow: c.flexGrow, shrink: c.flexShrink, ws: c.whiteSpace }; });
+    // Computed styles (not a rendered wrap): flex 0 1 auto and normal white space, as in any plain ButtonGroup.
+    expect(s).toEqual({ grow: '0', shrink: '1', ws: 'normal' });
+  }));
+
+// True overflow keeps its fade: data-r while content is hidden to the right, data-l once scrolled.
+for (const id of ['over', 'att7'])
+  t(`${id}: real overflow still sets data-r, then data-l after scrolling`, async () => {
+    const page = await open(360);
+    const sc = `#${id} ${id === 'over' ? '[role=tablist]' : '.tabs-attached-bar'}`;
+    const has = (a: string, v: boolean) => page.waitForFunction(([s, a, v]) => document.querySelector(s as string)!.hasAttribute(a as string) === v, [sc, a, v] as const);
+    await page.evaluate((s) => { (document.querySelector(s) as HTMLElement).scrollLeft = 0; }, sc); // the scroll event is the component's own trigger
+    await has('data-r', true);
+    await has('data-l', false);
+    await page.evaluate((s) => { (document.querySelector(s) as HTMLElement).scrollLeft = 40; }, sc);
+    await has('data-l', true);
+  });
