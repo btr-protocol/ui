@@ -79,6 +79,13 @@ const fmtBpsAt = (v: number, decimals: number) =>
  *  reading prints "1.00" and not "1.0000" (`trimZeros` would print "1"). */
 export const legendTrim = (s: string): string => s.replace(/(\.\d\d\d*?)0+(?=\D*$)/, '$1');
 
+/** One legend / crosshair reading. Only a reading whose decimals the axis span chose (it differs from
+ *  the span-less ladder) loses its surplus zeros; a ladder reading keeps them ("0.450%" stays). */
+export function legendText(format: MetricValueFormat, span: number | undefined, v: number): string {
+  const spanned = formatter(format, span)(v);
+  return spanned === formatter(format)(v) ? spanned : legendTrim(spanned);
+}
+
 /** A tick that is float noise around zero (a stacked pane's baseline lands on 1e-16) reads 0, not
  *  "0.0₁₄694%". */
 const snap0 = (v: number) => (Math.abs(v) < 1e-9 ? 0 : v);
@@ -140,6 +147,7 @@ function formatRaw(format: MetricValueFormat, span = 0): (v: number) => string {
       // Fixed decimals only where they beat the three significant figures of this value
       // (50.001% vs 50.002% on a thin band); elsewhere the shared sig-fig law stands.
       const x = v * 100;
+      if (!Number.isFinite(x)) return fmtRatio(v, false, 2);
       const sig = x === 0 ? 2 : Math.max(0, 2 - Math.floor(Math.log10(Math.abs(x))));
       return decimals - 2 > sig
         ? `${x.toLocaleString('en-US', { minimumFractionDigits: decimals - 2, maximumFractionDigits: decimals - 2 })}%`
@@ -344,6 +352,16 @@ export function scaleSpan(
     /* not attached yet: the fallback */
   }
   return r ? r.to - r.from : fallback;
+}
+
+/** The span of the axis a series is drawn on (union of every series sharing that price scale), `fallback` until it has a range. */
+export function seriesSpan(
+  spec: { id: string; scale?: 'right' | 'left' | 'hidden'; pane?: number },
+  priceScale: (scaleId: string, pane: number) => { getVisibleRange(): { from: number; to: number } | null | undefined } | undefined,
+  fallback: ReadonlyMap<string, number>,
+): number | undefined {
+  const id = spec.scale === 'hidden' ? `hidden:${spec.id}` : (spec.scale ?? 'right');
+  return scaleSpan(() => priceScale(id, spec.pane ?? 0)?.getVisibleRange(), fallback.get(spec.id));
 }
 
 /** Time grid of one chart: the sorted, de-duplicated bucket times of all its series, in seconds.

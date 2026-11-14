@@ -41,7 +41,7 @@ import {
   crosshairTimeMs,
   formatter,
   latestActiveTime,
-  legendTrim,
+  legendText,
   legendValueNodes,
   logicalToSec,
   nonNegative,
@@ -49,7 +49,7 @@ import {
   ownValueAt,
   paintOrder,
   restingValue,
-  scaleSpan,
+  seriesSpan,
   secToLogical,
   seriesPaint,
   stackedPoints,
@@ -177,8 +177,7 @@ export function MetricChart({
   // scale the series is drawn on. That is the union of every series on a shared scale, so a flat
   // series first on the axis cannot set the decimals for the ticks its neighbours share.
   const spanOf = (spec: MetricSeriesSpec): number | undefined => {
-    const id = spec.scale === 'hidden' ? `hidden:${spec.id}` : (spec.scale ?? 'right');
-    return scaleSpan(() => chartRef.current?.priceScale(id, spec.pane ?? 0).getVisibleRange(), spanRef.current.get(spec.id));
+    return seriesSpan(spec, (id, pane) => chartRef.current?.priceScale(id, pane), spanRef.current);
   };
   const fittedRef = useRef(false);
   const syncingRef = useRef(false);
@@ -261,7 +260,7 @@ export function MetricChart({
         (spec.scale === 'left' ? pane.leftFormat : pane.format) ??
         pane.format ??
         'usd';
-      node.textContent = raw == null ? '' : legendTrim(formatter(fmt, spanOf(spec))(raw));
+      node.textContent = raw == null ? '' : legendText(fmt, spanOf(spec), raw);
     }
   }, [dataKey, panes]);
 
@@ -716,7 +715,7 @@ export function MetricChart({
           const at = latestActiveTime(specs);
           raw = restingValue(spec, at);
         }
-        node.textContent = raw == null ? '' : legendTrim(formatter(fmt, spanOf(spec))(raw));
+        node.textContent = raw == null ? '' : legendText(fmt, spanOf(spec), raw);
       }
       if (param.time == null) restCrosshair(chart);
       if (syncId && !syncingRef.current) {

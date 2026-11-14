@@ -73,6 +73,12 @@ export function ChartPanel({ title, value, date, valueRef, dateRef, controls, ta
       leftIcon={<Icon name={open ? 'x' : 'corners-out'} className="h-4 w-4" />}
     />
   ) : null;
+  // DOM order = reading order: the table first when it sits left, after the chart when it sits right.
+  const tableEl = table && (
+    <div role="region" aria-label={tableLabel} className={cn('min-w-0 border-t border-border max-xl:order-last xl:border-t-0', tableSide === 'right' ? 'xl:border-l' : 'xl:border-r', open && 'xl:overflow-y-auto')}>
+      {table}
+    </div>
+  );
   const panel = (
     <section
       className={cn('surface isolate overflow-hidden border border-border bg-bg-1', open ? 'fixed inset-0 z-fullscreen flex flex-col rounded-none' : 'rounded-lg', className)}
@@ -95,16 +101,13 @@ export function ChartPanel({ title, value, date, valueRef, dateRef, controls, ta
         className={cn('grid min-w-0', table && (tableSide === 'right' ? 'xl:grid-cols-[minmax(0,1fr)_var(--cp-w)]' : 'xl:grid-cols-[var(--cp-w)_minmax(0,1fr)]'), open && 'min-h-0 flex-1 overflow-y-auto xl:grid-rows-[minmax(0,1fr)] xl:overflow-hidden')}
         style={table ? ({ '--cp-w': tableWidth } as Record<string, string>) : undefined}
       >
-        {table && (
-          <div role="region" aria-label={tableLabel} className={cn('min-w-0 border-t border-border max-xl:order-last xl:border-t-0', tableSide === 'right' ? 'xl:order-last xl:border-l' : 'xl:border-r', open && 'xl:overflow-y-auto')}>
-            {table}
-          </div>
-        )}
+        {tableSide !== 'right' && tableEl}
         <div className={cn('flex min-w-0 flex-col p-1', CHART_MIN_H, open && 'max-xl:min-h-[60dvh]')}>
           <div className="relative min-h-0 flex-1">
             <div className="absolute inset-0 [&>*]:h-full">{children}</div>
           </div>
         </div>
+        {tableSide === 'right' && tableEl}
       </div>
     </section>
   );

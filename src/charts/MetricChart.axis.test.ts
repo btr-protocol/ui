@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { axisDecimals, formatter, legendTrim, scaleSpan, trimZeros } from './metricChartMath';
+import { axisDecimals, formatter, legendText, legendTrim, scaleSpan, seriesSpan, trimZeros } from './metricChartMath';
 import { formatCurrencyCompact } from '../lib/format';
 
 // The owner's screenshot: a base-1 index spanning 0.99..1.01 ticked "1.01 1.01 1.01 1 1 1 0.99".
@@ -51,13 +51,21 @@ describe('axis tick decimals on the compact ladders', () => {
     expect(formatter('compact', 500)(1500)).toBe('1.50K');
     expect(formatter('compact')(1500)).toBe('1.50K');
   });
-  test('two series on one axis: the shared span, not a flat first series, sets the decimals', () => {
-    // Series A is flat at 1.00 (its own span is 0); series B spans 0.99..1.01 on the same scale.
-    const own = 0;
-    const shared = Math.max(1.01, 1) - Math.min(0.99, 1);
+  test('two series on one axis: the shared scale span (MetricChart seriesSpan), not a flat first series, sets the decimals', () => {
+    // Series A is flat at 1.00 (its own autoscale span is 0); series B spans 0.99..1.01 on the same right scale.
+    const ownSpans = new Map([['a', 0], ['b', 0.02]]);
+    const chart = (id: string, pane: number) => (id === 'right' && pane === 0 ? { getVisibleRange: () => ({ from: 0.99, to: 1.01 }) } : undefined);
+    const a = { id: 'a', pane: 0 };
+    const b = { id: 'b', pane: 0, scale: 'right' as const };
+    const shared = seriesSpan(a, chart, ownSpans);
+    expect(shared).toBeCloseTo(0.02, 10);
+    expect(seriesSpan(b, chart, ownSpans)).toBe(shared);
+    // Not attached (no scale / throws): each series falls back to its own autoscale span.
+    expect(seriesSpan(a, () => undefined, ownSpans)).toBe(0);
+    expect(seriesSpan({ id: 'h', scale: 'hidden' }, (id) => ({ getVisibleRange: () => (id === 'hidden:h' ? { from: 0, to: 4 } : null) }), ownSpans)).toBe(4);
     const ticks = [1.01, 1.005, 1, 0.995, 0.99];
-    const collapsed = new Set(ticks.map((v) => trimZeros(formatter('compact', own)(v)))).size;
-    const labels = ticks.map((v) => trimZeros(formatter('compact', shared)(v)));
+    const collapsed = new Set(ticks.map((v) => trimZeros(formatter('compact', ownSpans.get('a'))(v)))).size;
+    const labels = ticks.map((v) => trimZeros(formatter('compact', seriesSpan(a, chart, ownSpans))(v)));
     expect(collapsed).toBeLessThan(ticks.length);
     expect(new Set(labels).size).toBe(ticks.length);
   });
@@ -83,6 +91,17 @@ describe('non-finite readings and the legend trim', () => {
   test('a NaN reading prints as the ladder does for it, never NaN', () => {
     expect(formatter('usd', 20)(Number.NaN)).toBe(formatCurrencyCompact(Number.NaN));
     expect(formatter('compact', 20)(Number.NaN)).toBe('0');
+  });
+  test('pct and yield with Infinity fall back like NaN, never "∞%"', () => {
+    for (const f of ['pct', 'yield'] as const)
+      for (const v of [Infinity, -Infinity]) expect(formatter(f, 0.0004)(v)).toBe(formatter(f, 0.0004)(Number.NaN));
+  });
+  test('legendText trims only span-chosen decimals; a ladder reading keeps its zeros', () => {
+    expect(legendText('usd', undefined, 5000)).toBe('$5.00K');
+    expect(legendText('usd', 2000, 5000)).toBe('$5.00K');
+    expect(legendText('pct', 0.00002, 0.50001)).toBe('50.001%');
+    expect(legendText('compact', 500, 1500)).toBe('1.50K');
+    expect(legendText('compact', 0.02, 1.0)).toBe('1.00');
   });
   test('legendTrim keeps the 2dp ladder and drops only the surplus span digits', () => {
     expect(legendTrim('1.0000')).toBe('1.00');
