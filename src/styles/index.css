@@ -251,16 +251,25 @@ select[aria-invalid="true"]:focus {
     pointer-events: none;
     transition: opacity var(--dur-2);
   }
-  .row-x:hover > :not(.row-x-btn),
-  .row-x:has(:focus-visible) > :not(.row-x-btn) {
-    padding-inline-end: 2.75rem;
+  /* Separate rules: a browser without :has() drops only the ones that use it. */
+  .row-x > .row-x-btn:focus-visible {
+    opacity: 1;
+    pointer-events: auto;
   }
-  .row-x:hover > .row-x-btn,
   .row-x:has(:focus-visible) > .row-x-btn {
     opacity: 1;
     pointer-events: auto;
+  }
+  .row-x:hover > :not(.row-x-btn) {
+    padding-inline-end: 2.75rem;
+  }
+  .row-x:has(:focus-visible) > :not(.row-x-btn) {
+    padding-inline-end: 2.75rem;
+  }
+  .row-x:hover > .row-x-btn {
+    opacity: 1;
+    pointer-events: auto;
     /* takes clicks only once the tag has slid clear: a quick click where the tag was still hits the row */
-    transition: opacity var(--dur-2);
     animation: row-x-arm 1ms var(--dur-2) backwards;
   }
   .row-x:hover > .hover-primary:not(:disabled) {
@@ -268,6 +277,16 @@ select[aria-invalid="true"]:focus {
     border-color: var(--border-color-primary) !important;
     color: var(--fg-primary);
   }
+}
+@media (hover: hover) and (prefers-reduced-motion: reduce) {
+  .row-x:hover > .row-x-btn {
+    animation: none; /* no slide to wait for: what is shown is armed at once */
+  }
+}
+/* A connection is pending (every row is disabled): the remove button is gone too, so a click cannot drop the wallet being connected. */
+.row-x > .row-x-btn:disabled {
+  opacity: 0;
+  pointer-events: none;
 }
 @media (hover: hover) and (prefers-reduced-motion: no-preference) {
   .row-x > :not(.row-x-btn) {

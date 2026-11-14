@@ -1,7 +1,7 @@
 // Page for test/wallet-rows.browser.test.tsx: the real connect modal with 2 Recent + 2 Installed wallets, rendered by Chromium.
 // ?icon=ok (default): Ambire announces a detailed purple mark on a TRANSPARENT background, as a wallet would (a stand-in:
 // the kit bundles no Ambire asset, it only ever arrives as an EIP-6963 data URI); ?icon=broken: an undecodable data URI.
-// Connections are recorded on window.__connected.
+// ?pending=1: onConnect never settles (a wallet popup left open). Connections are recorded on window.__connected.
 import { render } from 'preact';
 import { RECENT_KEY } from '../../src/wallet/recentWallets';
 import { WalletModal } from '../../src/wallet/WalletModal';
@@ -29,6 +29,9 @@ const announce = () => wallets.forEach((info) => window.dispatchEvent(new Custom
 window.addEventListener('eip6963:requestProvider', announce);
 
 (window as unknown as { __connected: string[] }).__connected = [];
-const onConnect = async (_p: unknown, info: { id: string }) => void (window as unknown as { __connected: string[] }).__connected.push(info.id);
+const onConnect = async (_p: unknown, info: { id: string }) => {
+  (window as unknown as { __connected: string[] }).__connected.push(info.id);
+  if (q.get('pending')) await new Promise(() => {});
+};
 render(<WalletModal isOpen onClose={() => {}} onConnect={onConnect} />, document.body.appendChild(document.createElement('div')));
 announce();

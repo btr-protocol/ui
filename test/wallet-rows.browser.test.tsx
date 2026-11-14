@@ -46,13 +46,14 @@ beforeAll(async () => {
 afterAll(async () => { await (await launching?.catch(() => undefined))?.close(); }, 30000);
 
 const contexts: import('playwright-core').BrowserContext[] = [];
-afterEach(async () => { for (const c of contexts.splice(0)) await c.close().catch(() => {}); }, 30000);
+// A context close that stalls on a loaded machine must not fail the next test: bounded, then the browser's own close in afterAll reaps it.
+afterEach(async () => { for (const c of contexts.splice(0)) await Promise.race([c.close().catch(() => {}), new Promise((r) => setTimeout(r, 20000))]); }, 30000);
 
-async function open(o: { touch?: boolean; light?: boolean; width?: number; icon?: 'ok' | 'broken' } = {}) {
-  const ctx = await browser!.newContext({ viewport: { width: o.width ?? 1440, height: 900 }, ...(o.touch ? { hasTouch: true, isMobile: true } : {}), colorScheme: o.light ? 'light' : 'dark' });
+async function open(o: { touch?: boolean; light?: boolean; width?: number; icon?: 'ok' | 'broken'; pending?: boolean; reducedMotion?: boolean } = {}) {
+  const ctx = await browser!.newContext({ viewport: { width: o.width ?? 1440, height: 900 }, ...(o.touch ? { hasTouch: true, isMobile: true } : {}), colorScheme: o.light ? 'light' : 'dark', ...(o.reducedMotion ? { reducedMotion: 'reduce' as const } : {}) });
   contexts.push(ctx);
   const page = await ctx.newPage();
-  await page.goto(`file://${join(cache, 'index.html')}${o.icon ? `?icon=${o.icon}` : ''}`);
+  await page.goto(`file://${join(cache, 'index.html')}${o.icon ? `?icon=${o.icon}` : o.pending ? '?pending=1' : ''}`);
   if (o.light) await page.evaluate(() => document.documentElement.classList.add('light'));
   await page.getByRole('group', { name: 'Installed' }).getByRole('button').first().waitFor();
   await page.getByRole('group', { name: 'Recent' }).getByRole('button').first().waitFor();
@@ -204,7 +205,7 @@ t('touch 390: every row shares one trailing edge, the x is 44 px and available',
   const a = await tagRight(row(page, 'Recent', 'Ambire')), b = await tagRight(row(page, 'Recent', 'Rabby')), c = await tagRight(row(page, 'Installed', 'Brave')), d = await tagRight(row(page, 'Installed', 'Phantom'));
   for (const v of [b, c, d]) expect(Math.abs(v - a)).toBeLessThanOrEqual(0.5);
   const link = await box(list(page, 'Other').getByRole('link').first().locator('svg').last());
-  expect(Math.abs(link.x + link.width - a)).toBeLessThanOrEqual(12); // link icon sits in the same gutter (its own 16 px glyph)
+  expect(Math.abs(link.x + link.width - a)).toBeLessThanOrEqual(0.5); // measured: both right edges are exactly the content edge (390 - 44 gutter = 346): the badge and the 16 px link glyph have no inner padding
   const xb = await box(remove(page, 'Ambire'));
   expect(xb.width).toBeGreaterThanOrEqual(44);
   expect(xb.height).toBeGreaterThanOrEqual(44);
@@ -220,7 +221,7 @@ for (const light of [false, true])
   t(`an announced icon with transparent areas: fixed light opaque tile, no generic glyph under it (${light ? 'light' : 'dark'})`, async () => {
     const page = await open({ light });
     const tile = tileOf(page, 'Ambire');
-    await page.waitForFunction(() => [...document.querySelectorAll('img')].some((i) => i.src.startsWith('data:image/svg') && !i.classList.contains('opacity-0')));
+    await tile.locator('img').evaluate((i: HTMLImageElement) => new Promise<void>((done) => (i.complete && i.naturalWidth > 0 ? done() : i.addEventListener('load', () => done())))); // Ambire's own image has loaded
     expect(await tile.locator('svg').count()).toBe(0); // the generic glyph is not under the loaded image
     expect(await tile.locator('img').count()).toBe(1);
     const bg = await tile.evaluate((el) => getComputedStyle(el).backgroundColor);
@@ -240,4 +241,28 @@ t('an icon that fails to load: no image left, the generic glyph on the neutral t
   expect(opaque(bg)).toBe(true);
   const lum = await page.evaluate((c) => { const k = document.createElement('canvas').getContext('2d')!; k.fillStyle = c; k.fillRect(0, 0, 1, 1); const [r, g, b] = k.getImageData(0, 0, 1, 1).data; return (r + g + b) / 3; }, bg);
   expect(lum).toBeLessThan(120); // the dark generic tile, not the light image tile
+});
+
+t('a pending connection disables and hides the x: a click in the gutter removes nothing', async () => {
+  const page = await open({ pending: true });
+  await row(page, 'Installed', 'Brave').click(); // the wallet popup never answers: connecting
+  await page.waitForFunction(() => (document.querySelector('[aria-label^="Remove Ambire"]') as HTMLButtonElement).disabled);
+  expect(await remove(page, 'Rabby').isDisabled()).toBe(true);
+  const rb = await box(row(page, 'Recent', 'Ambire'));
+  await page.mouse.move(rb.x + rb.width / 2, rb.y + rb.height / 2);
+  expect(await remove(page, 'Ambire').evaluate((e) => getComputedStyle(e).opacity)).toBe('0'); // hovered row, still hidden
+  await page.mouse.click(rb.x + rb.width - 10, rb.y + rb.height / 2); // the gutter
+  expect(await remove(page, 'Ambire').count()).toBe(1);
+  expect(await remove(page, 'Rabby').count()).toBe(1);
+});
+
+t('reduced motion: the x is armed the moment it is shown (no inert delay)', async () => {
+  const page = await open({ reducedMotion: true });
+  await row(page, 'Recent', 'Rabby').hover();
+  const m = await remove(page, 'Rabby').evaluate((e) => ({ pe: getComputedStyle(e).pointerEvents, anim: getComputedStyle(e).animationName }));
+  expect(m.pe).toBe('auto'); // read straight after the hover: no 180 ms of visible-but-inert
+  await settle(page);
+  expect(await remove(page, 'Rabby').evaluate((e) => getComputedStyle(e).opacity)).toBe('1');
+  await remove(page, 'Rabby').click();
+  await page.waitForFunction(() => document.querySelectorAll('[aria-label^="Remove"]').length === 1);
 });

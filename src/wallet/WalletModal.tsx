@@ -299,7 +299,7 @@ export function WalletModal({
             onClick={(e) => (mobile && uri && def ? launch(def, e) : setMore(true))}
           />
         )}
-        <CloseButton className="row-x-btn text-fg-2" size={16} aria-label={fill(l.removeRecent, recent.name)} onClick={(e) => remove(e, recent.id)} />
+        <CloseButton className="row-x-btn text-fg-2" size={16} disabled={connecting !== null} aria-label={fill(l.removeRecent, recent.name)} onClick={(e) => remove(e, recent.id)} />
       </div>
     );
   };

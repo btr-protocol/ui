@@ -7,6 +7,7 @@ interface CloseButtonProps {
   className?: string;
   /** Name the thing being closed ("Close settings"); a bare "Close" is the fallback. */
   'aria-label'?: string;
+  disabled?: boolean;
 }
 
 export function CloseButton({
@@ -14,6 +15,7 @@ export function CloseButton({
   size = 18,
   className,
   'aria-label': ariaLabel = 'Close',
+  disabled,
 }: CloseButtonProps) {
   return (
     <button
@@ -21,6 +23,7 @@ export function CloseButton({
       onClick={onClick}
       className={cn('opacity-70 hover:opacity-100 transition-opacity', className)}
       aria-label={ariaLabel}
+      disabled={disabled}
     >
       <Icon name="x" size={size} />
     </button>
