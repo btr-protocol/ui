@@ -154,7 +154,7 @@ t('keyboard: the account row takes focus and Enter activates it', async () => {
 });
 
 if (shots)
-  for (const [w, theme] of [[1440, 'dark'], [1440, 'light'], [390, 'dark']] as const)
+  for (const [w, theme] of [[1440, 'dark'], [1440, 'light'], [390, 'dark'], [390, 'light']] as const)
     t(`screenshots ${w} ${theme}`, async () => {
       let page = await open('share', w, theme);
       await shot(page, `mismatch-${w}-${theme}`);
