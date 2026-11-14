@@ -1,5 +1,5 @@
 import { walletId } from '@btr-protocol/sdk/eth/wallets';
-import { useEffect, useState } from 'preact/hooks';
+import { useEffect, useRef, useState } from 'preact/hooks';
 import { walletIcon } from '../lib/walletIcon';
 import { Icon } from '../ui/Icon';
 import type { ProviderInfo } from './wallet';
@@ -9,7 +9,7 @@ const ANNOUNCED_ICON_MAX = 32 * 1024;
 
 /**
  * A wallet mark, one degradation order: the bundled btr.markets raster for a catalog id (`metamask`, `rabby`, …), then
- * the icon the wallet ANNOUNCED (EIP-6963 data URI: attacker-controlled, so `<img src>` only), then the generic wallet glyph. The glyph tile is always drawn under the image, so a slow or failed load is never an empty square.
+ * the icon the wallet ANNOUNCED (EIP-6963 data URI: attacker-controlled, so `<img src>` only), then the generic wallet glyph. The tile is always drawn (an image sits on the fixed light `--wallet-tile-bg`, the generic glyph on `bg-bg-3`); the generic glyph shows only until an image has loaded (never through the transparent areas of one), so a slow or failed load is never an empty square.
  */
 export function WalletGlyph({
   info,
@@ -31,18 +31,26 @@ export function WalletGlyph({
   const raster = id ? walletIcon(id) : undefined;
   const [stage, setStage] = useState(0);
   const [loadedSrc, setLoadedSrc] = useState<string>();
-  useEffect(() => setStage(0), [id, announcedIcon]);
+  // Restart the degradation order only when the wallet or its icon CHANGES: an effect that also ran on mount (after paint) reset an early
+  // error (a broken data: URI fails before it) to stage 0 and left the dead image on the tile.
+  const shown = useRef(`${id}|${announcedIcon}`);
+  useEffect(() => {
+    if (shown.current !== `${id}|${announcedIcon}`) {
+      shown.current = `${id}|${announcedIcon}`;
+      setStage(0);
+    }
+  }, [id, announcedIcon]);
   // The announced icon is the wallet's own data: only a small inline image is drawn, never a request to its host.
   const announced = announcedIcon && announcedIcon.startsWith('data:image/') && announcedIcon.length <= ANNOUNCED_ICON_MAX ? announcedIcon : undefined;
   const src = stage === 0 && raster ? raster[0] : stage <= 1 && announced ? announced : undefined;
-  // The tile (generic wallet glyph) is always there: a slow, missing or blocked image never leaves an empty square.
+  // The tile is always there; the generic glyph only while no image has loaded: a slow, missing or blocked image never leaves an empty square.
   return (
     <span
       style={{ width: size, height: size }}
       aria-hidden="true"
-      className={`relative flex shrink-0 items-center justify-center rounded-xs ${bare ? '' : 'bg-bg-3 text-fg-2 ring-1 ring-bg-0'}`}
+      className={`relative flex shrink-0 items-center justify-center rounded-xs ${bare ? '' : `ring-1 ring-bg-0 ${src ? 'bg-[var(--wallet-tile-bg)] text-[var(--wallet-tile-fg)]' : 'bg-bg-3 text-fg-2'}`}`}
     >
-      {!bare && <Icon name="wallet" className="w-4 h-4" />}
+      {!bare && !(src && loadedSrc === src) && <Icon name="wallet" className="w-4 h-4" />}
       {src && (
         <img
           src={src}

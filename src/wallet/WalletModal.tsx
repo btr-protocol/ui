@@ -275,27 +275,31 @@ export function WalletModal({
     />
   );
 
+  // Removing a recent keeps keyboard focus in the list: the next row's remove button, else the previous one, else the search box, else the first row.
+  const remove = (e: MouseEvent, id: string) => {
+    const row = (e.currentTarget as HTMLElement).closest('.row-x');
+    const btn = (r?: Element | null) => r?.querySelector<HTMLElement>('.row-x-btn');
+    (btn(row?.nextElementSibling) ?? btn(row?.previousElementSibling) ?? row?.closest('[role=dialog]')?.querySelector<HTMLElement>('input, [aria-labelledby=wm-installed-label] button'))?.focus();
+    setRecents(removeRecent(id));
+  };
+
   // A recent that connected through WalletConnect: a phone with a live pairing opens that wallet's app, anything else starts the pairing.
   const recentRow = ({ recent, wallet }: RecentRow<WalletInfo>) => {
     const def = wallet ? undefined : mobileWallets().find((w) => w.id === recent.id);
     return (
-      <div key={wallet ? wKey(wallet) : `wc-${recent.id}`} className="flex items-stretch">
-        <div className="flex-1 min-w-0">
-          {wallet ? (
-            injectedRow(wallet)
-          ) : (
-            <WalletItemButton
-              name={recent.name}
-              icon={def ? <WalletGlyph id={def.id} name={def.name} size={28} /> : <WalletTile icon="link" />}
-              caption={l.viaWalletConnect}
-              isHighlighted={hl(`wc-${recent.id}`)}
-              onClick={(e) => (mobile && uri && def ? launch(def, e) : setMore(true))}
-            />
-          )}
-        </div>
-        <div className="w-10 shrink-0 flex items-center justify-center border-b border-border bg-bg-2 text-fg-2">
-          <CloseButton size={16} aria-label={fill(l.removeRecent, recent.name)} onClick={() => setRecents(removeRecent(recent.id))} />
-        </div>
+      <div key={wallet ? wKey(wallet) : `wc-${recent.id}`} className="row-x">
+        {wallet ? (
+          injectedRow(wallet)
+        ) : (
+          <WalletItemButton
+            name={recent.name}
+            icon={def ? <WalletGlyph id={def.id} name={def.name} size={28} /> : <WalletTile icon="link" />}
+            caption={l.viaWalletConnect}
+            isHighlighted={hl(`wc-${recent.id}`)}
+            onClick={(e) => (mobile && uri && def ? launch(def, e) : setMore(true))}
+          />
+        )}
+        <CloseButton className="row-x-btn text-fg-2" size={16} disabled={connecting !== null} aria-label={fill(l.removeRecent, recent.name)} onClick={(e) => remove(e, recent.id)} />
       </div>
     );
   };
@@ -345,13 +349,13 @@ export function WalletModal({
 
         {recentRows.length > 0 && (
           <ModalSection title={l.recent} groupId="wm-recent">
-            {recentRows.map(recentRow)}
+            <div className="wallet-rows">{recentRows.map(recentRow)}</div>
           </ModalSection>
         )}
 
         {installedRows.length > 0 && (
           <ModalSection title={mobile ? l.thisBrowser : l.installed} groupId="wm-installed">
-            {installedRows.map(injectedRow)}
+            <div className="wallet-rows">{installedRows.map(injectedRow)}</div>
           </ModalSection>
         )}
 
@@ -450,6 +454,7 @@ export function WalletModal({
         {/* On a phone the open pairing already lists the wallet apps: no second list of the same wallets. */}
         {otherShown && (
           <ModalSection title={empty ? l.installWallet : l.other} groupId="wm-other">
+            <div className="wallet-rows">
             {otherRows.map((w) => {
               const { href, deepLink } = otherLink(w);
               return (
@@ -467,6 +472,7 @@ export function WalletModal({
                 />
               );
             })}
+            </div>
           </ModalSection>
         )}
         {extra}
