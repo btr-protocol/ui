@@ -96,11 +96,13 @@ const chains = [
   { id: 1, name: 'Ethereum' },
   { id: 8453, name: 'Base' },
   { id: 5042, name: 'Arc', planned: true },
+  { id: 11155111, name: 'Sepolia', testnet: true },
 ];
 
-test('chain items hide planned unless asked', () => {
-  expect(chainSelectItems(chains).map((i) => i.id)).toEqual(['1', '8453']);
-  expect(chainSelectItems(chains, { includePlanned: true })[2]!.disabled).toBe(true);
+test('chain items: mainnets with planned last, testnets only when asked', () => {
+  expect(chainSelectItems(chains).map((i) => i.id)).toEqual(['1', '8453', '5042']);
+  expect(chainSelectItems(chains)[2]!.disabled).toBe(true);
+  expect(chainSelectItems(chains, { includeTestnets: true }).map((i) => i.id)).toContain('11155111');
 });
 
 test('ChainSelect trigger and ChainGlyph render', () => {

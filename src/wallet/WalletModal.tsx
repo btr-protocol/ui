@@ -238,7 +238,7 @@ export function WalletModal({
     >
       <>
         {error && (
-          <div className="mx-4 mt-4">
+          <div className={`${MODAL_PADDING} pt-4`}>
             <Notice
               tone="error"
               role="alert"
@@ -289,7 +289,7 @@ export function WalletModal({
         )}
 
         {waiting && (
-          <div className="flex flex-col gap-2 items-center px-4 py-6 text-center">
+          <div className={`flex flex-col gap-2 items-center ${MODAL_PADDING} py-6 text-center`}>
             <WalletGlyph id={waiting.id} name={waiting.name} size={48} />
             <p className="flex items-center gap-2 text-sm text-fg-0">
               <Spinner />
@@ -324,7 +324,7 @@ export function WalletModal({
 
         {showQr && (
           <ModalSection title={mobile ? l.anotherDevice : l.scanWithMobile}>
-            <div className="flex flex-col gap-4 items-center px-4 py-4">
+            <div className={`flex flex-col gap-4 items-center ${MODAL_PADDING} py-4`}>
               {qr ? (
                 <div className="bg-white p-2 rounded-lg">
                   <img src={qr} alt={l.qrAlt} className="w-full max-w-60 aspect-square" />

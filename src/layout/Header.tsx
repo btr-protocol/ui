@@ -2,6 +2,7 @@ import type { ComponentChildren } from 'preact';
 import { LOGO_URL } from '../lib/assets';
 import { cn } from '../lib/cn';
 import { Button } from '../ui/Button';
+import { ButtonGroup } from '../ui/ButtonGroup';
 import { Tooltip } from '../ui/FloatingPanel';
 import { Icon } from '../ui/Icon';
 import { MaskIcon } from '../ui/MaskIcon';
@@ -57,7 +58,7 @@ export function HeaderTool({
       aria-label={label}
       title={title ?? label}
       className={cn(
-        'tap-min relative min-w-[var(--ctl-m)] px-2 coarse:px-3 flex items-center justify-center gap-1.5 text-fg-2 hover:bg-bg-3 hover:text-fg-0 transition-colors border-l border-border first:border-l-0 first:rounded-l-sm last:rounded-r-sm',
+        'tap-min relative min-w-[var(--ctl-m)] px-2 coarse:px-3 flex items-center justify-center gap-1.5 text-fg-2 hover:bg-bg-3 hover:text-fg-0 transition-colors',
         desktopOnly && 'max-lg:hidden',
       )}
     >
@@ -161,9 +162,7 @@ export function Header({
 
         <div className="flex items-center gap-2">
           {tools && (
-            <div className="flex items-stretch border border-border rounded-sm bg-bg-1 min-h-[var(--ctl-m)]">
-              {tools}
-            </div>
+            <ButtonGroup className="min-h-[var(--ctl-m)]">{tools}</ButtonGroup>
           )}
           {right}
         </div>

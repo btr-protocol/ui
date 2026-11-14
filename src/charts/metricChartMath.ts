@@ -110,6 +110,22 @@ export function axisDecimals(span: number): number {
   return Math.min(8, Math.max(0, Math.ceil(-Math.log10(span / 50) - 1e-9)));
 }
 
+/** A price a ladder already printed (`base`, e.g. the SDK `formatPrice`) with the decimals the axis
+ *  `span` needs when the ladder has fewer: a stable pair at 1.0000 prints 1.00002, 1.00004 instead
+ *  of one label at every tick. Digits past the ladder's own decimals lose their trailing zeros; a
+ *  ladder that already tells the ticks apart (or has no plain decimals) is returned as is. */
+export function atSpan(base: string, v: number, span: number | undefined): string {
+  if (span == null || !Number.isFinite(v) || !/^-?[\d,]+(\.\d+)?$/.test(base)) return base;
+  const dp = axisDecimals(span);
+  const own = base.split('.')[1]?.length ?? 0;
+  if (dp <= own) return base;
+  const full = v.toLocaleString('en-US', { minimumFractionDigits: dp, maximumFractionDigits: dp });
+  const keep = full.length - (dp - own);
+  let end = full.length;
+  while (end > keep && full[end - 1] === '0') end--;
+  return full.slice(0, end);
+}
+
 /** Value formatter of one metric format. `span` = the height of the axis the value sits on (max -
  *  min of the autoscaled range): a format whose default decimals are too coarse for that span
  *  prints more, never fewer (`axisDecimals`). Without it the format's fixed ladder applies. */

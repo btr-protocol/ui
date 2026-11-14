@@ -1,0 +1,43 @@
+/* One joined control: shared outer border and radius, 1px dividers, no gaps. Wrapper-safe: the
+   rules reach buttons, links and role=button triggers at any depth (a Tooltip or Dropdown wraps
+   its trigger), so no child has to take a className. A primary child keeps its accent fill. */
+.btn-group {
+  display: inline-flex;
+  align-items: stretch;
+  max-width: 100%;
+  isolation: isolate;
+  border: var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-1);
+}
+.btn-group > * {
+  position: relative;
+  min-width: 0;
+}
+.btn-group :is(button, a, [role='button']) {
+  border-width: 0;
+  border-radius: 0;
+}
+.btn-group > :not(:first-child) { /* after the reset above: equal specificity, this one wins */
+  border-left: var(--border);
+}
+.btn-group :is(button, a, [role='button']):hover {
+  border-color: var(--border-color);
+}
+.btn-group > :first-child,
+.btn-group > :first-child :is(button, a, [role='button']) {
+  border-start-start-radius: calc(var(--radius-sm) - 1px);
+  border-end-start-radius: calc(var(--radius-sm) - 1px);
+}
+.btn-group > :last-child,
+.btn-group > :last-child :is(button, a, [role='button']) {
+  border-start-end-radius: calc(var(--radius-sm) - 1px);
+  border-end-end-radius: calc(var(--radius-sm) - 1px);
+}
+/* The ring sits inside the control and above its neighbours, so no sibling paints over it. */
+.btn-group :focus-visible {
+  outline-offset: -2px;
+}
+.btn-group > :focus-within {
+  z-index: var(--z-index-raised);
+}

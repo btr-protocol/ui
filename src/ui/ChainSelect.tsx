@@ -16,7 +16,7 @@ export interface ChainItem {
   icon?: ComponentChildren;
   explorer?: string;
   testnet?: boolean;
-  /** Roadmap entry: hidden unless "Planned" is on, then disabled and captioned. Default false. */
+  /** Roadmap entry (no deployment yet): listed after the live chains, disabled and captioned. Default false. */
   planned?: boolean;
 }
 
@@ -86,16 +86,17 @@ function ChainIdBadge({ chainId }: { chainId: number }) {
 export const CHAIN_SORT_COLUMNS: SelectionSortColumn[] = [{ key: 'chainId', label: 'Chain ID' }];
 
 /**
- * The chain list as `SelectionItem`s for `SelectionModal`. One row per chain; planned entries only
- * with `includePlanned`, disabled and captioned. The pinned `Network / Chain ID` header is the
- * heading: do not prepend rows.
+ * The chain list as `SelectionItem`s for `SelectionModal`. One row per chain: every mainnet,
+ * deployed ones first, then the planned ones (disabled and captioned); testnets only with
+ * `includeTestnets`. The pinned `Network / Chain ID` header is the heading: do not prepend rows.
  */
 export function chainSelectItems(
   chains: readonly ChainItem[],
-  { includePlanned = false }: { includePlanned?: boolean } = {},
+  { includeTestnets = false }: { includeTestnets?: boolean } = {},
 ): SelectionItem[] {
   return chains
-    .filter((chain) => !chain.planned || includePlanned)
+    .filter((chain) => !chain.testnet || includeTestnets)
+    .sort((a, b) => Number(!!a.planned) - Number(!!b.planned))
     .map((chain) => ({
       id: String(chain.id),
       label: chain.name,
@@ -125,8 +126,8 @@ interface ChainSelectModalProps {
   size?: 'sm' | 'md';
 }
 
-/** THE chain modal: pinned sortable `Network / Chain ID` header, "Planned" switch (shown when the
- *  list has planned chains). The current selection is never hidden. */
+/** THE chain modal: pinned sortable `Network / Chain ID` header, "Testnets" switch (off; shown when
+ *  the list has testnets). The current selection is never hidden. */
 export function ChainSelectModal({
   isOpen,
   onClose,
@@ -139,19 +140,19 @@ export function ChainSelectModal({
   allLabel,
   onAll,
 }: ChainSelectModalProps) {
-  const [showPlanned, setShowPlanned] = useState(false);
-  const hasPlanned = chains.some((c) => c.planned);
+  const [showTestnets, setShowTestnets] = useState(false);
+  const hasTestnets = chains.some((c) => c.testnet);
   const items: SelectionItem[] = useMemo(() => {
-    const shown = chainSelectItems(chains, { includePlanned: showPlanned });
+    const shown = chainSelectItems(chains, { includeTestnets: showTestnets });
     // "All chains" is a real, pinned row: same icon slot, in the arrow-key order, selected like any other.
     const all: SelectionItem[] = allLabel && onAll ? [{ id: ALL_ID, label: allLabel, pinned: true, icon: <span aria-hidden="true" className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xs bg-bg-3 text-fg-1 ring-1 ring-bg-0"><Icon name="globe" className="h-5 w-5" /></span> }] : [];
-    if (showPlanned || value == null || shown.some((item) => Number(item.id) === value)) {
-      return [...all, ...shown];
-    }
-    return [...all, ...chainSelectItems(chains, { includePlanned: true }).filter(
-      (item) => Number(item.id) === value || !item.disabled,
-    )];
-  }, [chains, showPlanned, value, allLabel, onAll]);
+    // The wallet's own chain stays listed even when it is a hidden testnet.
+    const current =
+      value == null || shown.some((item) => Number(item.id) === value)
+        ? []
+        : chainSelectItems(chains, { includeTestnets: true }).filter((item) => Number(item.id) === value);
+    return [...all, ...shown, ...current];
+  }, [chains, showTestnets, value, allLabel, onAll]);
 
   return (
     <SelectionModal
@@ -172,16 +173,16 @@ export function ChainSelectModal({
       primaryColumnLabel="Network"
       listHeader={listHeader}
       emptyMessage="No networks match"
-      hasActiveFilters={showPlanned}
-      onResetFilters={() => setShowPlanned(false)}
+      hasActiveFilters={showTestnets}
+      onResetFilters={() => setShowTestnets(false)}
       headerRight={
-        hasPlanned ? (
+        hasTestnets ? (
           <label className="flex items-center gap-1.5 cursor-pointer">
-            <span className="text-xs uppercase tracking-wide text-fg-2 max-sm:hidden">Planned</span>
+            <span className="text-xs uppercase tracking-wide text-fg-2 max-sm:hidden">Testnets</span>
             <Switch
-              checked={showPlanned}
-              onCheckedChange={setShowPlanned}
-              aria-label="Show planned networks"
+              checked={showTestnets}
+              onCheckedChange={setShowTestnets}
+              aria-label="Show testnets"
             />
           </label>
         ) : undefined
