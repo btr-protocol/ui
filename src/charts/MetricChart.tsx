@@ -32,7 +32,7 @@ import {
 } from './tdlc';
 import type { IChartApi, ISeriesApi, MouseEventParams, UTCTimestamp } from 'lightweight-charts';
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
-import { createGesture } from './gesture';
+import { createGesture, type Gesture } from './gesture';
 import { SERIES_HIGHLIGHT, useSeriesHover } from './SeriesHover';
 import {
   type MetricPaneSpec,
@@ -654,7 +654,8 @@ export function MetricChart({
   // Any wheel / pointer / touch on the plot: only then does a range change count as a gesture to mirror to the group. Layout-driven changes
   // (first fit, resize, a peer's first data) are not gestures, and broadcasting them collapsed every pane to the default window.
   // Dropped again once the input stops (`createGesture`), so the range changes that follow are layout, not gestures.
-  const gestureRef = useRef(createGesture());
+  const gestureRef = useRef<Gesture>(null as unknown as Gesture);
+  gestureRef.current ??= createGesture();
   useEffect(() => {
     const g = gestureRef.current;
     const up = () => g.release();
