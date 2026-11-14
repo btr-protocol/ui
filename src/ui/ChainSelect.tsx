@@ -1,13 +1,13 @@
 import type { ComponentChildren } from 'preact';
-import { useMemo, useState } from 'preact/hooks';
+import { Suspense, lazy } from 'preact/compat';
+import { useState } from 'preact/hooks';
 import { useOpen } from '../lib/modalRoute';
 import { chainIcon } from '../lib/chainIcon';
 import { cn } from '../lib/cn';
 import { Button } from './Button';
 import { Icon } from './Icon';
-import { type SelectionItem, type SelectionSortColumn, SelectionModal } from './Select';
+import type { SelectionItem, SelectionSortColumn } from './Select';
 import { StackedIcons } from './StackedIcons';
-import { Switch } from './Switch';
 
 /** A chain a picker offers. `icon` overrides the bundled mark (see `chainIcon`). */
 export interface ChainItem {
@@ -110,90 +110,6 @@ export function chainSelectItems(
     }));
 }
 
-const ALL_ID = '__all__';
-
-interface ChainSelectModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  chains: readonly ChainItem[];
-  /** Selected chain id, or null when the wallet is on a chain this list does not carry (or, with `allLabel`, "all chains"). */
-  value: number | null;
-  onSelect: (chainId: number) => void;
-  /** An "all chains" scope: a row pinned above the list (never a synthetic list row), picked with `onAll`. */
-  allLabel?: string;
-  onAll?: () => void;
-  title?: string;
-  /** Row pinned above the list. */
-  listHeader?: ComponentChildren;
-  size?: 'sm' | 'md';
-}
-
-/** THE chain modal: pinned sortable `Network / Chain ID` header, "Testnets" switch (off; shown when
- *  the list has testnets). The current selection is never hidden. */
-export function ChainSelectModal({
-  isOpen,
-  onClose,
-  chains,
-  value,
-  onSelect,
-  title = 'Select network',
-  listHeader,
-  size = 'sm',
-  allLabel,
-  onAll,
-}: ChainSelectModalProps) {
-  const [showTestnets, setShowTestnets] = useState(false);
-  const hasTestnets = chains.some((c) => c.testnet);
-  const items: SelectionItem[] = useMemo(() => {
-    const shown = chainSelectItems(chains, { includeTestnets: showTestnets });
-    // "All chains" is a real, pinned row: same icon slot, in the arrow-key order, selected like any other.
-    const all: SelectionItem[] = allLabel && onAll ? [{ id: ALL_ID, label: allLabel, pinned: true, icon: <span aria-hidden="true" className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xs bg-bg-3 text-fg-1 ring-1 ring-bg-0"><Icon name="globe" className="h-5 w-5" /></span> }] : [];
-    // The wallet's own chain stays listed even when it is a hidden testnet.
-    const current =
-      value == null || shown.some((item) => Number(item.id) === value)
-        ? []
-        : chainSelectItems(chains, { includeTestnets: true }).filter((item) => Number(item.id) === value);
-    return [...all, ...shown, ...current];
-  }, [chains, showTestnets, value, allLabel, onAll]);
-
-  return (
-    <SelectionModal
-      isOpen={isOpen}
-      onClose={onClose}
-      title={title}
-      searchPlaceholder="Search networks…"
-      items={items}
-      selectedIds={value == null ? (allLabel && onAll ? [ALL_ID] : []) : [String(value)]}
-      onSelect={(id) => {
-        const raw = Array.isArray(id) ? id[0] : id;
-        if (raw === ALL_ID) { onClose(); onAll?.(); return; }
-        const chainId = Number(raw);
-        onClose();
-        if (Number.isFinite(chainId)) onSelect(chainId);
-      }}
-      sortColumns={CHAIN_SORT_COLUMNS}
-      primaryColumnLabel="Network"
-      listHeader={listHeader}
-      emptyMessage="No networks match"
-      hasActiveFilters={showTestnets}
-      onResetFilters={() => setShowTestnets(false)}
-      headerRight={
-        hasTestnets ? (
-          <label className="flex items-center gap-1.5 cursor-pointer">
-            <span className="text-xs uppercase tracking-wide text-fg-2 max-sm:hidden">Testnets</span>
-            <Switch
-              checked={showTestnets}
-              onCheckedChange={setShowTestnets}
-              aria-label="Show testnets"
-            />
-          </label>
-        ) : undefined
-      }
-      size={size}
-    />
-  );
-}
-
 interface ChainSelectProps {
   chains: readonly ChainItem[];
   /** Selected chain id; null = the `allLabel` scope. */
@@ -206,9 +122,13 @@ interface ChainSelectProps {
   routeKey?: string;
 }
 
+const LazyChainSelectModal = lazy(() => import('./ChainSelectModal').then((m) => ({ default: m.ChainSelectModal })));
+
 /** The standard chain trigger: a button over `ChainSelectModal`. Reports ids only. */
 export function ChainSelect({ chains, value, onChange, title, routeKey, allLabel, onAll }: ChainSelectProps) {
   const [open, setOpen] = useOpen(routeKey);
+  const [seen, setSeen] = useState(false);
+  if (open && !seen) setSeen(true);
   const current = value == null ? undefined : chains.find((c) => c.id === value);
   return (
     <>
@@ -225,16 +145,21 @@ export function ChainSelect({ chains, value, onChange, title, routeKey, allLabel
       >
         <span className="truncate max-w-40">{current?.name ?? (value == null ? (allLabel ?? '') : `Chain ${value}`)}</span>
       </Button>
-      <ChainSelectModal
-        isOpen={open}
-        onClose={() => setOpen(false)}
-        chains={chains}
-        value={value}
-        onSelect={(c) => setOpen(false, () => onChange(c))}
-        title={title}
-        allLabel={allLabel}
-        onAll={onAll && (() => setOpen(false, onAll))}
-      />
+      {/* Fetched on first open: the trigger sits in every app header, the modal (list, sort, switch) does not. */}
+      {seen && (
+        <Suspense fallback={null}>
+          <LazyChainSelectModal
+            isOpen={open}
+            onClose={() => setOpen(false)}
+            chains={chains}
+            value={value}
+            onSelect={(c) => setOpen(false, () => onChange(c))}
+            title={title}
+            allLabel={allLabel}
+            onAll={onAll && (() => setOpen(false, onAll))}
+          />
+        </Suspense>
+      )}
     </>
   );
 }
