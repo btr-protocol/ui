@@ -160,6 +160,10 @@
        element and the later, equal-specificity --fg-2 wins before this substitutes. */
   --fg-3-text: var(--fg-2);
 
+  /* A wallet mark that is an IMAGE sits on this tile in both themes: announced icons are often transparent and were drawn on the page surface. */
+  --wallet-tile-bg: #f4f4f1;
+  --wallet-tile-fg: #5c5c57;
+
   --bg-0: var(--black); /* Main background */
   --bg-1: color-mix(in srgb, var(--black) 95%, var(--white)); /* Slightly lighter */
   --bg-2: color-mix(in srgb, var(--black) 90%, var(--white)); /* Cards */

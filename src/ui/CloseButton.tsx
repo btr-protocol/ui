@@ -2,7 +2,7 @@ import { cn } from '../lib/cn';
 import { Icon } from './Icon';
 
 interface CloseButtonProps {
-  onClick: () => void;
+  onClick: (e: MouseEvent) => void;
   size?: number;
   className?: string;
   /** Name the thing being closed ("Close settings"); a bare "Close" is the fallback. */
