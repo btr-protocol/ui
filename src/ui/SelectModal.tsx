@@ -53,6 +53,10 @@ interface Common<T extends string> {
   triggerLabel?: string;
   /** Show the selected row's icon before its label in the trigger (a Safe's colour dot). Single only. */
   triggerIcon?: boolean;
+  /** Content before the chosen label in the trigger (a status icon, "Simulated ·"): one button reads "prefix label". Single only. */
+  triggerPrefix?: ComponentChildren;
+  /** Search field in the modal. Default: only when the list has more than 6 options. */
+  searchable?: boolean;
   /** Sortable columns beside the pinned primary column, as the main app's chain modal (`Network / Chain ID`). */
   sortColumns?: SelectionSortColumn[];
   primaryColumnLabel?: string;
@@ -62,16 +66,20 @@ interface Common<T extends string> {
   groups?: readonly SelectionGroup[];
 }
 
+/** Lists up to this many options hide the search field. */
+const SEARCH_MIN = 6;
+
 const toItem = <T extends string>(i: SelectModalItem<T>): SelectionItem => ({ id: i.value, label: i.label, caption: i.caption, note: i.note, badge: i.detail, icon: i.icon, disabled: i.disabled, data: i.data, group: i.group });
 
 /** Single choice: a trigger Button (label + current value) that opens the modal picker. THE selector of the design system: no dropdown popups. */
-export function SelectModal<T extends string>({ value, onChange, items, label, title, searchPlaceholder = 'Search…', routeKey, applyLabel, triggerIcon = false, sortColumns, primaryColumnLabel, listHeader, groups }: Common<T> & { value: T | ''; onChange: (v: T) => void }) {
+export function SelectModal<T extends string>({ value, onChange, items, label, title, searchPlaceholder = 'Search…', routeKey, applyLabel, triggerIcon = false, triggerPrefix, searchable, sortColumns, primaryColumnLabel, listHeader, groups }: Common<T> & { value: T | ''; onChange: (v: T) => void }) {
   const [open, setOpen] = useOpen(routeKey);
   const sel = useMemo(() => items.map(toItem), [items]);
   const cur = items.find((i) => i.value === value);
   return (
     <>
       <Button type="button" size="sm" onClick={() => setOpen(true)} aria-haspopup="dialog" aria-expanded={open} rightIcon={<Icon name="caret-down" className="h-3.5 w-3.5 shrink-0 text-fg-3" />}>
+        {triggerPrefix}
         {triggerIcon && cur?.icon && typeof cur.icon !== 'string' ? <span className="flex h-5 w-5 shrink-0 items-center justify-center [&>*]:h-5 [&>*]:w-5 [&>*]:text-2xs">{cur.icon}</span> : null}
         <span className="min-w-0 max-w-[10rem] truncate">{cur?.label ?? label}</span>
       </Button>
@@ -80,6 +88,7 @@ export function SelectModal<T extends string>({ value, onChange, items, label, t
         onClose={() => setOpen(false)}
         title={title ?? label}
         searchPlaceholder={searchPlaceholder}
+        searchable={searchable ?? items.length > SEARCH_MIN}
         items={sel}
         selectedIds={value ? [value] : []}
         onSelect={(ids) => { const v = (Array.isArray(ids) ? ids[0] : ids) as T | undefined; setOpen(false, v !== undefined ? () => onChange(v) : undefined); }}
@@ -96,7 +105,7 @@ export function SelectModal<T extends string>({ value, onChange, items, label, t
 
 /** Several choices: the same trigger, the modal in multi mode (Select all / none, Apply). THE multi picker of chains, pools, legs and
  *  assets: `groups` sections the list (pools by chain), `presets` are the quick picks (Whole DEX, a pool, an asset). */
-export function MultiSelectModal<T extends string>({ value, onChange, items, label, title, searchPlaceholder = 'Search…', routeKey, applyLabel = 'Apply', allLabel = 'All', triggerLabel, triggerContent, sortColumns, primaryColumnLabel, listHeader, groups, presets, disabled, labels }: Common<T> & {
+export function MultiSelectModal<T extends string>({ value, onChange, items, label, title, searchPlaceholder = 'Search…', routeKey, applyLabel = 'Apply', allLabel = 'All', triggerLabel, triggerContent, searchable, sortColumns, primaryColumnLabel, listHeader, groups, presets, disabled, labels }: Common<T> & {
   value: readonly T[];
   onChange: (v: T[]) => void;
   allLabel?: string;
@@ -119,6 +128,7 @@ export function MultiSelectModal<T extends string>({ value, onChange, items, lab
         onClose={() => setOpen(false)}
         title={title ?? label}
         searchPlaceholder={searchPlaceholder}
+        searchable={searchable}
         items={sel}
         selectedIds={value.map(String)}
         multiSelect

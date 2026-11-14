@@ -15,6 +15,7 @@ import { createPortal, forwardRef } from 'preact/compat';
 import type { HTMLAttributes, Ref } from 'preact/compat';
 import { useEffect, useId, useMemo, useRef, useState } from 'preact/hooks';
 import { Tooltip } from './FloatingPanel';
+import { SelectedCheck } from './SelectedCheck';
 import { Icon } from './Icon';
 import { fieldSizing, inputVariants } from './Input';
 import { FormRow } from './Primitives';
@@ -438,13 +439,7 @@ export function Dropdown<T = string>({
                 ) : null}
               </div>
               {selected && !disabled && (
-                <Icon
-                  name="check"
-                  className={cn(
-                    'relative z-raised shrink-0 text-primary pointer-events-none',
-                    itemSizeClasses.check,
-                  )}
-                />
+                <SelectedCheck className="relative z-raised" />
               )}
             </div>
           );

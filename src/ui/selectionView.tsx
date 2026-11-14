@@ -8,6 +8,7 @@ import { useKeyboardNav } from '../lib/useKeyboardNav';
 import { MODAL_PADDING } from './BaseModal';
 import { PageState } from './Feedback';
 import { Icon } from './Icon';
+import { SelectedCheck } from './SelectedCheck';
 import { DATA_TABLE_HEADER, type SortDir, SortHeader, compareSorted } from './Table';
 
 /** Every fixed string of the modal, so a host can translate it. */
@@ -205,6 +206,8 @@ export function useSelectionView(p: SelectionViewProps) {
             ),
         )}
         {item.badge}
+        {/* Trailing selected mark; the slot is reserved on every row so a figure never shifts when a row is picked. */}
+        {!mark && <span className="flex h-4 w-4 shrink-0 items-center justify-center">{on && <SelectedCheck />}</span>}
       </>
     );
     // With a mark the row is a plain div holding TWO sibling controls (the open button fills the row, the mark toggles): no nested interactive.
@@ -215,7 +218,7 @@ export function useSelectionView(p: SelectionViewProps) {
             {body}
           </button>
           <button type="button" disabled={off} aria-label={on ? `Remove ${item.label}` : `Add ${item.label}`} aria-pressed={on} onClick={(e) => toggle(e, item.id)} className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-xs hover:bg-bg-4 disabled:cursor-not-allowed">
-            <Icon name={on ? 'check' : 'plus'} className={cn('h-3.5 w-3.5', on ? 'text-primary' : 'text-fg-2')} />
+            {on ? <SelectedCheck /> : <Icon name="plus" className="h-4 w-4 text-fg-2" />}
           </button>
         </div>
       );

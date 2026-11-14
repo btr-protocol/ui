@@ -29,6 +29,8 @@ import { cva } from '../lib/cva';
  *            secondary and ghost button sits here (swap submit, wallet, page CTAs).
  *   default  ctl-l text-base - modal footer pairs only (confirm/cancel share it).
  *
+ * A label is ONE line, always (nowrap): when the space runs out it truncates with an ellipsis and the icons stay.
+ *
  * Rules: one primary height per context (sm, unless modal footer or hero); a
  * secondary button matches its primary neighbour's size; padding, gap, icon
  * offset, radius and typography all come from the SIZE_ tokens and BORDER_RADIUS -
@@ -62,7 +64,7 @@ export interface ButtonProps extends Omit<HTMLAttributes<HTMLButtonElement>, 'cl
 }
 
 const buttonVariants = cva(
-  'inline-flex items-center justify-center font-medium font-title transition-colors disabled:pointer-events-none disabled:opacity-50',
+  'inline-flex min-w-0 max-w-full items-center justify-center whitespace-nowrap font-medium font-title transition-colors disabled:pointer-events-none disabled:opacity-50',
   {
     variants: {
       variant: {
@@ -140,6 +142,9 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       className: cn(BORDER_RADIUS, dynamicClasses, className),
     });
 
+    // Hooks for the group rules (button-group.css): icon cells stay compact squares, the primary takes the spare width.
+    const groupAttrs = { 'data-icon-only': isIconOnly || undefined, 'data-primary': variant === 'primary' || undefined };
+
     const content = (
       <>
         {leftIcon && (
@@ -147,7 +152,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
             {leftIcon}
           </span>
         )}
-        {children}
+        {typeof children === 'string' || typeof children === 'number' ? <span className="min-w-0 truncate">{children}</span> : children}
         {rightIcon && <span className="shrink-0 text-fg-3">{rightIcon}</span>}
       </>
     );
@@ -158,6 +163,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         <a
           href={href}
           className={classes}
+          {...groupAttrs}
           {...rest}
           onClick={(e) => {
             onClick?.(e);
@@ -182,7 +188,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     }
 
     return (
-      <button ref={ref} className={classes} {...props}>
+      <button ref={ref} className={classes} {...groupAttrs} {...props}>
         {content}
       </button>
     );
