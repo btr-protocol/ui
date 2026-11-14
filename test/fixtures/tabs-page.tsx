@@ -29,7 +29,7 @@ render(
     </div>
     <div id="fit" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 8, marginTop: 12 }}>
       {(['xs', 'sm', 'md'] as const).map((z) => (
-        <div key={z} id={`fit-${z}`} style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+        <div key={z} id={`fit-${z}`} style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'flex-start' }}>
           <Tabs opts={FIT} start="apr" size={z} />
           <Tabs opts={FIT} start="apr" size={z} presentation="attached" />
           <ButtonGroup aria-label="g"><Button size={z === 'xs' ? 'xs' : 'sm'}>$</Button><Button size={z === 'xs' ? 'xs' : 'sm'}>APR</Button></ButtonGroup>
