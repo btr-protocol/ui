@@ -14,6 +14,8 @@ export interface ChainItem {
   id: number;
   name: string;
   icon?: ComponentChildren;
+  /** Mark on the trigger button, when it differs from the list row's `icon` (a larger role). */
+  triggerIcon?: ComponentChildren;
   explorer?: string;
   testnet?: boolean;
   /** Roadmap entry (no deployment yet): listed after the live chains, disabled and captioned. Default false. */
@@ -216,7 +218,7 @@ export function ChainSelect({ chains, value, onChange, title, routeKey, allLabel
         onClick={() => setOpen(true)}
         leftIcon={
           current ? (
-            (current.icon ?? <ChainGlyph chainId={current.id} name={current.name} role="trigger" />)
+            (current.triggerIcon ?? current.icon ?? <ChainGlyph chainId={current.id} name={current.name} role="trigger" />)
           ) : undefined
         }
         rightIcon={<Icon name="caret-down" className="w-3.5 h-3.5 text-fg-3 shrink-0" />}
