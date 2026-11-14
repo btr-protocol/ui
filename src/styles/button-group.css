@@ -92,7 +92,7 @@
 }
 /* The touch hit-area `::after` (index.css) is absolutely positioned, so inside a scroller it counts as scrollable overflow. Even
    with the 44 px floor below it overflows: it is sized against the tab's PADDING box, 1 px narrower than the tab for every tab after
-   the first (the `border-inline-start` divider), and its own 44 px minimum then pokes out by that px (measured: scrollWidth 89 over
+   the first (the `border-inline-start` divider), and its own 44 px minimum then pokes out by half that px at the floor (measured: scrollWidth 89 over
    clientWidth 88 on an equal xs strip, a range strip scrolled 3 px). The scroller clips that pseudo anyway, so inside a strip it takes the
    tab's own box. Both rules name the strip itself (a direct child of the bar), so a ButtonGroup inside an attached panel is a plain one. */
 .btn-group-scroll > *::after,
@@ -172,10 +172,10 @@
   }
 }
 /* A disabled tab does not react to hover: pin its idle fill, ahead of Button's own `hover:bg-bg-primary` (the selected fill) and the `hover:bg-glass` of the dim class. */
-.btn-group:not(.btn-group-attached) > [role='tab'][aria-disabled]:hover {
+.btn-group:not(.btn-group-attached) > [role='tab'][aria-disabled]:not([aria-selected='true']):hover {
   background: var(--glass);
 }
-.btn-group-attached > [role='tab'][aria-disabled]:hover {
+.btn-group-attached > [role='tab'][aria-disabled]:not([aria-selected='true']):hover {
   background: var(--bg-2);
 }
 .tabs-panel {

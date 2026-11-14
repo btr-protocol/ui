@@ -325,7 +325,9 @@ for (const theme of ['dark', 'light'])
       const off = `${DIS[kind]} [role=tab][aria-disabled=true]`;
       const idle = await bgOf(page, off);
       await page.hover(off);
-      await reaches(page, off, idle);
+      // let a hover transition start (two frames) and finish before comparing: reading at once would pass with no pin
+      await page.evaluate(() => new Promise<void>((r) => requestAnimationFrame(() => requestAnimationFrame(() => r()))));
+      await until(page, () => document.getAnimations().length === 0);
       expect(await bgOf(page, off)).toBe(idle);
     });
   }
