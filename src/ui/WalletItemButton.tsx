@@ -33,6 +33,8 @@ interface WalletItemButtonProps {
   isSelected?: boolean;
   /** Secondary line under the name (e.g. "Not available" on an undeployed chain). */
   caption?: string;
+  /** Accessible name when the visible text is not enough (a link that opens a new tab). */
+  ariaLabel?: string;
   /** Unavailable via `aria-disabled` instead of `disabled`: the row keeps focus (and arrow-key order) while busy; the
    *  caller ignores clicks. */
   ariaDisabled?: boolean;
@@ -52,6 +54,7 @@ export function WalletItemButton({
   isHighlighted = false,
   isSelected = false,
   caption,
+  ariaLabel,
   ariaDisabled = false,
 }: WalletItemButtonProps) {
   const unavailable = disabled || isConnecting;
@@ -73,7 +76,7 @@ export function WalletItemButton({
         gap="md"
         label={
           <span className="flex flex-col flex-1 min-w-0 text-left">
-            <span className={`font-medium text-sm ${isSelected ? 'text-primary' : 'text-fg-1'}`}>
+            <span className={`font-medium text-sm truncate min-w-0 ${isSelected ? 'text-primary' : 'text-fg-1'}`}>
               {name}
             </span>
             {caption && <span className="text-2xs text-fg-3 truncate">{caption}</span>}
@@ -102,11 +105,11 @@ export function WalletItemButton({
   );
   const button =
     href && !off ? (
-      <a href={href} className={cls} onClick={onClick} {...(external && { target: '_blank', rel: 'noopener noreferrer' })}>
+      <a href={href} className={cls} onClick={onClick} aria-label={ariaLabel} {...(external && { target: '_blank', rel: 'noopener noreferrer' })}>
         {content}
       </a>
     ) : (
-      <button className={cls} onClick={onClick} disabled={off} aria-disabled={(ariaDisabled && unavailable) || undefined}>
+      <button className={cls} onClick={onClick} aria-label={ariaLabel} disabled={off} aria-disabled={(ariaDisabled && unavailable) || undefined}>
         {content}
       </button>
     );

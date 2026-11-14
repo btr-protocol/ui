@@ -9,8 +9,15 @@ export interface WalletModalLabels {
   installed: string;
   walletConnect: string;
   other: string;
-  /** Caption of an Other row. */
+  /** Caption of an Other row; on a phone, where the row opens the wallet's app, `open`. */
   install: string;
+  open: string;
+  /** Heading of the list when nothing else can connect (no injected wallet, no WalletConnect). */
+  installWallet: string;
+  /** Appended to the accessible name of a link that opens a new tab. */
+  newTab: string;
+  /** Accessible name of a Recent row's remove button; `{name}` = the wallet. */
+  removeRecent: string;
   /** Caption of a recent wallet reached through WalletConnect. */
   viaWalletConnect: string;
   qrCaption: string;
@@ -35,9 +42,7 @@ export interface WalletModalLabels {
   cancel: string;
   /** `{name}` = the wallet. */
   getWallet: string;
-  anotherDevice: string;
   anotherDeviceQr: string;
-  scanWithMobile: string;
   qrAlt: string;
   qrFailed: string;
   qrLoading: string;
@@ -57,6 +62,10 @@ export const WALLET_MODAL_LABELS: WalletModalLabels = {
   walletConnect: 'WalletConnect',
   other: 'Other',
   install: 'Install',
+  open: 'Open',
+  installWallet: 'Install a wallet',
+  newTab: '(opens in a new tab)',
+  removeRecent: 'Remove {name} from recent wallets',
   viaWalletConnect: 'WalletConnect',
   qrCaption: 'Scan a QR code with your phone',
   appsCaption: 'Open a wallet app',
@@ -77,9 +86,7 @@ export const WALLET_MODAL_LABELS: WalletModalLabels = {
   showQr: 'Show QR',
   cancel: 'Cancel',
   getWallet: 'Not installed? Get {name}',
-  anotherDevice: 'Another device',
   anotherDeviceQr: 'Another device (QR code)',
-  scanWithMobile: 'Scan with a mobile wallet',
   qrAlt: 'WalletConnect QR code',
   qrFailed: 'Could not generate the QR code.',
   qrLoading: 'Generating QR code...',

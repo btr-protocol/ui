@@ -1,7 +1,6 @@
 // Connect modal sections: recents store (ordering, cap, corrupt / blocked storage) and the Recent / Installed / Other split.
-import { afterEach, describe, expect, test } from 'bun:test';
+import { afterAll, afterEach, beforeAll, describe, expect, test } from 'bun:test';
 import { GlobalRegistrator } from '@happy-dom/global-registrator';
-import { afterAll, beforeAll } from 'bun:test';
 import { WALLETS } from '@btr-protocol/sdk/eth/wallets';
 import {
   RECENT_KEPT,
@@ -13,6 +12,7 @@ import {
   readRecent,
   recentEntry,
   recordRecent,
+  removeRecent,
 } from '../src/wallet/recentWallets';
 import { OTHER_IDS, OTHER_MAX, otherHref, sectionWallets } from '../src/wallet/walletSections';
 
@@ -30,7 +30,7 @@ describe('recent wallets store', () => {
 
   test('noteUse bumps count and time, adds new, caps the kept list', () => {
     const one = noteUse([], { id: 'io.rabby', name: 'Rabby', via: 'injected' }, 10);
-    expect(one).toEqual([{ id: 'io.rabby', name: 'Rabby', icon: undefined, via: 'injected', last: 10, uses: 1 }]);
+    expect(one).toEqual([{ id: 'io.rabby', name: 'Rabby', via: 'injected', last: 10, uses: 1 }]);
     const two = noteUse(noteUse(one, { id: 'io.metamask', name: 'MetaMask', via: 'injected' }, 20), { id: 'io.rabby', name: 'Rabby', via: 'injected' }, 30);
     expect(two.map((r) => [r.id, r.uses, r.last])).toEqual([['io.rabby', 2, 30], ['io.metamask', 1, 20]]);
     let many: RecentWallet[] = [];
@@ -39,9 +39,36 @@ describe('recent wallets store', () => {
     expect(many[0]?.id).toBe(`w${RECENT_KEPT + 3}`);
   });
 
-  test('a huge announced icon is not stored', () => {
-    const r = noteUse([], { id: 'x', name: 'X', icon: `data:image/png;base64,${'A'.repeat(5000)}`, via: 'injected' }, 1);
-    expect(r[0]?.icon).toBeUndefined();
+  test('write builds from a field whitelist: no icon, name clamped, bad id refused', () => {
+    const w = { id: 'x', name: 'N'.repeat(100), via: 'injected', icon: 'data:image/png;base64,AAAA', extra: 1 } as never;
+    const r = noteUse([], w, 1);
+    expect(Object.keys(r[0] as object).sort()).toEqual(['id', 'last', 'name', 'uses', 'via']);
+    expect(r[0]?.name.length).toBe(40);
+    expect(noteUse([], { id: 'Has Space', name: 'X', via: 'injected' }, 1)).toEqual([]);
+    expect(noteUse([], { id: 'a'.repeat(65), name: 'X', via: 'injected' }, 1)).toEqual([]);
+  });
+
+  test('read: name clamped, bad ids dropped, duplicate ids keep the newest', () => {
+    localStorage.setItem(
+      RECENT_KEY,
+      JSON.stringify([
+        { ...rec('dup', 1), name: 'old' },
+        { ...rec('dup', 9), name: 'N'.repeat(90), icon: 'x' },
+        rec('BAD ID', 5),
+        rec('x'.repeat(65), 5),
+      ]),
+    );
+    const got = readRecent();
+    expect(got.length).toBe(1);
+    expect(got[0]).toEqual({ id: 'dup', name: 'N'.repeat(40), via: 'injected', last: 9, uses: 1 });
+  });
+
+  test('removeRecent drops one entry from storage and keeps the rest', () => {
+    recordRecent({ id: 'a', name: 'A', via: 'injected' }, 1);
+    recordRecent({ id: 'b', name: 'B', via: 'walletconnect' }, 2);
+    expect(removeRecent('a').map((r) => r.id)).toEqual(['b']);
+    expect(readRecent().map((r) => r.id)).toEqual(['b']);
+    expect(removeRecent('nope').map((r) => r.id)).toEqual(['b']);
   });
 
   test('round trip through localStorage holds no address, only the documented fields', () => {
@@ -111,6 +138,34 @@ describe('sectionWallets', () => {
     expect(s.installed).toEqual([]);
   });
 
+  test('a WalletConnect recent never becomes an injected row, even when the rdns normalises to its id', () => {
+    const s = sectionWallets({ ...none, injected: [inj('metamask', 'io.metamask.flask')], recents: [rec('metamask', 9, 1, 'walletconnect')] });
+    expect(s.recent.map((r) => r.wallet)).toEqual([undefined]);
+    expect(s.installed.map((w) => w.rdns)).toEqual(['io.metamask.flask']);
+  });
+
+  test('an injected recent matches by exact rdns only, not by the normalised id', () => {
+    const flask = inj('metamask', 'io.metamask.flask');
+    expect(sectionWallets({ ...none, injected: [flask], recents: [rec('metamask', 9)] }).recent).toEqual([]);
+    expect(sectionWallets({ ...none, injected: [flask], recents: [rec('io.metamask', 9)] }).recent).toEqual([]);
+    expect(sectionWallets({ ...none, injected: [flask, inj('rabby', 'io.rabby')], recents: [rec('io.metamask.flask', 9)] }).recent[0]?.wallet).toBe(flask);
+    // a legacy wallet without an rdns is recorded by its catalog id
+    const legacy = inj('trust');
+    expect(sectionWallets({ ...none, injected: [legacy], recents: [rec('trust', 9)] }).recent[0]?.wallet).toBe(legacy);
+  });
+
+  test('announcements sharing an rdns or catalog id stay out of Recent and are marked ambiguous', () => {
+    const a = inj('metamask', 'io.metamask');
+    const b = inj('metamask', 'io.metamask');
+    const c = inj('rabby', 'io.rabby');
+    const s = sectionWallets({ ...none, injected: [a, b, c], recents: [rec('io.metamask', 9), rec('io.rabby', 5)] });
+    expect(s.recent.map((r) => r.wallet)).toEqual([c]);
+    expect(s.installed).toEqual([a, b]);
+    expect([...s.ambiguous]).toEqual([a, b]);
+    const d = inj('metamask', 'io.metamask.flask');
+    expect(sectionWallets({ ...none, injected: [a, d], recents: [] }).ambiguous.size).toBe(2);
+  });
+
   test('WalletConnect recent stays in Recent while WalletConnect is on, else it moves to Other with its install link', () => {
     const recents = [rec('rainbow', 9, 3, 'walletconnect')];
     const on = sectionWallets({ injected: [], recents, wcOn: true });
@@ -150,6 +205,12 @@ describe('otherHref', () => {
     const p = otherHref(def('phantom'), true, 'https://btr.markets/x');
     expect(p.deepLink).toBe(true);
     expect(p.href).toContain('phantom.app/ul/browse/');
+  });
+  test('phone: no query or hash reaches the wallet deep link', () => {
+    const p = otherHref(def('phantom'), true, 'https://btr.markets/x?qq=abc&sig=s#frag');
+    expect(decodeURIComponent(p.href)).toContain('https://btr.markets/x');
+    expect(p.href).not.toContain('qq');
+    expect(p.href).not.toContain('frag');
   });
   test('phone, wallet without a deep link: its page', () => {
     expect(otherHref(def('okx'), true, 'https://btr.markets/')).toEqual({ href: def('okx').url, deepLink: false });
