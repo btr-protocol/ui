@@ -29,7 +29,10 @@ export interface SegmentedOption<T extends string> {
   href?: string;
 }
 
-export interface SegmentedControlProps<T extends string> {
+/** A tablist needs a name for assistive tech: `aria-label` or `aria-labelledby` is required. */
+export type TablistName = { 'aria-label': string; 'aria-labelledby'?: undefined } | { 'aria-labelledby': string; 'aria-label'?: undefined };
+
+export type SegmentedControlProps<T extends string> = TablistName & {
   options: SegmentedOption<T>[];
   value: T;
   onChange: (value: T) => void;
@@ -38,8 +41,6 @@ export interface SegmentedControlProps<T extends string> {
   size?: 'xs' | 'sm' | 'md';
   /** Every option as wide as the widest label (toggles that should not jump or look ragged). */
   equal?: boolean;
-  /** Names the tablist for assistive tech. */
-  'aria-label'?: string;
   /** `group` (default): a plain ButtonGroup. `attached`: the strip sits on the top edge of the card it controls. */
   presentation?: 'group' | 'attached';
   /** attached only: a primary accent on the active tab's top edge (default true; false = flush with the card). */
@@ -50,10 +51,9 @@ export interface SegmentedControlProps<T extends string> {
   panelId?: string;
   /** attached only: the card's content (rendered as the tabpanel below the strip, named by the active tab). */
   children?: ComponentChildren;
-}
+};
 
 let uid = 0;
-let warned = false;
 const FOCUSABLE = 'a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])';
 
 export function SegmentedControl<T extends string>({
@@ -69,6 +69,7 @@ export function SegmentedControl<T extends string>({
   panelId,
   children,
   'aria-label': label,
+  'aria-labelledby': labelledby,
 }: SegmentedControlProps<T>) {
   const id = (useRef<string>().current ??= `seg${++uid}`);
   const scroller = useRef<HTMLDivElement>(null);
@@ -111,11 +112,6 @@ export function SegmentedControl<T extends string>({
     if (p.querySelector(FOCUSABLE)) p.removeAttribute('tabindex');
     else p.setAttribute('tabindex', '0');
   });
-  useEffect(() => {
-    if (label || warned) return;
-    warned = true;
-    console.warn('SegmentedControl: pass an aria-label, a tablist needs a name for assistive tech');
-  }, [label]);
 
   // Arrow / Home / End step from the FOCUSED tab (not the selected value: an async consumer has not committed the last change yet).
   // auto: they also select; manual: focus only, Enter / Space selects.
@@ -145,6 +141,7 @@ export function SegmentedControl<T extends string>({
       ref={attached ? list : (el: HTMLDivElement | null) => { list.current = el; scroller.current = el; }}
       role="tablist"
       aria-label={label}
+      aria-labelledby={labelledby}
       onKeyDown={onKeyDown}
       className={cn(
         'btn-group',

@@ -27,7 +27,7 @@ test('group: the tablist is a ButtonGroup and every tab a Button, with tab seman
 
 test('click selects; a disabled tab never does', () => {
   const got: string[] = [];
-  const { host } = mount(<SegmentedControl options={O} value="a" onChange={(v) => got.push(v)} />);
+  const { host } = mount(<SegmentedControl aria-label="S" options={O} value="a" onChange={(v) => got.push(v)} />);
   click(tabs(host)[1]!);
   click(tabs(host)[2]!);
   expect(got).toEqual(['c']);
@@ -37,7 +37,7 @@ test('keys: arrows skip disabled and wrap, Home / End jump, focus follows select
   const got: string[] = [];
   const Host = () => {
     const [v, setV] = useState('a');
-    return <SegmentedControl options={O} value={v} onChange={(x) => { got.push(x); setV(x); }} />;
+    return <SegmentedControl aria-label="S" options={O} value={v} onChange={(x) => { got.push(x); setV(x); }} />;
   };
   const { host } = mount(<Host />);
   const list = host.querySelector('[role=tablist]')!;
@@ -72,7 +72,7 @@ test('attached: strip on the panel, panel named by the active tab, tabs control 
 });
 
 test('attached: accent={false} is flush; a caller-owned panel id with no children renders no panel', () => {
-  const html = ssr(<SegmentedControl presentation="attached" accent={false} panelId="mine" options={O} value="a" onChange={() => {}} />);
+  const html = ssr(<SegmentedControl aria-label="S" presentation="attached" accent={false} panelId="mine" options={O} value="a" onChange={() => {}} />);
   expect(html).not.toContain('btn-group-accent');
   expect(html).toContain('aria-controls="mine"');
   expect(html).not.toContain('role="tabpanel"');
@@ -141,7 +141,15 @@ test('arrows step from the focused tab, not the selected value (async consumers 
 
 
 test('no selected value: the first enabled tab is the one tab stop', () => {
-  const { host } = mount(<SegmentedControl options={O} value={'zz' as 'a'} onChange={() => {}} />);
+  const { host } = mount(<SegmentedControl aria-label="S" options={O} value={'zz' as 'a'} onChange={() => {}} />);
   expect(tabs(host).map((x) => x.tabIndex)).toEqual([0, -1, -1, -1]);
 });
 
+
+test('a tablist must be named: aria-label or aria-labelledby is required by the types', () => {
+  const noop = () => {};
+  // @ts-expect-error no accessible name
+  ssr(<SegmentedControl options={O} value="a" onChange={noop} />);
+  const html = ssr(<SegmentedControl aria-labelledby="h" options={O} value="a" onChange={noop} />);
+  expect(html).toContain('aria-labelledby="h"');
+});

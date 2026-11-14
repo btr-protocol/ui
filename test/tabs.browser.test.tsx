@@ -1,5 +1,5 @@
 // Real-browser checks (Chromium via playwright-core): geometry cannot be asserted in a DOM emulation.
-// Skipped, with a note, where no Chromium is installed (`bunx playwright install chromium`).
+// Needs Chromium (`bunx playwright install chromium`): without one every test here fails with that instruction.
 import { afterAll, beforeAll, expect, test } from 'bun:test';
 import { existsSync, mkdirSync, readdirSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
@@ -25,7 +25,7 @@ const exe = chromium();
 let browser: import('playwright-core').Browser | undefined;
 
 beforeAll(async () => {
-  if (!exe) return console.warn('tabs.browser: no Chromium found, browser tests skipped');
+  if (!exe) return;
   mkdirSync(cache, { recursive: true });
   const built = await Bun.build({ entrypoints: [join(root, 'test/fixtures/tabs-page.tsx')], outdir: cache, naming: 'page.js', format: 'iife', target: 'browser' });
   if (!built.success) throw new Error(built.logs.join('\n'));
@@ -46,7 +46,12 @@ async function open(width: number, theme = 'dark') {
   await page.waitForSelector('#cmp [role=tab]');
   return page;
 }
-const t = (name: string, fn: () => Promise<void>) => test(name, async () => { if (browser) await fn(); }, 30000);
+// No Chromium = a FAILING test, never a silent pass or skip: geometry is only asserted in a real browser.
+const t = (name: string, fn: () => Promise<void>) =>
+  test(name, async () => {
+    if (!browser) throw new Error('Chromium not found: run `bunx playwright install chromium` (or set CHROMIUM_PATH to a chrome-headless-shell binary)');
+    await fn();
+  }, 30000);
 
 for (const w of [1440, 390]) {
   t(`group tabs are exactly a ButtonGroup: same height and text position (${w}px)`, async () => {

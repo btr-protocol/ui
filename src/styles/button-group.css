@@ -15,7 +15,6 @@
 .btn-group > * {
   position: relative;
   min-width: 0;
-  white-space: nowrap; /* a label never wraps inside a cell ("All time" at 390); `wrap` breaks the cells into rows, not the text */
 }
 .btn-group :is(button, a, [role='button']) {
   border-width: 0;
@@ -89,6 +88,7 @@
 .btn-group-scroll > *,
 .tabs-attached .btn-group > * {
   flex: none;
+  white-space: nowrap; /* tabs stay one line each; a plain ButtonGroup keeps wrapping its text as before */
 }
 
 /* attached: the strip sits on the top edge of the card it controls (the `.tabs-panel`). The bar
