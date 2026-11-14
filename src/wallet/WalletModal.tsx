@@ -11,6 +11,7 @@ import { addNotification } from '../lib/notifications';
 import { useKeyboardNav } from '../lib/useKeyboardNav';
 import { BaseModal, MODAL_PADDING, ModalSection } from '../ui/BaseModal';
 import { Button } from '../ui/Button';
+import { ButtonGroup } from '../ui/ButtonGroup';
 import { CloseButton } from '../ui/CloseButton';
 import { Notice, PageState } from '../ui/Feedback';
 import { Icon } from '../ui/Icon';
@@ -325,7 +326,7 @@ export function WalletModal({
     >
       <>
         {error && (
-          <div className="mx-4 mt-4">
+          <div className={`${MODAL_PADDING} pt-4`}>
             <Notice
               tone="error"
               role="alert"
@@ -378,14 +379,14 @@ export function WalletModal({
             )}
 
             {waiting && (
-              <div className="flex flex-col gap-2 items-center px-4 py-6 text-center">
+              <div className={`flex flex-col gap-2 items-center ${MODAL_PADDING} py-6 text-center`}>
                 <WalletGlyph id={waiting.id} name={waiting.name} size={48} />
                 <p className="flex items-center gap-2 text-sm text-fg-0">
                   <Spinner />
                   {fill(l.waitingFor, waiting.name)}
                 </p>
                 <p className="text-xs text-fg-2">{l.approveThere}</p>
-                <div className="flex flex-wrap justify-center gap-2">
+                <ButtonGroup aria-label={l.title} wrap className="justify-center">
                   <Button variant="primary" onClick={() => uri && void openWallet(waiting, uri)}>
                     {l.openAgain}
                   </Button>
@@ -393,7 +394,7 @@ export function WalletModal({
                   <Button variant="ghost" onClick={retry}>
                     {l.cancel}
                   </Button>
-                </div>
+                </ButtonGroup>
                 <a
                   href={getDownloadUrl(waiting.id) ?? undefined}
                   target="_blank"
@@ -412,7 +413,7 @@ export function WalletModal({
             )}
 
             {showQr && (
-              <div ref={qrRef} tabIndex={-1} role="group" aria-label={l.qrAlt} className="flex flex-col gap-4 items-center px-4 py-4 outline-none">
+              <div ref={qrRef} tabIndex={-1} role="group" aria-label={l.qrAlt} className={`flex flex-col gap-4 items-center ${MODAL_PADDING} py-4 outline-none`}>
                 {qr ? (
                   <div className="bg-white p-2 rounded-lg">
                     <img src={qr} alt={l.qrAlt} className="w-full max-w-60 aspect-square" />
