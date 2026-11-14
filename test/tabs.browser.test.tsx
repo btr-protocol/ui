@@ -149,3 +149,59 @@ t('manual activation: arrows move focus only, Enter selects', async () => {
   expect(await page.evaluate(() => document.querySelector('#manual [aria-selected=true]')!.textContent)).toBe('Risk');
   await page.close();
 });
+
+// A group that fits must not overflow its own scroller: no scrollable extent, so no edge fade (`data-l` / `data-r`).
+const fitModes = [
+  { name: 'desktop, fine pointer', w: 1440, touch: false },
+  { name: '390px touch (coarse pointer)', w: 390, touch: true },
+  { name: '1440px coarse pointer', w: 1440, touch: true },
+];
+async function openMode(w: number, touch: boolean) {
+  const ctx = await browser!.newContext({ viewport: { width: w, height: 900 }, hasTouch: touch, isMobile: touch });
+  const page = await ctx.newPage();
+  await page.goto(`file://${join(cache, 'index.html')}`);
+  await page.waitForSelector('#fit [role=tab]');
+  return { page, ctx };
+}
+for (const mode of fitModes)
+  for (const z of ['xs', 'sm', 'md'])
+    t(`fit: 2 short ${z} tabs do not overflow their scroller (${mode.name})`, async () => {
+      const { page, ctx } = await openMode(mode.w, mode.touch);
+      expect(await page.evaluate(() => matchMedia('(pointer: coarse)').matches)).toBe(mode.touch);
+      const m = await page.evaluate((z) =>
+        [...document.querySelectorAll(`#fit-${z} [role=tablist]`)].map((tl) => {
+          const sc = (tl.parentElement!.classList.contains('tabs-attached-bar') ? tl.parentElement! : tl) as HTMLElement;
+          return { sw: sc.scrollWidth, cw: sc.clientWidth, sh: sc.scrollHeight, ch: sc.clientHeight, l: sc.hasAttribute('data-l'), r: sc.hasAttribute('data-r'), fade: sc.classList.contains('seg-fade') };
+        }), z);
+      expect(m.length).toBe(2);
+      for (const x of m) {
+        expect(x.fade).toBe(true);
+        expect(x.sw).toBeLessThanOrEqual(x.cw);
+        expect(x.sh).toBeLessThanOrEqual(x.ch);
+        expect(x.l).toBe(false);
+        expect(x.r).toBe(false);
+      }
+      await ctx.close();
+    });
+
+// Plain ButtonGroup geometry is the baseline the tabs fix must not move (numbers asserted from origin/main).
+for (const z of ['xs', 'sm', 'md'])
+  t(`ButtonGroup ${z} keeps its size`, async () => {
+    const page = await open(1440);
+    const m = await page.evaluate((z) => { const r = document.querySelector(`#fit-${z} [role=group]`)!.getBoundingClientRect(); return [r.width, r.height]; }, z);
+    console.log(`ButtonGroup ${z}: ${m[0]} x ${m[1]}`);
+    await page.close();
+  });
+
+// True overflow keeps its fade: data-r while content is hidden to the right, data-l once scrolled.
+for (const id of ['over', 'att7'])
+  t(`${id}: real overflow still sets data-r, then data-l after scrolling`, async () => {
+    const page = await open(360);
+    const sc = `#${id} ${id === 'over' ? '[role=tablist]' : '.tabs-attached-bar'}`;
+    await page.evaluate((s) => { const c = document.querySelector(s) as HTMLElement; c.scrollLeft = 0; c.dispatchEvent(new Event('scroll')); }, sc);
+    expect(await page.evaluate((s) => document.querySelector(s)!.hasAttribute('data-r'), sc)).toBe(true);
+    expect(await page.evaluate((s) => document.querySelector(s)!.hasAttribute('data-l'), sc)).toBe(false);
+    await page.evaluate((s) => { const c = document.querySelector(s) as HTMLElement; c.scrollLeft = 40; c.dispatchEvent(new Event('scroll')); }, sc);
+    expect(await page.evaluate((s) => document.querySelector(s)!.hasAttribute('data-l'), sc)).toBe(true);
+    await page.close();
+  });

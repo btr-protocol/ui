@@ -90,6 +90,15 @@
   flex: none;
   white-space: nowrap; /* tabs stay one line each; a plain ButtonGroup keeps wrapping its text as before */
 }
+/* The touch hit-area `::after` (index.css, 44 px floor) is absolutely positioned, so inside a scroller it
+   counts as scrollable overflow: two short xs tabs measured scrollWidth 66 over clientWidth 64 and the edge
+   fade masked the last label. The scroller clips that pseudo anyway (its box is the hit area), so it takes
+   the tab's own box here: nothing beyond the strip is reachable, nothing in the strip is lost. */
+.btn-group-scroll > *::after,
+.tabs-attached .btn-group > *::after {
+  min-width: 0;
+  min-height: 0;
+}
 
 /* attached: the strip sits on the top edge of the card it controls (the `.tabs-panel`). The bar
    overlaps the panel's top border by exactly that 1px row, so the strip's bottom edge IS the
