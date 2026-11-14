@@ -57,7 +57,8 @@ export function sectionWallets<W extends Detected>(o: {
   }
   const listed = new Set(recent.flatMap((x) => (x.wallet ? [x.wallet] : [])));
   const installed = injected.filter((w) => !listed.has(w));
-  const have = (d: WalletDef) => nativeIds.includes(d.id) || injected.some((w) => w.id === d.id || (!!d.rdns && w.rdns === d.rdns));
+  const shown = recent.map((x) => x.recent.id);
+  const have = (d: WalletDef) => nativeIds.includes(d.id) || shown.includes(d.id) || (!!d.rdns && shown.includes(d.rdns)) || injected.some((w) => w.id === d.id || (!!d.rdns && w.rdns === d.rdns));
   const popular = OTHER_IDS.flatMap((id) => WALLETS.find((w) => w.id === id) ?? []);
   const other = [...lost, ...popular.filter((d) => !lost.includes(d))].filter((d) => !have(d)).slice(0, OTHER_MAX);
   return { recent, installed, other };
