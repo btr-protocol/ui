@@ -116,6 +116,8 @@ describe('sectionWallets', () => {
     const on = sectionWallets({ injected: [], recents, wcOn: true });
     expect(on.recent.map((r) => r.recent.id)).toEqual(['rainbow']);
     expect(on.recent[0]?.wallet).toBeUndefined();
+    expect(on.other.map((w) => w.id)).not.toContain('rainbow');
+    expect(on.other.length).toBe(OTHER_MAX);
     const off = sectionWallets({ injected: [], recents, wcOn: false });
     expect(off.recent).toEqual([]);
     expect(off.other[0]?.id).toBe('rainbow');
