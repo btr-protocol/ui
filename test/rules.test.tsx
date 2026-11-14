@@ -1,6 +1,6 @@
 import { expect, test } from 'bun:test';
 import { render } from 'preact-render-to-string';
-import { Button, ButtonGroup, Icon, SelectedCheck, SelectModal } from '../src';
+import { Button, ClickMenu, Icon, MultiSelectModal, SelectedCheck, SelectModal } from '../src';
 import { click, mount, useDom } from './dom';
 
 useDom();
@@ -8,7 +8,10 @@ useDom();
 test('Button: label is nowrap and truncates; icon-only and primary carry the group hooks', () => {
   const text = render(<Button size="sm" leftIcon={<Icon name="copy" />}>A long label</Button>);
   expect(text).toContain('whitespace-nowrap');
-  expect(text).toContain('<span class="min-w-0 truncate">A long label</span>');
+  expect(text).toContain('min-w-0 truncate');
+  expect(render(<Button>{3} items</Button>)).toContain('data-label');
+  expect(render(<Button>Pick <b>all</b></Button>)).toContain('data-label');
+  expect(render(<Button><b>all</b></Button>)).not.toContain('data-label');
   expect(text).not.toContain('data-icon-only');
   const icon = render(<Button aria-label="Copy" leftIcon={<Icon name="copy" />} />);
   expect(icon).toContain('data-icon-only');
@@ -16,35 +19,13 @@ test('Button: label is nowrap and truncates; icon-only and primary carry the gro
   expect(render(<Button>Go</Button>)).not.toContain('data-primary');
 });
 
-test('button-group.css: icon cells do not stretch, the primary takes the spare width', async () => {
-  const css = await Bun.file(new URL('../src/styles/button-group.css', import.meta.url)).text();
-  expect(css).toMatch(/\[data-icon-only\][^{]*\{\s*flex: none;/);
-  expect(css).toMatch(/\[data-primary\][^{]*\{\s*flex: 100 1 auto;/);
-  expect(render(<ButtonGroup aria-label="x" wrap><Button>A</Button></ButtonGroup>)).toContain('btn-group-wrap');
-});
-
-test('menu panels are flush: no panel padding, rows own it', async () => {
-  const preset = await Bun.file(new URL('../src/styles/tailwind.preset.js', import.meta.url)).text();
-  expect(preset).toMatch(/'\.floating-panel\.floating-flush': \{\s*padding: '0'/);
-  const menu = await Bun.file(new URL('../src/ui/ClickMenu.tsx', import.meta.url)).text();
-  expect(menu).toContain('flush');
-  expect(menu).not.toContain('py-1"');
-});
-
-test('SelectedCheck: the check icon, 16 px, primary', () => {
-  const html = render(<SelectedCheck />);
-  expect(html).toContain('data-selected-check');
-  expect(html).toContain('h-4 w-4');
-  expect(html).toContain('text-primary');
-});
-
-test('every selected-row component uses SelectedCheck, no private check icon', async () => {
-  for (const f of ['Select.tsx', 'selectionView.tsx', 'ClickMenu.tsx']) {
-    const src = await Bun.file(new URL(`../src/ui/${f}`, import.meta.url)).text();
-    expect(src).toContain('SelectedCheck');
-    expect(src).not.toContain('name="check"');
-    expect(src).not.toContain("'check'");
-  }
+test('ClickMenu: a selected item is a menuitemradio with the check, button and link alike; plain items stay menuitem', () => {
+  const { host, unmount } = mount(<ClickMenu trigger={<button type="button" id="trg">Menu</button>} items={[{ id: 'a', label: 'A', selected: true }, { id: 'b', label: 'B', href: '/b', selected: true }, { id: 'c', label: 'C', href: '/c', selected: false }, { id: 'd', label: 'D' }]} />);
+  click(host.querySelector('#trg')!);
+  const rows = [...document.querySelectorAll('[role^=menuitem]')];
+  expect(rows.map((r) => [r.tagName, r.getAttribute('role'), r.getAttribute('aria-checked')])).toEqual([['BUTTON', 'menuitemradio', 'true'], ['A', 'menuitemradio', 'true'], ['A', 'menuitemradio', 'false'], ['BUTTON', 'menuitem', null]]);
+  expect(rows.map((r) => r.querySelectorAll('[data-selected-check]').length)).toEqual([1, 1, 0, 0]);
+  unmount();
 });
 
 const opts = (n: number) => Array.from({ length: n }, (_, i) => ({ value: `v${i}`, label: `Opt ${i}` }));
@@ -70,4 +51,25 @@ test('SelectModal: the picked row shows the trailing check; triggerPrefix leads 
   expect(marks.length).toBe(1);
   expect(marks[0]!.closest('button')!.textContent).toContain('Opt 1');
   unmount();
+});
+
+test('modal rows expose the selection: aria-current when single, aria-pressed per row when multi', () => {
+  const a = mount(<SelectModal routeKey="a-one" label="X" items={opts(3)} value="v1" onChange={() => {}} />);
+  click(a.host.querySelector('button')!);
+  expect([...document.querySelectorAll('[role=dialog] [data-sel-row]')].map((r) => r.getAttribute('aria-current'))).toEqual([null, 'true', null]);
+  a.unmount();
+  const b = mount(<MultiSelectModal routeKey="a-multi" label="X" items={opts(3)} value={['v0', 'v2']} onChange={() => {}} searchable={false} />);
+  click(b.host.querySelector('button')!);
+  expect([...document.querySelectorAll('[role=dialog] [data-sel-row]')].map((r) => r.getAttribute('aria-pressed'))).toEqual(['true', 'false', 'true']);
+  b.unmount();
+});
+
+test('one search rule: every select modal hides search at 6 options or fewer, unless forced', () => {
+  const cases = [[3, undefined, false], [7, undefined, true], [3, true, true], [9, false, false]] as const;
+  for (const [n, forced, shown] of cases) {
+    const m = mount(<MultiSelectModal routeKey={`m-${n}-${forced}`} label="X" items={opts(n)} value={[]} onChange={() => {}} searchable={forced} />);
+    click(m.host.querySelector('button')!);
+    expect(!!searchBox()).toBe(shown);
+    m.unmount();
+  }
 });

@@ -55,7 +55,7 @@ interface Common<T extends string> {
   triggerIcon?: boolean;
   /** Content before the chosen label in the trigger (a status icon, "Simulated ·"): one button reads "prefix label". Single only. */
   triggerPrefix?: ComponentChildren;
-  /** Search field in the modal. Default: only when the list has more than 6 options. */
+  /** Search field in the modal. Default: only when the list has more than `SEARCH_HIDDEN_UP_TO` (6) options, as every kit select modal. */
   searchable?: boolean;
   /** Sortable columns beside the pinned primary column, as the main app's chain modal (`Network / Chain ID`). */
   sortColumns?: SelectionSortColumn[];
@@ -65,9 +65,6 @@ interface Common<T extends string> {
   /** Sections of the list (rows carry `group`): a chain heading its pools; empty sections show their `note`. */
   groups?: readonly SelectionGroup[];
 }
-
-/** Lists up to this many options hide the search field. */
-const SEARCH_MIN = 6;
 
 const toItem = <T extends string>(i: SelectModalItem<T>): SelectionItem => ({ id: i.value, label: i.label, caption: i.caption, note: i.note, badge: i.detail, icon: i.icon, disabled: i.disabled, data: i.data, group: i.group });
 
@@ -88,7 +85,7 @@ export function SelectModal<T extends string>({ value, onChange, items, label, t
         onClose={() => setOpen(false)}
         title={title ?? label}
         searchPlaceholder={searchPlaceholder}
-        searchable={searchable ?? items.length > SEARCH_MIN}
+        searchable={searchable}
         items={sel}
         selectedIds={value ? [value] : []}
         onSelect={(ids) => { const v = (Array.isArray(ids) ? ids[0] : ids) as T | undefined; setOpen(false, v !== undefined ? () => onChange(v) : undefined); }}

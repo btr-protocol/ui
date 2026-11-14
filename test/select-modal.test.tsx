@@ -57,7 +57,7 @@ test('closing after a pick pops exactly one history entry (select close + modal 
 test('MultiSelectModal: Select All picks only the filtered, enabled rows', async () => {
   const got: string[][] = [];
   const list = [{ value: 'a', label: 'Alpha' }, { value: 'b', label: 'Gamma' }, { value: 'c', label: 'Ogamma' }, { value: 'd', label: 'Gamma off', disabled: true }, { value: 'e', label: 'Beta' }];
-  const { host, unmount } = mount(<MultiSelectModal routeKey="t-all" label="Pools" items={list} value={['e']} onChange={(v) => got.push(v)} />);
+  const { host, unmount } = mount(<MultiSelectModal routeKey="t-all" searchable label="Pools" items={list} value={['e']} onChange={(v) => got.push(v)} />);
   click(trigger(host));
   const input = document.querySelector<HTMLInputElement>('[role=dialog] input')!;
   act(() => { input.value = 'gam'; input.dispatchEvent(new Event('input', { bubbles: true })); input.dispatchEvent(new Event('change', { bubbles: true })); });
@@ -74,7 +74,7 @@ test('SelectModal/MultiSelectModal: triggerIcon, triggerLabel and a wrapped note
   const one = mount(<SelectModal routeKey="t-ti" label="Safe" items={list} value="a" onChange={() => {}} triggerIcon />);
   expect(one.host.querySelector('[data-testid=ic]')).not.toBeNull();
   one.unmount();
-  const many = mount(<MultiSelectModal routeKey="t-tl" label="Tokens" items={list} value={['b']} onChange={() => {}} triggerLabel="1 of 2 tokens selected" />);
+  const many = mount(<MultiSelectModal routeKey="t-tl" searchable label="Tokens" items={list} value={['b']} onChange={() => {}} triggerLabel="1 of 2 tokens selected" />);
   expect(trigger(many.host).textContent).toContain('1 of 2 tokens selected');
   click(trigger(many.host));
   expect(dialog()!.textContent).toContain('no role on this chain');
@@ -139,7 +139,7 @@ test('MultiSelectModal groups + presets: sections in order, empty section shows 
   ];
   const groups = [{ id: '56', label: 'BNB Chain' }, { id: '1', label: 'Ethereum', note: 'DEX not deployed' }, { id: '143', label: 'Monad' }];
   const presets = [{ id: 'all', label: 'Whole DEX', ids: legs.map((l) => l.value) }, { id: 'usdc', label: 'USDC', ids: ['m:a'] }];
-  const { host, unmount } = mount(<MultiSelectModal routeKey="t-groups" label="Scope" items={legs} value={[]} groups={groups} presets={presets} onChange={(v) => got.push(v)} />);
+  const { host, unmount } = mount(<MultiSelectModal routeKey="t-groups" searchable label="Scope" items={legs} value={[]} groups={groups} presets={presets} onChange={(v) => got.push(v)} />);
   click(trigger(host));
   const heads = [...document.querySelectorAll<HTMLElement>('[role=dialog] [data-group]')];
   expect(heads.map((h) => h.dataset.group)).toEqual(['56', '1', '143']);
@@ -157,7 +157,7 @@ test('MultiSelectModal groups + presets: sections in order, empty section shows 
 test('presets never select phantom or disabled ids; a noted section takes no picks; min is kept', async () => {
   const got: string[][] = [];
   const list = [{ value: 'a', label: 'A1', group: 'x' }, { value: 'b', label: 'B1', group: 'y' }];
-  const { host, unmount } = mount(<MultiSelectModal routeKey="t-phantom" label="S" items={list} value={[]} groups={[{ id: 'x', label: 'X' }, { id: 'y', label: 'Y', note: 'off' }]} presets={[{ id: 'p', label: 'Ghost', ids: ['zz'] }, { id: 'q', label: 'Mix', ids: ['a', 'zz'] }]} onChange={(v) => got.push(v)} />);
+  const { host, unmount } = mount(<MultiSelectModal routeKey="t-phantom" searchable label="S" items={list} value={[]} groups={[{ id: 'x', label: 'X' }, { id: 'y', label: 'Y', note: 'off' }]} presets={[{ id: 'p', label: 'Ghost', ids: ['zz'] }, { id: 'q', label: 'Mix', ids: ['a', 'zz'] }]} onChange={(v) => got.push(v)} />);
   click(trigger(host));
   const btn = (label: string) => [...document.querySelectorAll<HTMLButtonElement>('[role=dialog] button')].find((b) => b.textContent?.trim() === label)!;
   expect(btn('Ghost').disabled).toBe(true);

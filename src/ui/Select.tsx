@@ -361,7 +361,7 @@ export function Dropdown<T = string>({
 
   const panelContent = (
     <>
-      <div className="max-h-64 overflow-y-auto">
+      <div className="max-h-64 overflow-y-auto" role="listbox" aria-multiselectable={mode === 'multi' || undefined}>
         {items.map((item) => {
           const selectableItems = items.filter((i) => !i.disabled);
           const selectableIdx = selectableItems.findIndex((i) => i.value === item.value);
@@ -392,6 +392,8 @@ export function Dropdown<T = string>({
                 {...(item.href
                   ? { href: item.href, target: '_blank', rel: 'noopener noreferrer' }
                   : { type: 'button', disabled })}
+                role="option"
+                aria-selected={selected}
                 aria-label={typeof item.label === 'string' ? item.label : undefined}
                 onClick={(e: MouseEvent) => {
                   if (item.href) {
@@ -552,12 +554,15 @@ interface SelectionModalProps {
   presets?: readonly SelectionPreset[];
 }
 
+/** A modal list of this many options or fewer shows no search field (`searchable` forces it either way). */
+export const SEARCH_HIDDEN_UP_TO = 6;
+
 export function SelectionModal({
   isOpen,
   onClose,
   title,
   searchPlaceholder = 'Search...',
-  searchable = true,
+  searchable: searchableProp,
   items,
   selectedIds,
   onSelect,
@@ -580,6 +585,7 @@ export function SelectionModal({
   presets,
 }: SelectionModalProps) {
   const L = { ...SELECTION_LABELS, ...labels };
+  const searchable = searchableProp ?? items.length > SEARCH_HIDDEN_UP_TO;
   const [search, setSearch] = useState('');
   const [tempSelected, setTempSelected] = useState<string[]>(selectedIds);
   useEffect(() => {
@@ -635,7 +641,7 @@ export function SelectionModal({
   const allOn = (ids: readonly string[]) => { const on = live(ids); return on.length > 0 && on.every((id) => tempSelected.includes(id)); };
 
   const view = useSelectionView({
-    items, search, selected: tempSelected, onToggle: handleToggle, onToggleMany: isMulti ? toggleMany : undefined, filterFn, sortColumns, primaryColumnLabel, initialSort, resetKey: isOpen, groups, enabled: isOpen, emptyMessage,
+    items, search, selected: tempSelected, onToggle: handleToggle, onToggleMany: isMulti ? toggleMany : undefined, filterFn, sortColumns, primaryColumnLabel, initialSort, resetKey: isOpen, groups, enabled: isOpen, multi: isMulti, emptyMessage,
     onResetFilters: onResetFilters || (() => setSearch('')), hasActiveFilters, labels,
   });
 
@@ -656,6 +662,26 @@ export function SelectionModal({
     onSelect(tempSelected);
     onClose();
   };
+
+  // No search field: the arrows rove the rows (the keys are the card's, not an input's) and focus starts on the picked row, else the first.
+  const rowEls = (card: ParentNode) => [...card.querySelectorAll<HTMLElement>('[data-sel-row]:not(:disabled)')];
+  const rowKeys = (e: KeyboardEvent) => {
+    if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
+    const rows = rowEls(e.currentTarget as HTMLElement);
+    if (!rows.length) return;
+    e.preventDefault();
+    const at = rows.indexOf(document.activeElement as HTMLElement);
+    rows[(at + (e.key === 'ArrowDown' ? 1 : -1) + rows.length) % rows.length]!.focus();
+  };
+  useEffect(() => {
+    if (!isOpen || searchable) return;
+    const t = setTimeout(() => {
+      const card = document.querySelector<HTMLElement>('[role=dialog]:last-of-type');
+      const rows = card ? rowEls(card) : [];
+      (rows.find((r) => r.getAttribute('aria-current') === 'true' || r.getAttribute('aria-pressed') === 'true') ?? rows[0])?.focus();
+    }, 50);
+    return () => clearTimeout(t);
+  }, [isOpen, searchable]);
 
   // One block ABOVE the scroller, not a sticky pinned inside it: whatever the surface put above
   // the list - identity row, sort header, or both stacked - is a sibling of the rows, so the
@@ -692,6 +718,7 @@ export function SelectionModal({
       searchValue={search}
       onSearchChange={setSearch}
       onSearchKeyDown={view.keyDown}
+      onBodyKeyDown={searchable ? undefined : rowKeys}
       size={size}
       headerRight={headerRight}
       bodyHeader={pinnedHeader}

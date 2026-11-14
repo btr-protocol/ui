@@ -1,6 +1,6 @@
 // Page for test/rules.browser.test.tsx: the button/menu/select rules in a real browser. ?v=group|menu|select|dropdown opens one.
 import { render } from 'preact';
-import { Button, ButtonGroup, ClickMenu, Dropdown, Icon, SelectModal } from '../../src/ui';
+import { Button, ButtonGroup, ClickMenu, ConfirmSheet, Dropdown, Icon, SegmentedControl, SelectModal } from '../../src/ui';
 
 const q = new URLSearchParams(location.search);
 const v = q.get('v');
@@ -12,7 +12,31 @@ const items = [
 ];
 const many = Array.from({ length: 9 }, (_, i) => ({ value: `v${i}`, label: `Option ${i}` }));
 
+const sized = q.get('size') as 'xs' | 'sm' | 'default' | null;
+
 function App() {
+  if (v === 'confirm') return <ConfirmSheet open title="Confirm" onClose={() => {}} onConfirm={() => {}} confirmLabel="Confirm and sign" />;
+  if (v === 'sort')
+    return (
+      <SelectModal routeKey="sort" label="Token" value="a" onChange={() => {}} searchable
+        sortColumns={[{ key: 'bal', label: 'Balance', fmt: (x) => String(x ?? '') }]}
+        items={items.map((i, n) => ({ ...i, data: { bal: 100 * (n + 1) + 0.5 } }))} />
+    );
+  if (v === 'strip')
+    return (
+      <div id="strip" style={{ width: 200 }}>
+        <SegmentedControl aria-label="Range" value="a" onChange={() => {}} options={[{ value: 'a', label: 'Short' }, { value: 'b', label: 'A tab label much wider than the strip' }]} />
+      </div>
+    );
+  if (v === 'flex')
+    return (
+      <div id="row" style={{ display: 'flex', width: 130 }} className="p-2">
+        <Button size="sm" id="count">{12} items selected in the list</Button>
+        <Button size="sm" id="mixed">Pick <b>all</b> of them now</Button>
+        <Button size="sm" id="fits" className="shrink-0">OK</Button>
+      </div>
+    );
+  if (v === 'dropdown' && sized) return <div className="p-4"><Dropdown size={sized} value="a" onChange={() => {}} items={items} /></div>;
   if (v === 'group')
     return (
       <div id="host" style={{ width: q.get('w') ? `${q.get('w')}px` : '100%' }} className="p-2">

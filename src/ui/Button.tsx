@@ -37,7 +37,7 @@ import { cva } from '../lib/cva';
  * never override padding or text-size classes on a call site; tune width with
  * min-w only.
  */
-import type { ComponentChildren } from 'preact';
+import { type ComponentChildren, Fragment } from 'preact';
 import type { HTMLAttributes, Ref } from 'preact/compat';
 import { forwardRef } from 'preact/compat';
 
@@ -83,6 +83,19 @@ const buttonVariants = cva(
     },
   },
 );
+
+/** Does a label mix text into its children (`{n} items`, text + an element, a fragment of those)? Then it is wrapped to truncate. */
+const hasText = (c: ComponentChildren): boolean =>
+  Array.isArray(c) ? c.some(hasText) : typeof c === 'string' || typeof c === 'number' || (typeof c === 'object' && c !== null && (c as { type?: unknown }).type === Fragment && hasText((c as { props: { children?: ComponentChildren } }).props.children));
+
+/** `title` only while the label is cut: measured on hover / focus, never set on a label that fits. */
+const titleIfCut = (e: Event) => {
+  const btn = e.currentTarget as HTMLElement;
+  const label = btn.querySelector<HTMLElement>(':scope > [data-label]');
+  if (!label || btn.dataset.ownTitle) return;
+  if (label.scrollWidth > label.clientWidth) btn.title = label.textContent ?? '';
+  else btn.removeAttribute('title');
+};
 
 const PADDING_X = {
   xs: { base: 'px-2', left: 'pl-1.5', right: 'pr-1.5' },
@@ -143,7 +156,11 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     });
 
     // Hooks for the group rules (button-group.css): icon cells stay compact squares, the primary takes the spare width.
-    const groupAttrs = { 'data-icon-only': isIconOnly || undefined, 'data-primary': variant === 'primary' || undefined };
+    const fit = (h?: (e: never) => void) => (e: Event) => { titleIfCut(e); (h as ((e: Event) => void) | undefined)?.(e); };
+    const groupAttrs = {
+      'data-own-title': props.title ? 'true' : undefined,
+      onMouseEnter: fit(props.onMouseEnter as never),
+      onFocus: fit(props.onFocus as never), 'data-icon-only': isIconOnly || undefined, 'data-primary': variant === 'primary' || undefined };
 
     const content = (
       <>
@@ -152,7 +169,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
             {leftIcon}
           </span>
         )}
-        {typeof children === 'string' || typeof children === 'number' ? <span className="min-w-0 truncate">{children}</span> : children}
+        {hasText(children) ? <span data-label="" className="min-w-0 truncate">{children}</span> : children}
         {rightIcon && <span className="shrink-0 text-fg-3">{rightIcon}</span>}
       </>
     );
@@ -163,8 +180,8 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         <a
           href={href}
           className={classes}
-          {...groupAttrs}
           {...rest}
+          {...groupAttrs}
           onClick={(e) => {
             onClick?.(e);
             // Same-origin paths route in-app (no reload); modified clicks and external URLs stay native anchors.
@@ -188,7 +205,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     }
 
     return (
-      <button ref={ref} className={classes} {...groupAttrs} {...props}>
+      <button ref={ref} className={classes} {...props} {...groupAttrs}>
         {content}
       </button>
     );

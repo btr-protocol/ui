@@ -39,7 +39,8 @@ export function ClickMenu({ trigger, items, side = 'top' }: { trigger: Component
     e.preventDefault();
     list[to]!.focus();
   };
-  const row = (it: ClickMenuItem) => cn('flex min-h-10 touch:min-h-11 w-full items-center gap-2 px-3 text-left text-sm hover:bg-bg-2 disabled:opacity-50', it.tone === 'danger' ? 'text-red' : 'text-fg-0');
+  const row = (it: ClickMenuItem) => cn('flex min-h-10 touch:min-h-11 w-full items-center gap-2 px-3 text-left text-sm hover:bg-bg-2 focus-visible:-outline-offset-2 disabled:opacity-50', it.tone === 'danger' ? 'text-red' : 'text-fg-0');
+  const role = (it: ClickMenuItem) => (it.selected === undefined ? 'menuitem' : 'menuitemradio');
   const body = (it: ClickMenuItem) => (it.selected === undefined ? it.label : <><span className="min-w-0 flex-1 truncate">{it.label}</span>{it.selected && <SelectedCheck />}</>);
   return (
     <FloatingPanel
@@ -52,9 +53,9 @@ export function ClickMenu({ trigger, items, side = 'top' }: { trigger: Component
         <div role="menu" ref={mount} onKeyDown={onKeyDown} className="flex min-w-44 flex-col">
           {items.map((it) =>
             it.href ? (
-              <a key={it.id} role="menuitem" href={it.href} className={row(it)}>{body(it)}</a>
+              <a key={it.id} role={role(it)} aria-checked={it.selected} href={it.href} className={row(it)}>{body(it)}</a>
             ) : (
-              <button key={it.id} type="button" role={it.selected === undefined ? 'menuitem' : 'menuitemradio'} aria-checked={it.selected} disabled={it.disabled} className={row(it)} onClick={it.onSelect}>{body(it)}</button>
+              <button key={it.id} type="button" role={role(it)} aria-checked={it.selected} disabled={it.disabled} className={row(it)} onClick={it.onSelect}>{body(it)}</button>
             ),
           )}
         </div>

@@ -75,6 +75,8 @@ export interface BaseModalProps {
   onSearchChange?: (value: string) => void;
   /** For headerType='input': onKeyDown handler */
   onSearchKeyDown?: (e: JSX.TargetedKeyboardEvent<HTMLInputElement>) => void;
+  /** Keys that reach the card (a list without a search field roves its rows with the arrows). */
+  onBodyKeyDown?: (e: KeyboardEvent) => void;
   /** For headerType='input': extra attributes (combobox ARIA) spread on the input. */
   inputProps?: JSX.IntrinsicElements['input'];
   /** For headerType='input': content rendered left of the input (scope chip). */
@@ -108,6 +110,7 @@ export function BaseModal({
   searchValue,
   onSearchChange,
   onSearchKeyDown,
+  onBodyKeyDown,
   inputProps,
   inputPrefix,
   contrastHeader = true,
@@ -259,6 +262,7 @@ export function BaseModal({
         ref={cardRef}
         data-closing={closing || undefined}
         tabIndex={-1}
+        onKeyDown={onBodyKeyDown}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}

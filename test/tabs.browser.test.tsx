@@ -249,7 +249,7 @@ t('touch: only strip tabs drop the 44 px hit-area; panel and top-level ButtonGro
     expect(await after('#panelgrp [role=tablist] [role=tab]')).toEqual(['0px', '0px']);
     expect(await after('#fit-xs [role=tablist] [role=tab]')).toEqual(['0px', '0px']);
         const s = await page.evaluate(() => { const c = getComputedStyle(document.querySelector('#panelgrp [role=tabpanel] [role=group] button:last-child')!); return { grow: c.flexGrow, shrink: c.flexShrink, ws: c.whiteSpace }; });
-    // Computed styles (not a rendered wrap): flex 0 1 auto, as in any plain ButtonGroup; its label never wraps (a Button is one line, truncating).
+    // Computed styles: flex 0 1 auto as in any plain ButtonGroup, and the label never wraps (a Button is one line).
     expect(s).toEqual({ grow: '0', shrink: '1', ws: 'nowrap' });
   }));
 
