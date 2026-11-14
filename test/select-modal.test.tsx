@@ -105,11 +105,12 @@ test('Expandable bordered: own border + nesting radius, flat stays a divider row
   b.unmount();
 });
 
-test('ChainSelect: all-chains scope is a pinned row (not a list row); chain rows are rounded squares', () => {
+test('ChainSelect: all-chains scope is a pinned row (not a list row); chain rows are rounded squares', async () => {
   const picked: string[] = [];
   const { host, unmount } = mount(<ChainSelect routeKey="t-chain" chains={[{ id: 143, name: 'Monad' }, { id: 1, name: 'Ethereum' }]} value={null} allLabel="All networks" onAll={() => picked.push('all')} onChange={(c) => picked.push(String(c))} />);
   expect(host.querySelector('button')!.textContent).toContain('All networks');
   click(host.querySelector('button')!);
+  await until(() => !!dialog()?.textContent?.includes('Monad')); // the modal chunk loads on first open
   expect(document.querySelector('[role=dialog]')!.innerHTML).toContain('rounded-xs');
   const rows = [...document.querySelectorAll<HTMLElement>('[role=dialog] [role=option], [role=dialog] button')];
   expect(rows.some((r) => r.textContent?.includes('All networks') && r.querySelector('svg'))).toBe(true); // icon slot like the other rows

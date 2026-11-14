@@ -110,6 +110,22 @@ export function axisDecimals(span: number): number {
   return Math.min(8, Math.max(0, Math.ceil(-Math.log10(span / 50) - 1e-9)));
 }
 
+/** A price a ladder already printed (`base`, e.g. the SDK `formatPrice`) with the decimals the axis
+ *  `span` needs when the ladder has fewer: a stable pair at 1.0000 prints 1.00002, 1.00004 instead
+ *  of one label at every tick. Digits past the ladder's own decimals lose their trailing zeros; a
+ *  ladder that already tells the ticks apart (or has no plain decimals) is returned as is. */
+export function atSpan(base: string, v: number, span: number | undefined): string {
+  if (span == null || !Number.isFinite(v) || !/^-?[\d,]+(\.\d+)?$/.test(base)) return base;
+  const dp = axisDecimals(span);
+  const own = base.split('.')[1]?.length ?? 0;
+  if (dp <= own) return base;
+  const full = v.toLocaleString('en-US', { minimumFractionDigits: dp, maximumFractionDigits: dp });
+  const keep = full.length - (dp - own);
+  let end = full.length;
+  while (end > keep && full[end - 1] === '0') end--;
+  return full.slice(0, end);
+}
+
 /** Value formatter of one metric format. `span` = the height of the axis the value sits on (max -
  *  min of the autoscaled range): a format whose default decimals are too coarse for that span
  *  prints more, never fewer (`axisDecimals`). Without it the format's fixed ladder applies. */
@@ -131,7 +147,10 @@ function compactAt(v: number, span: number, usd: boolean): string {
   const [d, unit] = compactUnit(Math.abs(v));
   const dp = axisDecimals(span / d);
   if (dp <= 2) return usd ? formatCurrencyCompact(v) : formatCompact(v);
-  const body = (Math.abs(v) / d).toLocaleString('en-US', { minimumFractionDigits: dp, maximumFractionDigits: dp });
+  // Digits past the ladder's own 2dp lose their trailing zeros: "$400.00" stays, "$400.0001" shows.
+  const body = (Math.abs(v) / d)
+    .toLocaleString('en-US', { minimumFractionDigits: dp, maximumFractionDigits: dp })
+    .replace(/(\.\d{2}\d*?)0+$/, '$1');
   return `${v < 0 ? '-' : ''}${usd ? '$' : ''}${body}${unit}`;
 }
 
@@ -141,8 +160,8 @@ function compactAt(v: number, span: number, usd: boolean): string {
  *  yield already read distinctly or are whole things. */
 function formatRaw(format: MetricValueFormat, span = 0): (v: number) => string {
   const decimals = axisDecimals(span);
-  // Same compact $ ladder as AssetBars / StatTile (`usd()`): always 2 fraction digits
-  // so axis ticks and the projected last-value label match ($280.00K, $400.00).
+  // Same compact $ ladder as AssetBars / StatTile (`usd()`): 2 fraction digits ($280.00K); a span
+  // too thin for 2dp prints more, trimmed of trailing zeros past the 2nd ($400.0001, never $400.0100).
   if (format === 'usd') return (v) => compactAt(v, span, true);
   // Same ratio formatter the metric tiles use; a chart axis and the tile above it
   // disagreeing about decimals is how "3.68%" ended up next to "3.7%". A span too thin for its

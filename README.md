@@ -67,7 +67,7 @@ Exports: `.`, `./ui`, `./layout`, `./wallet`, `./styles`, `./styles/tokens.css`,
 Needs peer `@btr-protocol/sdk` (formatters).
 
 - Formatters (`lib/format`, from the index): `formatUsd`/`formatQty` (auto by magnitude, the one implementation), SDK `formatCompact/Number/Price/Currency/CurrencyCompact/Percent/PercentSig/Yield/Units`, `parseUnits`; metrics `DASH num fmtUsd fmtSignedPct fmtCount fmtRatio fmtApr fmtAge fmtFixed fmtWindowMs feeSplit weightedRate`; amounts `formatBalance formatAmount parseAmountInput formatAmountDisplay parseAmountToBig useAmountInput`. Numbers font: `className="font-numeric"`.
-- Chains: `chainIcon(idOrSlug, {mono?})`, `chainSlug`, `ChainGlyph`, `ChainSelect`, `ChainSelectModal`, `chainSelectItems` (props: `{id,name,icon?,explorer?,testnet?,planned?}[]`).
+- Chains: `chainIcon(idOrSlug, {mono?})`, `chainSlug`, `ChainGlyph`, `ChainSelect`, `ChainSelectModal`, `chainSelectItems` (mainnets, planned last; `includeTestnets`; props: `{id,name,icon?,explorer?,testnet?,planned?}[]`).
 - Forms: `MultiInput`, `SettingRow`, `Slider`, `PercentLadderSlider`, `Field` (label, hint, error, `maxW`).
 
 ## 0.4 additions (master-detail kit)

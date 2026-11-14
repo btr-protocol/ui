@@ -1,22 +1,25 @@
 import type { ComponentChildren } from 'preact';
-import { useMemo, useState } from 'preact/hooks';
+import type { ComponentProps } from 'preact';
+import { useEffect, useState } from 'preact/hooks';
 import { useOpen } from '../lib/modalRoute';
 import { chainIcon } from '../lib/chainIcon';
 import { cn } from '../lib/cn';
+import { BaseModal, MODAL_PADDING } from './BaseModal';
 import { Button } from './Button';
 import { Icon } from './Icon';
-import { type SelectionItem, type SelectionSortColumn, SelectionModal } from './Select';
+import type { SelectionItem, SelectionSortColumn } from './Select';
 import { StackedIcons } from './StackedIcons';
-import { Switch } from './Switch';
 
 /** A chain a picker offers. `icon` overrides the bundled mark (see `chainIcon`). */
 export interface ChainItem {
   id: number;
   name: string;
   icon?: ComponentChildren;
+  /** Mark on the trigger button, when it differs from the list row's `icon` (a larger role). */
+  triggerIcon?: ComponentChildren;
   explorer?: string;
   testnet?: boolean;
-  /** Roadmap entry: hidden unless "Planned" is on, then disabled and captioned. Default false. */
+  /** Roadmap entry (no deployment yet): listed after the live chains, disabled and captioned. Default false. */
   planned?: boolean;
 }
 
@@ -86,16 +89,17 @@ function ChainIdBadge({ chainId }: { chainId: number }) {
 export const CHAIN_SORT_COLUMNS: SelectionSortColumn[] = [{ key: 'chainId', label: 'Chain ID' }];
 
 /**
- * The chain list as `SelectionItem`s for `SelectionModal`. One row per chain; planned entries only
- * with `includePlanned`, disabled and captioned. The pinned `Network / Chain ID` header is the
- * heading: do not prepend rows.
+ * The chain list as `SelectionItem`s for `SelectionModal`. One row per chain: every mainnet,
+ * deployed ones first, then the planned ones (disabled and captioned); testnets only with
+ * `includeTestnets`. The pinned `Network / Chain ID` header is the heading: do not prepend rows.
  */
 export function chainSelectItems(
   chains: readonly ChainItem[],
-  { includePlanned = false }: { includePlanned?: boolean } = {},
+  { includeTestnets = false }: { includeTestnets?: boolean } = {},
 ): SelectionItem[] {
   return chains
-    .filter((chain) => !chain.planned || includePlanned)
+    .filter((chain) => !chain.testnet || includeTestnets)
+    .sort((a, b) => Number(!!a.planned) - Number(!!b.planned))
     .map((chain) => ({
       id: String(chain.id),
       label: chain.name,
@@ -105,90 +109,6 @@ export function chainSelectItems(
       data: { chainId: chain.id, testnet: !!chain.testnet },
       badge: <ChainIdBadge chainId={chain.id} />,
     }));
-}
-
-const ALL_ID = '__all__';
-
-interface ChainSelectModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  chains: readonly ChainItem[];
-  /** Selected chain id, or null when the wallet is on a chain this list does not carry (or, with `allLabel`, "all chains"). */
-  value: number | null;
-  onSelect: (chainId: number) => void;
-  /** An "all chains" scope: a row pinned above the list (never a synthetic list row), picked with `onAll`. */
-  allLabel?: string;
-  onAll?: () => void;
-  title?: string;
-  /** Row pinned above the list. */
-  listHeader?: ComponentChildren;
-  size?: 'sm' | 'md';
-}
-
-/** THE chain modal: pinned sortable `Network / Chain ID` header, "Planned" switch (shown when the
- *  list has planned chains). The current selection is never hidden. */
-export function ChainSelectModal({
-  isOpen,
-  onClose,
-  chains,
-  value,
-  onSelect,
-  title = 'Select network',
-  listHeader,
-  size = 'sm',
-  allLabel,
-  onAll,
-}: ChainSelectModalProps) {
-  const [showPlanned, setShowPlanned] = useState(false);
-  const hasPlanned = chains.some((c) => c.planned);
-  const items: SelectionItem[] = useMemo(() => {
-    const shown = chainSelectItems(chains, { includePlanned: showPlanned });
-    // "All chains" is a real, pinned row: same icon slot, in the arrow-key order, selected like any other.
-    const all: SelectionItem[] = allLabel && onAll ? [{ id: ALL_ID, label: allLabel, pinned: true, icon: <span aria-hidden="true" className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xs bg-bg-3 text-fg-1 ring-1 ring-bg-0"><Icon name="globe" className="h-5 w-5" /></span> }] : [];
-    if (showPlanned || value == null || shown.some((item) => Number(item.id) === value)) {
-      return [...all, ...shown];
-    }
-    return [...all, ...chainSelectItems(chains, { includePlanned: true }).filter(
-      (item) => Number(item.id) === value || !item.disabled,
-    )];
-  }, [chains, showPlanned, value, allLabel, onAll]);
-
-  return (
-    <SelectionModal
-      isOpen={isOpen}
-      onClose={onClose}
-      title={title}
-      searchPlaceholder="Search networks…"
-      items={items}
-      selectedIds={value == null ? (allLabel && onAll ? [ALL_ID] : []) : [String(value)]}
-      onSelect={(id) => {
-        const raw = Array.isArray(id) ? id[0] : id;
-        if (raw === ALL_ID) { onClose(); onAll?.(); return; }
-        const chainId = Number(raw);
-        onClose();
-        if (Number.isFinite(chainId)) onSelect(chainId);
-      }}
-      sortColumns={CHAIN_SORT_COLUMNS}
-      primaryColumnLabel="Network"
-      listHeader={listHeader}
-      emptyMessage="No networks match"
-      hasActiveFilters={showPlanned}
-      onResetFilters={() => setShowPlanned(false)}
-      headerRight={
-        hasPlanned ? (
-          <label className="flex items-center gap-1.5 cursor-pointer">
-            <span className="text-xs uppercase tracking-wide text-fg-2 max-sm:hidden">Planned</span>
-            <Switch
-              checked={showPlanned}
-              onCheckedChange={setShowPlanned}
-              aria-label="Show planned networks"
-            />
-          </label>
-        ) : undefined
-      }
-      size={size}
-    />
-  );
 }
 
 interface ChainSelectProps {
@@ -203,9 +123,55 @@ interface ChainSelectProps {
   routeKey?: string;
 }
 
+type ModalProps = ComponentProps<typeof import('./ChainSelectModal').ChainSelectModal>;
+type ModalModule = typeof import('./ChainSelectModal');
+const loadModal = (): Promise<ModalModule> => import('./ChainSelectModal');
+
+/** The modal chunk, fetched on first open: one retry on a rejected import, then an inline error with
+ *  a Retry button (never a blank screen); a minimal pending state while it loads. `load` is a test seam. */
+export function ChainSelectModalHost({ load = loadModal, ...props }: ModalProps & { load?: () => Promise<ModalModule> }) {
+  const [mod, setMod] = useState<ModalModule | null>(null);
+  const [failed, setFailed] = useState(false);
+  const [round, setRound] = useState(0);
+  useEffect(() => {
+    let live = true;
+    setFailed(false);
+    const go = (left: number): void => {
+      load().then(
+        (m) => live && setMod(m),
+        () => (left > 0 ? go(left - 1) : live && setFailed(true)),
+      );
+    };
+    go(1);
+    return () => {
+      live = false;
+    };
+  }, [round, load]);
+  if (mod) return <mod.ChainSelectModal {...props} />;
+  if (!props.isOpen) return null;
+  return (
+    <BaseModal isOpen onClose={props.onClose} title={props.title ?? 'Select network'} headerType="title" size="sm">
+      <div className={`${MODAL_PADDING} py-6 text-sm text-fg-2`} role={failed ? 'alert' : 'status'}>
+        {failed ? (
+          <div className="flex items-center justify-between gap-3">
+            <span>Could not load the network list.</span>
+            <Button size="sm" onClick={() => setRound(round + 1)}>
+              Retry
+            </Button>
+          </div>
+        ) : (
+          'Loading networks…'
+        )}
+      </div>
+    </BaseModal>
+  );
+}
+
 /** The standard chain trigger: a button over `ChainSelectModal`. Reports ids only. */
 export function ChainSelect({ chains, value, onChange, title, routeKey, allLabel, onAll }: ChainSelectProps) {
   const [open, setOpen] = useOpen(routeKey);
+  const [seen, setSeen] = useState(false);
+  if (open && !seen) setSeen(true);
   const current = value == null ? undefined : chains.find((c) => c.id === value);
   return (
     <>
@@ -215,23 +181,28 @@ export function ChainSelect({ chains, value, onChange, title, routeKey, allLabel
         onClick={() => setOpen(true)}
         leftIcon={
           current ? (
-            (current.icon ?? <ChainGlyph chainId={current.id} name={current.name} role="trigger" />)
+            (current.triggerIcon ?? current.icon ?? <ChainGlyph chainId={current.id} name={current.name} role="trigger" />)
           ) : undefined
         }
         rightIcon={<Icon name="caret-down" className="w-3.5 h-3.5 text-fg-3 shrink-0" />}
       >
         <span className="truncate max-w-40">{current?.name ?? (value == null ? (allLabel ?? '') : `Chain ${value}`)}</span>
       </Button>
-      <ChainSelectModal
-        isOpen={open}
-        onClose={() => setOpen(false)}
-        chains={chains}
-        value={value}
-        onSelect={(c) => setOpen(false, () => onChange(c))}
-        title={title}
-        allLabel={allLabel}
-        onAll={onAll && (() => setOpen(false, onAll))}
-      />
+      {/* Fetched on first open: the trigger sits in every app header, the modal (list, sort, switch) does not. */}
+      {seen && (
+        <>
+          <ChainSelectModalHost
+            isOpen={open}
+            onClose={() => setOpen(false)}
+            chains={chains}
+            value={value}
+            onSelect={(c) => setOpen(false, () => onChange(c))}
+            title={title}
+            allLabel={allLabel}
+            onAll={onAll && (() => setOpen(false, onAll))}
+          />
+        </>
+      )}
     </>
   );
 }

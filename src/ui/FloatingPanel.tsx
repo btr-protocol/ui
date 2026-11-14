@@ -22,7 +22,7 @@ export interface FloatingPanelProps {
   tooltipMode?: boolean;
   /** Panel carries links: stays hoverable past the trigger, clicks inside survive. */
   interactive?: boolean;
-  /** Classes on the trigger wrapper (not `className`: ButtonGroup clones that onto its children). */
+  /** Classes on the trigger wrapper. */
   wrapClass?: string;
 }
 
@@ -251,8 +251,7 @@ export function Tooltip({
   wrapClass,
   ...props
 }: Omit<FloatingPanelProps, 'mode' | 'tooltipMode'> & {
-  /** Lands on the trigger wrapper: what `ButtonGroup` clones onto a child, so a tooltipped button
-   *  can sit in a group and still take its divider and end rounding. */
+  /** Lands on the trigger wrapper. */
   className?: string;
 }) {
   return <FloatingPanel tooltipMode wrapClass={cn(wrapClass, className)} {...props} />;

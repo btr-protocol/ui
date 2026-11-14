@@ -8,6 +8,7 @@ export * from './ButtonGroup';
 export * from './Checkbox';
 export * from './classes';
 export * from './ChainSelect';
+export * from './ChainSelectModal';
 export * from './ChainMultiSelect';
 export * from './ClickMenu';
 export * from './CloseButton';

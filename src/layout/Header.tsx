@@ -1,7 +1,9 @@
+import { useMedia } from '../lib/useMedia';
 import type { ComponentChildren } from 'preact';
 import { LOGO_URL } from '../lib/assets';
 import { cn } from '../lib/cn';
 import { Button } from '../ui/Button';
+import { ButtonGroup } from '../ui/ButtonGroup';
 import { Tooltip } from '../ui/FloatingPanel';
 import { Icon } from '../ui/Icon';
 import { MaskIcon } from '../ui/MaskIcon';
@@ -50,6 +52,9 @@ export function HeaderTool({
   desktopOnly,
   children,
 }: HeaderToolProps) {
+  // Rendered only when shown: a CSS-hidden child would leave a stray divider or square corner.
+  const wide = useMedia('(min-width: 1024px)');
+  if (desktopOnly && !wide) return null;
   return (
     <button
       type="button"
@@ -57,8 +62,7 @@ export function HeaderTool({
       aria-label={label}
       title={title ?? label}
       className={cn(
-        'tap-min relative min-w-[var(--ctl-m)] px-2 coarse:px-3 flex items-center justify-center gap-1.5 text-fg-2 hover:bg-bg-3 hover:text-fg-0 transition-colors border-l border-border first:border-l-0 first:rounded-l-sm last:rounded-r-sm',
-        desktopOnly && 'max-lg:hidden',
+        'tap-min relative min-w-[var(--ctl-m)] px-2 coarse:px-3 flex items-center justify-center gap-1.5 text-fg-2 hover:bg-bg-3 hover:text-fg-0 transition-colors',
       )}
     >
       <Icon name={icon} className="w-4 h-4" />
@@ -161,9 +165,7 @@ export function Header({
 
         <div className="flex items-center gap-2">
           {tools && (
-            <div className="flex items-stretch border border-border rounded-sm bg-bg-1 min-h-[var(--ctl-m)]">
-              {tools}
-            </div>
+            <ButtonGroup aria-label="Tools" className="min-h-[var(--ctl-m)]">{tools}</ButtonGroup>
           )}
           {right}
         </div>

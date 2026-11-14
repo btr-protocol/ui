@@ -2,8 +2,9 @@ import { type Address, type Hex, shortAddr } from '../lib/address';
 import { CopyAddressButton } from './AddrActions';
 import type { ComponentChildren } from 'preact';
 import { useEffect, useState } from 'preact/hooks';
-import { BaseModal } from './BaseModal';
+import { BaseModal, MODAL_PADDING } from './BaseModal';
 import { Button } from './Button';
+import { ButtonGroup } from './ButtonGroup';
 import { HoldButton } from './HoldButton';
 import { Icon } from './Icon';
 
@@ -130,7 +131,7 @@ export function ConfirmSheet({
       headerIcon={<Icon name="warning" className="h-4 w-4 text-warning" />}
       size="md"
       footerControls={
-        <div className="flex w-full gap-2 [&>*]:flex-1">
+        <ButtonGroup aria-label="Actions" className="flex w-full [&>*]:flex-1">
           <Button onClick={onClose}>Cancel</Button>
           <HoldButton
             variant="primary"
@@ -141,10 +142,10 @@ export function ConfirmSheet({
           >
             {confirmLabel}
           </HoldButton>
-        </div>
+        </ButtonGroup>
       }
     >
-      <div className="space-y-2.5 px-4 py-3">
+      <div className={`space-y-2.5 ${MODAL_PADDING} py-3`}>
         {chainId != null && (
           <Row label="Chain">
             <span className={mismatch ? 'text-red' : undefined}>

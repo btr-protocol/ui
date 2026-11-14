@@ -7,6 +7,7 @@ import type { ComponentChildren, JSX } from 'preact';
 import { createPortal } from 'preact/compat';
 import { useEffect, useId, useRef, useState } from 'preact/hooks';
 import { Button, type ButtonVariant } from './Button';
+import { ButtonGroup } from './ButtonGroup';
 import { CloseButton } from './CloseButton';
 import type { InputProps } from './Input';
 import { ScrollPane } from './ScrollPane';
@@ -21,8 +22,12 @@ let preLockOverflow = '';
 const FOCUSABLE =
   'a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])';
 
-// Standard modal padding
-export const MODAL_PADDING = 'px-4';
+/** THE horizontal padding of every modal header, body and footer: the app header's `px-3`. No per-modal override. */
+export const MODAL_PADDING = 'px-3';
+/** Negative margin that cancels MODAL_PADDING (a full-bleed row inside a modal body). */
+export const MODAL_BLEED = '-mx-3';
+/** Page gutter var pinned to MODAL_PADDING for page content mounted inside a modal. */
+export const MODAL_PAGE_X = '[--page-x:0.75rem]';
 
 /** The modal width scale. Nothing outside this set: a one-off max-w-* or a pixel
  *  value is what made every dialog a different width. */
@@ -296,7 +301,7 @@ export function BaseModal({
           {!isSearch && (
             <div className="sm:hidden absolute left-1/2 top-1 h-1 w-9 -translate-x-1/2 rounded-full bg-line" />
           )}
-          <div className="flex items-center gap-2 sm:gap-3 pl-3 pr-3 h-12">
+          <div className={cn('flex items-center gap-2 sm:gap-3 h-12', MODAL_PADDING)}>
             {headerType === 'input' ? (
               <>
                 {inputPrefix}
@@ -452,18 +457,8 @@ export function ModalActions({
     </Button>
   );
   return (
-    <div className={cn('flex gap-2 justify-end', className)}>
-      {reverseOrder ? (
-        <>
-          {confirmButton}
-          {cancelButton}
-        </>
-      ) : (
-        <>
-          {cancelButton}
-          {confirmButton}
-        </>
-      )}
+    <div className={cn('flex justify-end', className)}>
+      <ButtonGroup aria-label="Actions">{reverseOrder ? [confirmButton, cancelButton] : [cancelButton, confirmButton]}</ButtonGroup>
     </div>
   );
 }

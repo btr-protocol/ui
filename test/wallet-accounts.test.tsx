@@ -156,6 +156,7 @@ describe('WalletButton account modal', () => {
     { id: 143, name: 'Monad' },
     { id: 1, name: 'Ethereum' },
     { id: 9999, name: 'Roadmap', planned: true },
+    { id: 11155111, name: 'Sepolia', testnet: true },
   ];
   const open = (props: Parameters<typeof WalletButton>[0]) => {
     const r = mount(<WalletButton {...props} />);
@@ -197,13 +198,15 @@ describe('WalletButton account modal', () => {
     expect(switched).toEqual([OTHER]);
   });
 
-  test('the chain list is the kit ChainSelect list: names, chain ids, planned hidden', async () => {
+  test('the chain list is the kit ChainSelect list: mainnets (planned last), testnets behind the switch', async () => {
     open({ address: SESSION, chainId: 143, chains, accounts: [SESSION], activeAddress: SESSION });
     await until(() => text().includes('Monad'));
     expect(text()).toContain('Ethereum');
     expect(text()).toContain('143');
-    expect(text()).not.toContain('Roadmap');
-    expect(document.body.querySelector('[aria-label="Show planned networks"]')).toBeTruthy();
+    expect(text()).toContain('Roadmap');
+    expect(text()).not.toContain('Sepolia');
+    expect(text().indexOf('Ethereum')).toBeLessThan(text().indexOf('Roadmap'));
+    expect(document.body.querySelector('[aria-label="Show testnets"]')).toBeTruthy();
   });
 });
 

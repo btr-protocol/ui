@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { axisDecimals, formatter, legendText, legendTrim, scaleSpan, seriesSpan, trimZeros } from './metricChartMath';
+import { atSpan, axisDecimals, formatter, legendText, legendTrim, scaleSpan, seriesSpan, trimZeros } from './metricChartMath';
 import { formatCurrencyCompact } from '../lib/format';
 
 // The owner's screenshot: a base-1 index spanning 0.99..1.01 ticked "1.01 1.01 1.01 1 1 1 0.99".
@@ -132,5 +132,27 @@ describe('scaleSpan: the axis span, with its fallback', () => {
   test('a scale with no range yet (null) falls back too', () => {
     expect(scaleSpan(() => null, 3)).toBe(3);
     expect(scaleSpan(() => undefined)).toBeUndefined();
+  });
+});
+
+describe('atSpan', () => {
+  test('a stable pair prints the decimals its axis needs, trimmed to the ladder floor', () => {
+    expect(atSpan('1.0000', 1.00002, 0.0004)).toBe('1.00002');
+    expect(atSpan('1.0000', 1, 0.0004)).toBe('1.0000');
+    expect(atSpan('1.0001', 1.0001, 0.0004)).toBe('1.0001');
+  });
+  test('a ladder that already separates the ticks, or has no plain decimals, is untouched', () => {
+    expect(atSpan('62,500.12', 62500.123, 40)).toBe('62,500.12');
+    expect(atSpan('0.0\u2084123', 0.00000123, 1e-7)).toBe('0.0\u2084123');
+    expect(atSpan('1.0000', 1.00002, undefined)).toBe('1.0000');
+  });
+});
+
+describe('compact ladder at tiny spans', () => {
+  test('digits past the 2dp lose trailing zeros', () => {
+    const f = formatter('usd', 0.0004);
+    expect(f(400)).toBe('$400.00');
+    expect(f(400.0001)).toBe('$400.0001');
+    expect(f(400.01)).toBe('$400.01');
   });
 });
