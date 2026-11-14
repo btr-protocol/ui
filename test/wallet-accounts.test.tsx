@@ -437,6 +437,27 @@ describe('WalletGlyph', () => {
   });
 });
 
+describe('WalletGlyph announced icon and walletIcon keys', () => {
+  test('only a small data:image icon is drawn; https and oversize give the generic glyph', () => {
+    const draw = (icon: string) => {
+      const m = mount(<WalletGlyph id="no-such-wallet" name="Zed" announcedIcon={icon} />);
+      const has = !!document.body.querySelector('img');
+      m.unmount();
+      return has;
+    };
+    expect(draw('data:image/svg+xml,%3Csvg/%3E')).toBe(true);
+    expect(draw('https://evil.example/x.png')).toBe(false);
+    expect(draw(`data:image/png;base64,${'A'.repeat(33 * 1024)}`)).toBe(false);
+    expect(draw('data:text/html,hi')).toBe(false);
+  });
+  test('inherited object keys are not wallets', async () => {
+    const { walletIcon } = await import('../src/lib/walletIcon');
+    expect(walletIcon('constructor')).toBeUndefined();
+    expect(walletIcon('__proto__')).toBeUndefined();
+    expect(walletIcon('rabby')).toBeTruthy();
+  });
+});
+
 describe('ConnectModalHost', () => {
   test('nothing while closed; the lazy modal on open', async () => {
     const { openConnectModal, closeConnectModal } = await import('../src');

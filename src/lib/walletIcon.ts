@@ -38,4 +38,4 @@ const WALLETS: Record<string, readonly [string, string]> = {
 };
 
 /** `[1x, 2x]` raster of a catalog wallet id (`metamask`, `rabby`, …), or undefined for one we do not ship. */
-export const walletIcon = (id: string): readonly [string, string] | undefined => WALLETS[id];
+export const walletIcon = (id: string): readonly [string, string] | undefined => (Object.hasOwn(WALLETS, id) ? WALLETS[id] : undefined);

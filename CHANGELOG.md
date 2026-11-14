@@ -7,6 +7,8 @@
 - A recent stored under a catalog id by an earlier build (not the wallet's rdns) no longer matches an announced wallet: that wallet is shown in Installed and is remembered again, under its rdns, on its next connection. Ids are lowercased before they are stored or matched.
 - New: `removeRecent`, `ambiguousWallets`, `InjectedWallet` (`WalletInfo` + announcement `uuid`), `WalletItemButton` `ariaLabel`, `sectionWallets`, `otherHref`, `OTHER_IDS` (walletSections), `readRecent` / `recordRecent` / `noteUse` / `rankRecent` / `recentEntry` (recentWallets), `WalletTile` (generic action mark in a wallet mark's size). `WalletItemButton` `external` (with `href`: new tab, `noopener noreferrer`).
 - `WalletGlyph`: the generic wallet glyph tile is always drawn under the image (the image fades in on load), and replaces the initial-letter fallback: a slow, missing or blocked image never leaves an empty square.
+- `WalletGlyph` draws an announced icon only when it is a `data:image/` URI of at most 32 KB (anything else, such as an https URL, gets the generic glyph: no request to the announcer's host); `walletIcon` ignores inherited keys such as `constructor`.
+- On a phone Other can list wallets that the closed WalletConnect "Wallet apps" list would also offer: intended, popular wallets stay visible; it is hidden only while that list is open.
 - The waiting-for-wallet actions (Open again, Show QR, Cancel) are one `ButtonGroup`; modal gutters come from `MODAL_PADDING`.
 
 ## 0.10.0

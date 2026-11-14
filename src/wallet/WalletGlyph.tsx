@@ -4,6 +4,9 @@ import { walletIcon } from '../lib/walletIcon';
 import { Icon } from '../ui/Icon';
 import type { ProviderInfo } from './wallet';
 
+/** 32 KB: an announced icon is a data URI of unbounded size. */
+const ANNOUNCED_ICON_MAX = 32 * 1024;
+
 /**
  * A wallet mark, one degradation order: the bundled btr.markets raster for a catalog id (`metamask`, `rabby`, …), then
  * the icon the wallet ANNOUNCED (EIP-6963 data URI: attacker-controlled, so `<img src>` only), then the generic wallet glyph. The glyph tile is always drawn under the image, so a slow or failed load is never an empty square.
@@ -26,7 +29,9 @@ export function WalletGlyph({
   const [stage, setStage] = useState(0);
   const [loadedSrc, setLoadedSrc] = useState<string>();
   useEffect(() => setStage(0), [id, announcedIcon]);
-  const src = stage === 0 && raster ? raster[0] : stage <= 1 && announcedIcon ? announcedIcon : undefined;
+  // The announced icon is the wallet's own data: only a small inline image is drawn, never a request to its host.
+  const announced = announcedIcon && announcedIcon.startsWith('data:image/') && announcedIcon.length <= ANNOUNCED_ICON_MAX ? announcedIcon : undefined;
+  const src = stage === 0 && raster ? raster[0] : stage <= 1 && announced ? announced : undefined;
   // The tile (generic wallet glyph) is always there: a slow, missing or blocked image never leaves an empty square.
   return (
     <span
