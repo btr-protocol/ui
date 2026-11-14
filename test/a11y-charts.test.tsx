@@ -39,7 +39,7 @@ test('TabStrip: roving tabindex, arrows move focus, pin/close are not inside rol
 
 test('TabStrip: Delete closes a focused closable tab, P toggles its pin, pinned tabs do not close', () => {
   const log: string[] = [];
-  const tabs = [{ id: 'a', label: 'A' }, { id: 'b', label: 'B', pinned: true }];
+  const tabs = [{ id: 'a', label: 'A' }, { id: 'b', label: 'B', pinned: true }, { id: 'c', label: 'C', closable: false }];
   const { host, unmount } = mount(<TabStrip tabs={tabs} active="a" onSelect={() => {}} onClose={(id) => log.push(`close:${id}`)} onPin={(id) => log.push(`pin:${id}`)} />);
   const el = (n: number) => [...host.querySelectorAll<HTMLElement>('[role=tab]')][n]!;
   press(el(0), 'p'); // pinned tabs sort first: b, a, c
@@ -47,6 +47,8 @@ test('TabStrip: Delete closes a focused closable tab, P toggles its pin, pinned 
   press(el(0), 'Delete');
   press(el(0), 'Backspace');
   press(el(1), 'Delete');
+  press(el(2), 'Delete');
+  press(el(2), 'p');
   expect(log).toEqual(['pin:b', 'close:a']);
   unmount();
 });
