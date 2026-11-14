@@ -44,7 +44,7 @@ export const CHAIN_ICON_SLUG: Record<number, ChainSlug> = {
   196: 'x-layer',
   999: 'hyperevm',
   4663: 'robinhood',
-  5042: 'arc', 5042002: 'arc',
+  5042: 'arc',
   8453: 'base', 84532: 'base',
   42161: 'arbitrum', 421614: 'arbitrum',
   43114: 'avalanche', 43113: 'avalanche',

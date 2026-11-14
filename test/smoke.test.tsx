@@ -87,7 +87,7 @@ test('formatters: sdk core, metric dash, amount ladder', () => {
 test('chainIcon resolves id, slug and testnet; unknown is undefined', () => {
   expect(chainIcon(8453)).toContain('base.svg');
   expect(chainIcon('bnb-chain', { mono: true })).toContain('bnb-chain-mono.svg');
-  expect(chainIcon(5042002)).toContain('arc.svg');
+  expect(chainIcon(11155111)).toContain('ethereum.svg');
   expect(chainIcon(10)).toContain('optimism.svg');
   expect(chainIcon(999999)).toBeUndefined();
 });
