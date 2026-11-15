@@ -551,7 +551,6 @@ export function Table<Row>({
       value={query}
       onChange={setQuery}
       placeholder={searchPlaceholder}
-      className={title ? 'w-full sm:w-64' : undefined}
     />
   );
 

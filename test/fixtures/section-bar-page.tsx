@@ -5,6 +5,7 @@ import { useState } from 'preact/hooks';
 import { Button } from '../../src/ui/Button';
 import { Icon } from '../../src/ui/Icon';
 import { PanelHeader, PanelTitle } from '../../src/ui/Panel';
+import { SearchField } from '../../src/ui/SearchField';
 import { SearchInput } from '../../src/ui/SearchInput';
 import { SectionBar, SectionBarCell, SectionBarText } from '../../src/ui/SectionBar';
 import { SegmentedControl } from '../../src/ui/SegmentedControl';
@@ -23,8 +24,8 @@ const COLS = [
 ];
 const CHAINS = [{ value: 'monad', label: 'Monad' }, { value: 'base', label: 'Base' }];
 
-const Frame = ({ id, before, children }: { id: string; before?: boolean; children: ComponentChildren }) => (
-  <section id={id} data-before={before || undefined} className="surface bg-bg-1 border border-border rounded-lg shadow-sm overflow-hidden">{children}</section>
+const Frame = ({ id, before, className = '', children }: { id: string; before?: boolean; className?: string; children: ComponentChildren }) => (
+  <section id={id} data-before={before || undefined} className={`${className} surface bg-bg-1 border border-border rounded-lg shadow-sm overflow-hidden`}>{children}</section>
 );
 const Sample = () => (
   <table className="w-full text-sm">
@@ -91,6 +92,28 @@ function Bars({ body }: { body: 'table' | 'card' }) {
   );
 }
 
+function SearchVariants() {
+  const [b, setB] = useState('');
+  const [m, setM] = useState('');
+  const [r, setR] = useState('');
+  const [d, setD] = useState('');
+  const [legacy, setLegacy] = useState('');
+  return (
+    <>
+      <Label>Search: one core, three presentations (bar, modal, boxed)</Label>
+      <div id="sv" className="grid gap-3 sm:grid-cols-2">
+        <Frame id="sv-bar" className="sm:col-span-2"><SectionBar title="bar" search={{ value: b, onChange: setB, placeholder: 'Search pools' }} /><p className="px-3 py-2 text-xs text-fg-2">A cell of the bar: the bar supplies box, corner, divider.</p></Frame>
+        <Frame id="sv-modal"><div className="h-12 border-b border-border bg-bg-1 px-3 flex items-center"><SearchField variant="modal" value={m} onChange={setM} placeholder="Search pools" /></div><p className="px-3 py-2 text-xs text-fg-2">A modal / list header: no box.</p></Frame>
+        <Frame id="sv-boxed"><div className="p-3"><SearchField variant="boxed" value={r} onChange={setR} placeholder="Search pools" /></div><p className="px-3 pb-2 text-xs text-fg-2">Standalone: its own box.</p></Frame>
+      </div>
+      <div id="sv-extra" className="mt-2 grid gap-2 sm:grid-cols-2">
+        <SearchField variant="boxed" value={d} onChange={(v) => { setD(v); (window as unknown as { __deb: string[] }).__deb = [...((window as unknown as { __deb?: string[] }).__deb ?? []), v]; }} debounce={200} placeholder="Debounced" className="sv-deb" />
+        <SearchInput variant="boxed" value={legacy} onChange={setLegacy} placeholder="SearchInput (boxed, kept export)" className="sv-legacy" />
+      </div>
+    </>
+  );
+}
+
 function Before() {
   const [a, setA] = useState('');
   const [tab, setTab] = useState('all');
@@ -113,6 +136,7 @@ render(
   <main style={{ padding: '16px', width: '100%', maxWidth: 960, margin: '0 auto' }}>
     <h1 className="text-lg font-semibold text-fg-0">SectionBar proposal</h1>
     <div id="before"><Before /></div>
+    <SearchVariants />
     <div id="after-table"><Bars body="table" /></div>
     <h2 className="mt-8 text-base font-semibold text-fg-0">In a card section, no table</h2>
     <div id="after-card"><Bars body="card" /></div>

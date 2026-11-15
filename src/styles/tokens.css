@@ -20,6 +20,8 @@
   --ctl-s: 1.5rem;
   --ctl-m: 2rem;
   --ctl-l: 2.5rem;
+  /* Search field width (SearchField bar + boxed): a third of its container, never under 12rem (a legible placeholder) or over 20rem (a table's first two columns). */
+  --search-w: clamp(12rem, 33%, 20rem);
   /* 2xs micro labels (the one size under xs, see lib/design.ts TYPE_SIZES): 11px on desktop, touch floors at 12px. */
   --fs-2xs: 0.6875rem;
 

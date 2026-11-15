@@ -7,7 +7,6 @@
   --sb-h: var(--ctl-m);
   /* Inner radius of a 1px-bordered container (Panel, Table frame): the corner the first/last cell must follow. */
   --sb-r: calc(var(--radius-lg, var(--r, 16px)) - 1px);
-  --sb-search-w: 16rem;
   position: relative;
   display: flex;
   align-items: stretch;
@@ -15,7 +14,8 @@
   height: var(--sb-h);
   min-width: 0;
   overflow: hidden; /* clips the cells to the corner radius; the scroller below does the sideways scroll */
-  background: var(--bg-1);
+  --sb-hover: color-mix(in srgb, var(--fg-0) 7%, var(--bg-3)); /* the hover tone: a step off the bar, in either theme */
+  background: var(--bg-3); /* the table column header's tone (DATA_TABLE_HEADER): bar and column header read as one band */
   border-bottom: var(--border);
   border-start-start-radius: var(--sb-r);
   border-start-end-radius: var(--sb-r);
@@ -65,7 +65,8 @@
 }
 
 /* Control cells: buttons, icon buttons, links and trigger buttons fill the cell edge to edge, flat, no own border or radius. */
-.sb-cell :is(button, a, [role='button']) {
+/* (the search clear button is the search's own, sized by Button xs) */
+.sb-cell :is(button, a, [role='button']):not([data-search-clear]) {
   align-self: stretch;
   height: 100%;
   min-height: 0;
@@ -73,12 +74,12 @@
   border-radius: 0;
   max-width: none;
 }
-.sb-cell :is(button, a, [role='button']):not([data-primary], [aria-selected='true'], [aria-pressed='true'], [disabled]) {
+.sb-cell :is(button, a, [role='button']):not([data-primary], [aria-selected='true'], [aria-pressed='true'], [disabled], [data-search-clear]) {
   background: transparent;
 }
 @media (hover: hover) {
-  .sb-cell :is(button, a, [role='button']):not([data-primary], [aria-selected='true'], [aria-pressed='true'], [disabled]):hover {
-    background: var(--bg-2);
+  .sb-cell :is(button, a, [role='button']):not([data-primary], [aria-selected='true'], [aria-pressed='true'], [disabled], [data-search-clear]):hover {
+    background: var(--sb-hover);
   }
 }
 .sb-cell :is(button, a, [role='button'])[aria-pressed='true'] {
@@ -128,14 +129,15 @@
 /* Search: a cell with the bar's own corner on its outer side. No border or radius of its own. */
 .sb-search {
   flex: none;
-  width: var(--sb-search-w);
-  padding-inline: 0.75rem 0.25rem;
+  width: var(--search-w);
+  padding-inline: 0;
   background: transparent;
   transition: background-color var(--dur-2, 180ms);
 }
-.sb-search > * {
+.sb-search > [data-search-field] {
   flex: 1;
   min-width: 0;
+  padding-inline: 0.75rem 0.25rem;
 }
 .sb-search[data-side='right'] {
   border-start-end-radius: var(--sb-r);
@@ -144,11 +146,7 @@
   border-start-start-radius: var(--sb-r);
 }
 .sb-search:focus-within {
-  background: var(--bg-2);
-  box-shadow: inset 0 0 0 2px var(--fg-primary); /* the kit focus ring, drawn inside the clipped bar */
-}
-.sb-search input:focus-visible {
-  outline: none;
+  background: var(--sb-hover); /* no ring (the modal search has none): the caret and this tone say where focus is */
 }
 .sb-cell.sb-search > .sb-search-btn {
   display: none; /* beats Button's inline-flex */
@@ -177,7 +175,7 @@
     inset-inline: 0;
     z-index: var(--z-index-raised);
     width: auto;
-    background: var(--bg-1);
+    background: var(--bg-3);
     border-inline-start-width: 0;
     border-start-start-radius: var(--sb-r);
     border-start-end-radius: var(--sb-r);

@@ -164,3 +164,83 @@ t('a11y: toolbar is named, search has a name, title is a heading', async () => {
   expect(a.h2).toBe(3);
   await page.close();
 });
+
+// ── ONE search core: every presentation renders the same input contract ──────────────────────────
+const FIELDS = ['#sv-bar [data-search-field]', '#sv-modal [data-search-field]', '#sv-boxed [data-search-field]'];
+
+t('search variants share one input contract (type, name, magnifier, placeholder style, no ring)', async () => {
+  const page = await open(1440);
+  const r = await page.evaluate((sels) => sels.map((s) => {
+    const f = document.querySelector(s)!, i = f.querySelector('input')!; i.focus(); const cs = getComputedStyle(i);
+    return { type: i.type, label: i.getAttribute('aria-label'), icon: !!f.querySelector('svg'), ph: getComputedStyle(i, '::placeholder').color, font: cs.fontSize, outline: cs.outlineColor, bg: cs.backgroundColor, bw: cs.borderTopWidth };
+  }), FIELDS);
+  for (const x of r) {
+    expect(x.type).toBe('text');
+    expect(x.label).toBe('Search pools');
+    expect(x.icon).toBe(true);
+    expect(x.outline).toBe('rgba(0, 0, 0, 0)'); // focused: no visible ring
+    expect(x.bw).toBe('0px'); // the input is never boxed itself: the shell is
+  }
+  expect(new Set(r.map((x) => x.ph)).size).toBe(1);
+  expect(new Set(r.map((x) => x.font)).size).toBe(1);
+  await page.close();
+});
+
+for (const sel of FIELDS) {
+  t(`clear button empties and refocuses (${sel.split(' ')[0]})`, async () => {
+    const page = await open(1440);
+    await page.fill(`${sel} input`, 'abc');
+    await page.click(`${sel} [data-search-clear]`);
+    expect(await page.inputValue(`${sel} input`)).toBe('');
+    expect(await page.evaluate((s) => document.activeElement === document.querySelector(`${s} input`), sel)).toBe(true);
+    expect(await page.locator(`${sel} [data-search-clear]`).count()).toBe(0);
+    await page.close();
+  });
+}
+
+for (const sel of [FIELDS[0], FIELDS[2]]) {
+  t(`Escape clears a query, then blurs the empty field (${sel.split(' ')[0]})`, async () => {
+    const page = await open(1440);
+    await page.fill(`${sel} input`, 'abc');
+    await page.keyboard.press('Escape');
+    expect(await page.inputValue(`${sel} input`)).toBe('');
+    expect(await page.evaluate((s) => document.activeElement === document.querySelector(`${s} input`), sel)).toBe(true);
+    await page.keyboard.press('Escape');
+    expect(await page.evaluate((s) => document.activeElement === document.querySelector(`${s} input`), sel)).toBe(false);
+    await page.close();
+  });
+}
+
+t('modal variant leaves Escape to the modal (query kept, the modal closes it)', async () => {
+  const page = await open(1440);
+  await page.fill(`${FIELDS[1]} input`, 'abc');
+  await page.keyboard.press('Escape');
+  expect(await page.inputValue(`${FIELDS[1]} input`)).toBe('abc');
+  await page.close();
+});
+
+t('debounce: onChange fires after the delay, clear is immediate; SearchInput stays the boxed variant', async () => {
+  const page = await open(1440);
+  await page.fill('.sv-deb input', 'xy');
+  expect(await page.evaluate(() => (window as unknown as { __deb?: string[] }).__deb ?? [])).toEqual([]);
+  await until(page, () => ((window as unknown as { __deb?: string[] }).__deb ?? []).includes('xy'));
+  await page.click('.sv-deb [data-search-clear]');
+  expect((await page.evaluate(() => (window as unknown as { __deb: string[] }).__deb)).at(-1)).toBe('');
+  expect(await page.locator('.sv-legacy').getAttribute('data-search-field')).toBe('boxed');
+  await page.close();
+});
+
+t('focus: no ring, the search cell takes the hover tone', async () => {
+  const page = await open(1440);
+  const m = await page.evaluate(() => {
+    const cell = document.querySelector('#after-card .sb-search') as HTMLElement;
+    const before = getComputedStyle(cell).backgroundColor;
+    cell.querySelector('input')!.focus();
+    const cs = getComputedStyle(cell);
+    return { before, after: cs.backgroundColor, shadow: cs.boxShadow, out: getComputedStyle(cell.querySelector('input')!).outlineColor };
+  });
+  expect(m.shadow).toBe('none');
+  expect(m.out).toBe('rgba(0, 0, 0, 0)');
+  expect(m.after).not.toBe(m.before);
+  await page.close();
+});
