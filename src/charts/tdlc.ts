@@ -2,12 +2,13 @@
 // for every host (price engine, metric charts, docs LineChart).
 import type { IChartApi } from 'lightweight-charts';
 import { useLayoutEffect, useRef } from 'preact/hooks';
+import { guardedImport } from '../lib/importGuard';
 
 let tdlcCache: typeof import('lightweight-charts') | null = null;
 
 export function getTDLC() {
   if (tdlcCache) return Promise.resolve(tdlcCache);
-  return import('lightweight-charts').then((m) => {
+  return guardedImport(() => import('lightweight-charts')).then((m) => {
     tdlcCache = m;
     return m;
   });
