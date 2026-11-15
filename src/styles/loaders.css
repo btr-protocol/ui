@@ -1,0 +1,122 @@
+/* Kit loaders: Spinner, Skeleton, ValuePlaceholder, Hairline, Busy, ProgressSteps pending. SELF-CONTAINED: needs only styles/tokens.css
+   (--bg-3, --fg-0, --fg-1, --fg-primary, --line-ui, --dur-spin, --dur-sweep, --ease-linear); no Tailwind layer. Imported by index.css; an app
+   that takes only tokens.css + button-group.css imports `@btr-protocol/ui/styles/loaders.css` as well. The one Tailwind class named here,
+   `animate-spin`, is matched only so the kit keyframes win over Tailwind's own `spin`. */
+/* ── Loaders (ui/Loaders.tsx, Spinner.tsx, Figure.tsx): CSS only, transform / opacity only ─────────────────────────────────────
+   ONE visual language for data: a soft highlight sweeping across a block (`.sk`). The sweep is the ::after layer moving with
+   translateX, never a background-position or width animation, so it runs on the compositor. Logical properties + :dir(rtl). */
+:where(.sk) { /* zero specificity: a bg-* / rounded / size class on the element wins */
+  position: relative;
+  overflow: hidden;
+  background-color: var(--bg-3);
+}
+.sk::after,
+.hairline::after {
+  content: "";
+  position: absolute;
+  inset-block: 0;
+  inset-inline: 0;
+  background: linear-gradient(90deg, transparent 0%, var(--sweep) 50%, transparent 100%);
+  transform: translateX(-100%);
+  animation: loader-sweep var(--dur-sweep) var(--ease-linear) var(--sk-phase, 0ms) infinite; /* --sk-phase: set once per element (useSweepPhase), one shared clock */
+}
+.sk { --sweep: color-mix(in srgb, var(--fg-0) 14%, transparent); }
+.sk:dir(rtl)::after,
+.hairline:dir(rtl)::after {
+  background: linear-gradient(270deg, transparent 0%, var(--sweep) 50%, transparent 100%);
+  animation-name: loader-sweep-rtl;
+}
+@keyframes loader-sweep {
+  to { transform: translateX(100%); }
+}
+@keyframes loader-sweep-rtl {
+  from { transform: translateX(100%); }
+  to { transform: translateX(-100%); }
+}
+/* Hairline: a 2px sweep on the top edge of a `relative` parent, for a refresh while the old value stays. */
+.hairline {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline: 0;
+  height: 2px;
+  overflow: hidden;
+  pointer-events: none;
+  --sweep: var(--fg-primary);
+}
+/* Spinner: a conic arc masked to a ring (the -webkit- mask for Safari), one turn per --dur-spin. User-initiated pending only. */
+:where(.spinner) { /* size and shape at zero specificity: w-* / h-* from className win */
+  width: 1rem;
+  height: 1rem;
+  border-radius: 9999px;
+}
+.spinner {
+  display: inline-block;
+  flex: none;
+  color: var(--fg-primary);
+  background: conic-gradient(from 0deg, transparent 0%, transparent 20%, currentColor 100%);
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 2px), black calc(100% - 2px));
+  mask: radial-gradient(farthest-side, transparent calc(100% - 2px), black calc(100% - 2px));
+  animation: loader-spin var(--dur-spin) var(--ease-linear) infinite;
+}
+.spinner.animate-spin { /* the class the front's lite-mode exemption names; the kit keyframes still win */
+  animation: loader-spin var(--dur-spin) var(--ease-linear) infinite;
+}
+.spinner:dir(rtl) {
+  animation-direction: reverse;
+}
+.bg-primary .spinner,
+.bg-red-solid .spinner {
+  color: inherit; /* on a filled button the arc takes the label colour, not the fill's own */
+}
+:where(.spinner-md) {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+@keyframes loader-spin {
+  to { transform: rotate(360deg); }
+}
+/* ProgressSteps: a missing step is the same sweep over the 3:1 control line. */
+.progress-pending {
+  position: relative;
+  overflow: hidden;
+  background-color: var(--line-ui);
+  --sweep: var(--fg-1);
+}
+.progress-pending::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent 0%, var(--sweep) 50%, transparent 100%);
+  transform: translateX(-100%);
+  animation: loader-sweep var(--dur-sweep) var(--ease-linear) var(--sk-phase, 0ms) infinite;
+}
+.progress-pending:dir(rtl)::after {
+  background: linear-gradient(270deg, transparent 0%, var(--sweep) 50%, transparent 100%);
+  animation-name: loader-sweep-rtl;
+}
+/* Lite mode (a consumer's `[data-lite]` on :root): data sweeps hold still, like reduced motion. */
+:root[data-lite] .sk::after,
+:root[data-lite] .hairline::after,
+:root[data-lite] .progress-pending::after {
+  animation: none;
+  transform: none;
+  opacity: 0;
+}
+
+/* Reduced motion for the loaders (the global switch for everything else stays in index.css). */
+@media (prefers-reduced-motion: reduce) {
+  /* Loaders: data shimmer holds still (a static block still reads as "not here yet"); the spinner keeps turning, slowly
+     (>= 2 s), because a frozen ring looks hung. The class beats the `*` rule above on specificity at equal !important. */
+  .sk::after,
+  .hairline::after,
+  .progress-pending::after {
+    animation: none !important;
+    transform: none !important;
+    opacity: 0 !important;
+  }
+  .spinner,
+  .spinner.animate-spin { /* the second selector outranks the global `.animate-spin` 2 s rule: the spinner stays at 2.4 s wherever this file is imported */
+    animation-duration: 2.4s !important;
+    animation-iteration-count: infinite !important;
+  }
+}

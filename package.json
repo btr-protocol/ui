@@ -1,12 +1,14 @@
 {
   "name": "@btr-protocol/ui",
-  "version": "0.14.0",
+  "version": "0.14.1",
   "license": "MIT",
   "type": "module",
   "description": "BTR shared UI kit: the btr.markets Preact components, layout shell, theme tokens and Tailwind preset. Source only, no build step.",
   "exports": {
     ".": "./src/index.ts",
     "./ui": "./src/ui/index.ts",
+    "./ui/classes": "./src/ui/classes.ts",
+    "./ui/useDismiss": "./src/ui/useDismiss.ts",
     "./ui/*": "./src/ui/*.tsx",
     "./layout": "./src/layout/index.ts",
     "./wallet": "./src/wallet/index.ts",
@@ -19,6 +21,7 @@
     "./styles": "./src/styles/index.css",
     "./styles/tokens.css": "./src/styles/tokens.css",
     "./styles/button-group.css": "./src/styles/button-group.css",
+    "./styles/loaders.css": "./src/styles/loaders.css",
     "./styles/fonts.css": "./src/styles/fonts.css",
     "./tailwind.preset": "./src/styles/tailwind.preset.js",
     "./assets/*": "./src/assets/*",

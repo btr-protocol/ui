@@ -21,7 +21,6 @@ export interface AccountLabels {
   notExposed: string;
   /** Row hints after a click on an account that could not be activated. `{addr}` = short address, `{wallet}` = the wallet's announced
    *  name (named once), `{action}` = the `connectOther` label. */
-  hintRejected: string;
   hintNotShared: string;
   hintAmbiguous: string;
   /** The app's own step after the switch failed; the previous wallet is back. */
@@ -41,7 +40,6 @@ export const ACCOUNT_LABELS: AccountLabels = {
   switchTo: 'Switch wallet to {addr}',
   useInstead: 'Use {addr} instead',
   notExposed: 'Not in this wallet: select to find it',
-  hintRejected: 'Request cancelled in {wallet}. Select {addr} there, share it with this site, then try again.',
   hintNotShared: '{wallet} does not share {addr} with this site. Select it there, then try again.',
   hintAmbiguous: '{addr} may be in another installed wallet. Choose that wallet with "{action}", then select the account.',
   hintFailed: 'Could not switch to {addr}. The previous wallet is back. Try again.',

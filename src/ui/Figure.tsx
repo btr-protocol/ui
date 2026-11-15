@@ -52,9 +52,11 @@ export function Figure<T>({ cell: input, format, ch, className, placeholderClass
   const reasoned = (glyph: preact.ComponentChildren, said: string, extra?: preact.ComponentChildren) => (
     <>
       <Tooltip content={said} side="bottom">
-        <span tabIndex={0} className="inline-flex cursor-help items-center gap-1 rounded-xs"><span aria-hidden="true" className="inline-flex items-center gap-1">{glyph}</span></span>
+        <span tabIndex={0} className="inline-flex cursor-help items-center gap-1 rounded-xs">
+          <span aria-hidden="true" className="inline-flex items-center gap-1">{glyph}</span>
+          <span className="sr-only">{said}</span>
+        </span>
       </Tooltip>
-      <span className="sr-only">{said}</span>
       {extra}
     </>
   );

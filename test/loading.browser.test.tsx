@@ -1,7 +1,7 @@
 // Real-browser checks of the loaders (Chromium via playwright-core): width-stable value swap, compositor-only sweep, reduced motion,
-// one role=status in Busy, every Figure state distinct. SHOT_DIR=<dir> also saves renders. Needs Chromium (`bunx playwright install chromium`).
+// one always-mounted role=status per Busy, plain hidden text for a lone loading Figure, every Figure state distinct, the loaders stylesheet alone. SHOT_DIR=<dir> also saves renders. Needs Chromium (`bunx playwright install chromium`).
 import { afterAll, afterEach, beforeAll, expect, test } from 'bun:test';
-import { existsSync, mkdirSync, readdirSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 
@@ -35,6 +35,9 @@ async function setup() {
   const tw = Bun.spawnSync([join(root, 'node_modules/.bin/tailwindcss'), '-c', join(cache, 'tw.config.js'), '-i', join(cache, 'in.css'), '-o', join(cache, 'page.css')], { stderr: 'pipe' });
   if (tw.exitCode) throw new Error(tw.stderr.toString());
   writeFileSync(join(cache, 'index.html'), '<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><link rel="stylesheet" href="page.css"></head><body><script src="page.js"></script></body></html>');
+  // The loaders stylesheet ALONE: tokens.css + loaders.css, no Tailwind, no index.css (what an app that imports only the tokens gets).
+  writeFileSync(join(cache, 'bare.css'), ['tokens.css', 'loaders.css'].map((f) => readFileSync(join(root, 'src/styles', f), 'utf8')).join('\n'));
+  writeFileSync(join(cache, 'bare.html'), '<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="bare.css"></head><body><script src="page.js"></script></body></html>');
   const { chromium: pw } = await import('playwright-core');
   return pw.launch({ executablePath: exe });
 }
@@ -62,13 +65,13 @@ afterEach(async () => {
 }, 30000);
 
 
-type V = 'all' | 'swap' | 'busy';
+type V = 'all' | 'swap' | 'busy' | 'bare';
 async function open(v: V, o: { width?: number; light?: boolean; reduced?: boolean } = {}) {
   const ctx = await browser!.newContext({ viewport: { width: o.width ?? 1440, height: 900 }, colorScheme: o.light ? 'light' : 'dark', ...(o.reduced ? { reducedMotion: 'reduce' as const } : {}) });
   contexts.push(ctx);
   const page = await ctx.newPage();
   page.setDefaultTimeout(8000);
-  await page.goto(`file://${join(cache, 'index.html')}?v=${v}`);
+  await page.goto(`file://${join(cache, v === 'bare' ? 'bare.html' : 'index.html')}?v=${v}`);
   if (o.light) await page.evaluate(() => document.documentElement.classList.add('light'));
   // Colour transitions run after the theme flips; measuring or capturing inside them reads a half-faded button (the cause of the 'invisible Retry' light capture).
   if (o.light) await page.waitForFunction(() => document.getAnimations().every((a) => !(a instanceof CSSTransition)));
@@ -104,7 +107,7 @@ t('the sweep runs on the compositor and animates; reduced motion holds it still 
 });
 
 t('no loader animates a layout property', async () => {
-  const css = await Bun.file(join(root, 'src/styles/index.css')).text();
+  const css = await Bun.file(join(root, 'src/styles/loaders.css')).text();
   const keyframes = [...css.matchAll(/@keyframes (loader-[\w-]+) \{([\s\S]*?)\n\}/g)];
   expect(keyframes.length).toBe(3);
   for (const [, name, body] of keyframes) expect(body, name).not.toMatch(/background-position|width|height|top|left|right|bottom/);
@@ -171,6 +174,23 @@ t('the Retry button is visible in light and dark: a box, and 3:1 contrast agains
     expect(m.onScreen).toBe(true);
     expect(m.op).toBe('1');
     expect(m.ratio, `light=${light}`).toBeGreaterThanOrEqual(3);
+  }
+});
+
+t('tokens.css + loaders.css alone: Spinner sm/md have a box and a running turn, the sweep layer runs, in light and dark', async () => {
+  for (const light of [false, true]) {
+    const page = await open('bare', { light });
+    const m = await page.evaluate(() => {
+      const rem = parseFloat(getComputedStyle(document.documentElement).fontSize);
+      const sp = [...document.querySelectorAll('.spinner')].map((e) => { const r = e.getBoundingClientRect(); const cs = getComputedStyle(e); return { w: r.width, h: r.height, name: cs.animationName, state: cs.animationPlayState, mask: cs.maskImage !== 'none' || cs.webkitMaskImage !== 'none' }; });
+      const sk = document.getElementById('sk')!; const r = sk.getBoundingClientRect(); const a = getComputedStyle(sk, '::after');
+      return { rem, sp, sk: { w: r.width, h: r.height, pos: getComputedStyle(sk).position, bg: getComputedStyle(sk).backgroundColor, name: a.animationName, state: a.animationPlayState }, anim: document.getAnimations().length };
+    });
+    expect(m.sp.map((s) => [s.w, s.h])).toEqual([[m.rem, m.rem], [1.5 * m.rem, 1.5 * m.rem]]);
+    for (const s of m.sp) expect(s).toMatchObject({ name: 'loader-spin', state: 'running', mask: true });
+    expect(m.sk).toMatchObject({ w: 80, h: 12, pos: 'relative', name: 'loader-sweep', state: 'running' });
+    expect(m.sk.bg).not.toBe('rgba(0, 0, 0, 0)');
+    expect(m.anim).toBeGreaterThanOrEqual(3);
   }
 });
 

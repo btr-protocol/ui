@@ -1,5 +1,5 @@
 // Page for test/loading.browser.test.tsx: every loader primitive and every Figure state, in a table, a card and a button.
-// ?v=all (default) | swap (ValuePlaceholder <-> value, window.__flip()) | busy (200 loading rows in Busy, window.__busy(bool)).
+// ?v=bare (no Tailwind: the loaders stylesheet alone) | all (default) | swap (ValuePlaceholder <-> value, window.__flip()) | busy (200 loading rows in Busy, window.__busy(bool)).
 import { render } from 'preact';
 import { useState } from 'preact/hooks';
 import type { Cell } from '../../src/lib/cell';
@@ -28,6 +28,14 @@ function App() {
   (window as unknown as { __busy: (b: boolean) => void }).__busy = setBusy;
   if (v === 'swap')
     return <div className="p-4"><span id="fig" className="text-sm"><Figure ch={10} cell={loaded ? { s: 'value', v: 42 } : { s: 'loading', since: Date.now() }} format={fmt} /></span></div>;
+  if (v === 'bare')
+    return (
+      <div id="bare">
+        <Spinner />
+        <Spinner size="md" />
+        <span id="sk" className="sk" style="display:block;width:80px;height:12px" />
+      </div>
+    );
   if (v === 'busy')
     return (
       <Busy busy={busy} label="Loading pools">
