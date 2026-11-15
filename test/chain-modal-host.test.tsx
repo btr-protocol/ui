@@ -1,4 +1,5 @@
 import { expect, test } from 'bun:test';
+import { ImportFailure } from '../src';
 import { ChainSelectModalHost } from '../src/ui/ChainSelect';
 import { act, click, mount, until, useDom } from './dom';
 
@@ -31,4 +32,32 @@ test('while pending it shows a loading state', () => {
   const { unmount } = mount(<ChainSelectModalHost {...props} load={never} />);
   expect(dialog()?.textContent).toContain('Loading networks');
   unmount();
+});
+
+const btns = () => [...document.querySelectorAll<HTMLElement>('[role=dialog] button')].map((b) => b.textContent?.trim()).filter((t) => t === 'Reload' || t === 'Retry');
+const setOnline = (on: boolean) => Object.defineProperty(navigator, 'onLine', { value: on, configurable: true });
+
+test('a gone chunk: the shared notice with Reload, never a Retry that re-runs a cached failed import, no silent retry', async () => {
+  let calls = 0;
+  const load = () => { calls++; return Promise.reject(new ImportFailure('A new version is available. Reload the page.', 'Reload', 'stale')); };
+  const { unmount } = mount(<ChainSelectModalHost {...props} load={load} />);
+  await until(() => !!dialog()?.textContent?.includes('A new version is available'));
+  expect(calls).toBe(1);
+  expect(btns()).toEqual(['Reload']);
+  expect(dialog()?.textContent).not.toContain('Could not load the network list');
+  act(() => unmount());
+});
+
+test('a gone chunk while offline: the offline line, no button; Reload when the connection returns', async () => {
+  setOnline(false);
+  try {
+    const { unmount } = mount(<ChainSelectModalHost {...props} load={() => Promise.reject(new ImportFailure('You are offline. Reconnect and try again.', 'Reload', 'offline'))} />);
+    await until(() => !!dialog()?.textContent?.includes('You are offline'));
+    expect(btns()).toEqual([]);
+    setOnline(true);
+    act(() => void window.dispatchEvent(new Event('online')));
+    await until(() => btns().length === 1);
+    expect(btns()).toEqual(['Reload']);
+    act(() => unmount());
+  } finally { setOnline(true); }
 });

@@ -34,6 +34,7 @@ import {
 } from './wallet';
 import { OTHER_IDS, OTHER_MAX, type RecentRow, otherHref, sectionWallets } from './walletSections';
 import { readRecent, recentEntry, recordRecent, removeRecent } from './recentWallets';
+import { canReload, useFailureNotice, useOnline } from '../ui/ImportFailureNotice';
 import { walletConnectEnabled } from './walletConnectShell';
 import {
   browseHref,
@@ -144,6 +145,7 @@ export function WalletModal({
     uri,
     qr,
     error: pairError,
+    importFailure,
     restart,
   } = useWalletConnection({
     enabled: pairing,
@@ -243,6 +245,8 @@ export function WalletModal({
   const mine = apps.mine.filter((w) => !recentIds.includes(w.id));
   const popular = apps.popular.filter((w) => !recentIds.includes(w.id));
   const error = err || pairError;
+  const online = useOnline();
+  const noticeRef = useFailureNotice();
   const copyGlyph = <Icon name={copied ? 'check-circle' : 'copy'} className="w-4 h-4" />;
 
   const row = (w: WalletDef) => {
@@ -330,15 +334,23 @@ export function WalletModal({
     >
       <>
         {error && (
-          <div className={`${MODAL_PADDING} pt-4`}>
+          <div ref={importFailure ? noticeRef : undefined} className={`${MODAL_PADDING} pt-4`}>
             <Notice
               tone="error"
               role="alert"
               action={
                 pairError ? (
-                  <Button size="xs" onClick={retry}>
-                    {l.tryAgain}
-                  </Button>
+                  importFailure ? (
+                    canReload(importFailure, online) ? (
+                      <Button size="xs" onClick={() => location.reload()}>
+                        {importFailure.actionLabel}
+                      </Button>
+                    ) : undefined
+                  ) : (
+                    <Button size="xs" onClick={retry}>
+                      {l.tryAgain}
+                    </Button>
+                  )
                 ) : undefined
               }
             >
@@ -423,13 +435,14 @@ export function WalletModal({
               </div>
             )}
 
-            {pairing && mobile && !waiting && !qrOpen && (
+            {pairing && mobile && !waiting && !qrOpen && !importFailure && (
               <div className={`${MODAL_PADDING} py-3`}>
                 <Button onClick={() => setQrOpen(true)}>{l.anotherDeviceQr}</Button>
               </div>
             )}
 
-            {showQr && (
+            {/* a gone chunk is told once, in the notice above: no QR box with its own "could not generate" */}
+            {showQr && !importFailure && (
               <div id={qrId} ref={qrRef} tabIndex={-1} role="group" aria-label={l.qrAlt} className={`flex flex-col gap-4 items-center ${MODAL_PADDING} py-4 outline-none`}>
                 {qr ? (
                   <div className="bg-white p-2 rounded-lg w-[296px] max-w-full">

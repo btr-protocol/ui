@@ -2,6 +2,7 @@
 // the app configures it once with `configureWalletConnect` (project id, metadata, chains, reader).
 import { type AccountClass, accountClass, resolveWallet } from '@btr-protocol/sdk/eth/wallets';
 import type { Address } from '../lib/address';
+import { guardedImport } from '../lib/importGuard';
 import {
   WC_FLAG,
   type WalletConnectProvider,
@@ -443,7 +444,7 @@ export async function restoreWalletConnect(): Promise<WalletConnectResult | null
 
 /** WalletConnect URI -> QR SVG data URL. */
 export async function generateQrCode(uri: string): Promise<string> {
-  const { createQr } = await import('./qrcode');
+  const { createQr } = await guardedImport(() => import('./qrcode'));
   const svg = createQr(uri);
   return `data:image/svg+xml;base64,${btoa(svg)}`;
 }

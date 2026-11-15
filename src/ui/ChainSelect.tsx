@@ -2,11 +2,13 @@ import type { ComponentChildren } from 'preact';
 import type { ComponentProps } from 'preact';
 import { useEffect, useState } from 'preact/hooks';
 import { useOpen } from '../lib/modalRoute';
+import { ImportFailure, guardedImport } from '../lib/importGuard';
 import { chainIcon } from '../lib/chainIcon';
 import { cn } from '../lib/cn';
 import { BaseModal, MODAL_PADDING } from './BaseModal';
 import { Button } from './Button';
 import { Icon } from './Icon';
+import { ImportFailureNotice } from './ImportFailureNotice';
 import type { SelectionItem, SelectionSortColumn } from './Select';
 import { StackedIcons } from './StackedIcons';
 
@@ -125,21 +127,26 @@ interface ChainSelectProps {
 
 type ModalProps = ComponentProps<typeof import('./ChainSelectModal').ChainSelectModal>;
 type ModalModule = typeof import('./ChainSelectModal');
-const loadModal = (): Promise<ModalModule> => import('./ChainSelectModal');
+const loadModal = (): Promise<ModalModule> => guardedImport(() => import('./ChainSelectModal'));
 
-/** The modal chunk, fetched on first open: one retry on a rejected import, then an inline error with
- *  a Retry button (never a blank screen); a minimal pending state while it loads. `load` is a test seam. */
+/** The modal chunk, fetched on first open; a minimal pending state while it loads. A gone chunk (ImportFailure) shows the shared failure notice
+ *  (Reload when online, the offline line otherwise): a browser caches a failed module fetch, so a Retry could never succeed. Any other
+ *  failure gets one silent retry, then an inline error with a Retry button (never a blank screen). `load` is a test seam. */
 export function ChainSelectModalHost({ load = loadModal, ...props }: ModalProps & { load?: () => Promise<ModalModule> }) {
   const [mod, setMod] = useState<ModalModule | null>(null);
-  const [failed, setFailed] = useState(false);
+  const [failed, setFailed] = useState<Error | null>(null);
   const [round, setRound] = useState(0);
   useEffect(() => {
     let live = true;
-    setFailed(false);
+    setFailed(null);
     const go = (left: number): void => {
       load().then(
         (m) => live && setMod(m),
-        () => (left > 0 ? go(left - 1) : live && setFailed(true)),
+        (e: unknown) => {
+          if (!live) return;
+          if (e instanceof ImportFailure || left <= 0) setFailed(e instanceof Error ? e : new Error(String(e)));
+          else go(left - 1);
+        },
       );
     };
     go(1);
@@ -151,18 +158,22 @@ export function ChainSelectModalHost({ load = loadModal, ...props }: ModalProps 
   if (!props.isOpen) return null;
   return (
     <BaseModal isOpen onClose={props.onClose} title={props.title ?? 'Select network'} headerType="title" size="sm">
-      <div className={`${MODAL_PADDING} py-6 text-sm text-fg-2`} role={failed ? 'alert' : 'status'}>
-        {failed ? (
-          <div className="flex items-center justify-between gap-3">
-            <span>Could not load the network list.</span>
-            <Button size="sm" onClick={() => setRound(round + 1)}>
-              Retry
-            </Button>
-          </div>
-        ) : (
-          'Loading networks…'
-        )}
-      </div>
+      {failed instanceof ImportFailure ? (
+        <ImportFailureNotice failure={failed} className={`${MODAL_PADDING} py-6`} />
+      ) : (
+        <div className={`${MODAL_PADDING} py-6 text-sm text-fg-2`} role={failed ? 'alert' : 'status'}>
+          {failed ? (
+            <div className="flex items-center justify-between gap-3">
+              <span>Could not load the network list.</span>
+              <Button size="sm" onClick={() => setRound(round + 1)}>
+                Retry
+              </Button>
+            </div>
+          ) : (
+            'Loading networks…'
+          )}
+        </div>
+      )}
     </BaseModal>
   );
 }

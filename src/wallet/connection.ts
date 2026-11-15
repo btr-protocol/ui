@@ -1,6 +1,7 @@
 // The connect modal's WalletConnect pairing hook and its user-facing error copy (moved from the front).
 import { isProviderDisconnected } from '@btr-protocol/sdk/eth';
 import { useEffect, useRef, useState } from 'preact/hooks';
+import { ImportFailure } from '../lib/importGuard';
 import type { Eip1193Provider } from './wallet';
 import { loadWc } from './walletConnectShell';
 
@@ -39,6 +40,7 @@ export function useWalletConnection(o: {
   const [uri, setUri] = useState<string | null>(null);
   const [qr, setQr] = useState<string | null>(null);
   const [error, setError] = useState('');
+  const [importFailure, setImportFailure] = useState<ImportFailure | null>(null); // a gone chunk: retrying re-runs a cached failed import, only a reload helps
   const [attempt, setAttempt] = useState(0);
   const latest = useRef(o);
   latest.current = o;
@@ -46,6 +48,7 @@ export function useWalletConnection(o: {
   useEffect(() => {
     setUri(null);
     setError('');
+    setImportFailure(null);
     if (!enabled) return;
     const ac = new AbortController();
     loadWc()
@@ -57,7 +60,8 @@ export function useWalletConnection(o: {
         if (ac.signal.aborted) return;
         console.error('[walletModal] connect failed', e);
         setUri(null); // a dead pairing must not stay tappable
-        setError(connectError(e));
+        setError(e instanceof ImportFailure ? e.message : connectError(e));
+        setImportFailure(e instanceof ImportFailure ? e : null);
       });
     return () => ac.abort();
   }, [enabled, attempt]);
@@ -75,5 +79,5 @@ export function useWalletConnection(o: {
     };
   }, [uri, wantQr]);
 
-  return { uri, qr, error, restart: () => setAttempt((n) => n + 1) };
+  return { uri, qr, error, importFailure, restart: () => setAttempt((n) => n + 1) };
 }

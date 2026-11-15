@@ -17,6 +17,7 @@ export { cn, type ClassValue } from './lib/cn';
 export { Z, Z_LAYERS, type ZLayer } from './lib/zIndex';
 export { cva } from './lib/cva';
 export { configureNav } from './lib/nav';
+export { ImportFailure, configureImportGuard, type ImportFailureKind, type ImportGuardOptions, type ImportTexts } from './lib/importGuard';
 export { ROUTE_EVENT, useModalRoute, useOpen } from './lib/modalRoute';
 export { copyText } from './lib/clipboard';
 export { configureHaptic, haptic } from './lib/haptic';
