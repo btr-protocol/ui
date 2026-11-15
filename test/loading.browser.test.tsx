@@ -143,8 +143,10 @@ t('Figure: every state has its own accessible text; a measured zero prints as ze
   expect(by(9).focusable).toBe(true);
   expect(rows.some((r) => r.text.includes(String.fromCharCode(8212)))).toBe(false);
   expect(new Set(rows.map((r) => r.text + r.sk + r.warn)).size).toBe(rows.length - 0);
-  // a loading figure OUTSIDE a Busy announces itself
-  expect(await page.locator('#solo [role=status]').textContent()).toBe('Loading');
+  // a loading figure OUTSIDE a Busy announces itself as plain hidden text (no live region)
+  expect(await page.locator('#solo').textContent()).toBe('Loading');
+  // axe aria-hidden-focus: no focusable element is, or sits inside, an aria-hidden subtree
+  expect(await page.evaluate(() => [...document.querySelectorAll('[tabindex],button,a[href],input')].filter((e) => e.closest('[aria-hidden=true]')).length)).toBe(0);
 });
 
 t('the Retry button is visible in light and dark: a box, and 3:1 contrast against its background', async () => {

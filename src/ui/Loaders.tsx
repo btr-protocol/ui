@@ -11,7 +11,15 @@ export const useInBusy = () => useContext(BusyContext);
 
 /** The shared sweep clock: a negative delay of (now mod period), computed ONCE per element, puts every sweep on the same phase. */
 export function useSweepPhase(): { '--sk-phase': string } {
-  return useState(() => ({ '--sk-phase': `-${Math.round(performance.now() % 1400)}ms` }))[0];
+  return useState(() => ({ '--sk-phase': `-${Math.round(performance.now() % sweepPeriodMs())}ms` }))[0];
+}
+/** The period is the CSS token `--dur-sweep` (tokens.css), read once; 1400 where there is no DOM or the token is unset. */
+let period: number | undefined;
+function sweepPeriodMs(): number {
+  if (period) return period;
+  const raw = typeof document === 'undefined' ? '' : getComputedStyle(document.documentElement).getPropertyValue('--dur-sweep').trim();
+  const n = parseFloat(raw);
+  return (period = n > 0 ? (raw.endsWith('ms') ? n : raw.endsWith('s') ? n * 1000 : 1400) : 1400);
 }
 
 /** A block placeholder. `lines` > 1 stacks text-line blocks (the last one shorter). Size it with `className` (`h-24 w-full`). */

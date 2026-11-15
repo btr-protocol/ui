@@ -65,7 +65,7 @@ test('Figure: unavailable and na carry real text, a focusable tooltip trigger, a
 test('MetricState: each phase has its own role, text and icon', () => {
   const r = (phase: Parameters<typeof MetricState>[0]['phase']) => render(<MetricState phase={phase} value="1.5" reason="why" />);
   expect(r('live')).toContain('1.5');
-  expect(r('loading')).toContain('role="status"'); // standalone: announces itself
+  expect(r('loading')).toContain('>Loading<'); // standalone: hidden plain text, no live region
   expect(r('loading')).not.toContain('1.5');
   const err = r('error');
   expect(err).toContain('Unavailable: Could not load, why');

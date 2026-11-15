@@ -502,12 +502,13 @@ describe('account panel with two wallets', () => {
     expect(walletAddress.value).toBe(RABBY_ACCT);
   });
 
-  test('rejected in the other wallet: a row names it once, the modal stays open, the app step never runs', async () => {
+  test('the user cancels the other wallet\'s picker (4001): silent, no row, the modal stays open, the app step never runs', async () => {
     let ran = 0;
     await openPanel({ rejectRequest: true }, { onSwitch: () => (ran++, true) });
     click(byText('Switch wallet to') as HTMLElement);
-    await until(() => text().includes('Request cancelled in Rabby'));
-    expect(text()).toContain('Request cancelled in Rabby. Select 0xaB7B…0760 there, share it with this site, then try again.');
+    await new Promise((r) => setTimeout(r, 150));
+    expect(text()).not.toContain('Request cancelled');
+    expect(text()).not.toContain('try again');
     expect(ran).toBe(0);
     expect(text()).toContain('Accounts');
     expect(walletAddress.value).toBe(AMBIRE_ACCT);

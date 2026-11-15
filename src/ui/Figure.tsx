@@ -52,7 +52,7 @@ export function Figure<T>({ cell: input, format, ch, className, placeholderClass
   const reasoned = (glyph: preact.ComponentChildren, said: string, extra?: preact.ComponentChildren) => (
     <>
       <Tooltip content={said} side="bottom">
-        <span tabIndex={0} aria-hidden="true" className="inline-flex cursor-help items-center gap-1 rounded-xs">{glyph}</span>
+        <span tabIndex={0} className="inline-flex cursor-help items-center gap-1 rounded-xs"><span aria-hidden="true" className="inline-flex items-center gap-1">{glyph}</span></span>
       </Tooltip>
       <span className="sr-only">{said}</span>
       {extra}
@@ -72,7 +72,7 @@ export function Figure<T>({ cell: input, format, ch, className, placeholderClass
       return box(
         <>
           <ValuePlaceholder ch={ch} className={placeholderClassName} />
-          {!inBusy && <span role="status" className="sr-only">Loading</span>}
+          {!inBusy && <span className="sr-only">Loading</span>}
         </>,
       );
     case 'measuring':
