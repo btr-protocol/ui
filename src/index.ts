@@ -19,7 +19,7 @@ export { cva } from './lib/cva';
 export { configureNav } from './lib/nav';
 export { ROUTE_EVENT, useModalRoute, useOpen } from './lib/modalRoute';
 export { copyText } from './lib/clipboard';
-export { haptic } from './lib/haptic';
+export { configureHaptic, haptic } from './lib/haptic';
 export { scrollPane } from './lib/scroll';
 export { LOGO_URL, LOGO_MARK_URL, SOCIAL_ICONS } from './lib/assets';
 export { type Address, type Hex, isAddress, checksumAddress, shortenAddress, shortAddr } from './lib/address';
