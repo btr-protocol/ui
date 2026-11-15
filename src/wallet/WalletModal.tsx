@@ -144,6 +144,7 @@ export function WalletModal({
     uri,
     qr,
     error: pairError,
+    reloadLabel,
     restart,
   } = useWalletConnection({
     enabled: pairing,
@@ -336,8 +337,8 @@ export function WalletModal({
               role="alert"
               action={
                 pairError ? (
-                  <Button size="xs" onClick={retry}>
-                    {l.tryAgain}
+                  <Button size="xs" onClick={reloadLabel ? () => location.reload() : retry}>
+                    {reloadLabel ?? l.tryAgain}
                   </Button>
                 ) : undefined
               }

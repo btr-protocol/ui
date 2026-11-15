@@ -1,7 +1,7 @@
 # Changelog
 
-## Unreleased (Safe app pin, not on main; the same change is 0.14.2 on main)
-- `configureImportGuard(fn)`: every dynamic import the kit makes goes through `fn` (see main's 0.14.2).
+## Unreleased (Safe app pin, not on main; the same change is 0.14.2 on main, PR #45)
+Kit 0.12.3 (904b8b0) plus `configureImportGuard`, `ImportFailure` and the guarded imports of main's 0.14.2: WalletModal, AccountModal, WalletConnect glue and QR chunks, chain picker, lightweight-charts. `ConnectModalHost` shows a failed chunk with Reload and Close; the pairing error button reloads on an `ImportFailure`; `guardedImport` survives a throwing or empty guard. Pinned by multisig-proposer #104 until that app moves to kit main.
 
 ## 0.12.3
 - Connect modal, Recent rows: the row is one surface. The remove button no longer sits in a separate cell with its own background: it is a 44 px box overlaying the row's inline end (`.row-x` / `.row-x-btn`, logical properties, RTL safe), so the hover, keyboard-highlighted and focus background and the accent border cover the whole row width. `CloseButton`'s `onClick` now receives the click event.

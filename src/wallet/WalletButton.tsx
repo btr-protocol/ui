@@ -1,6 +1,7 @@
 import type { ComponentType } from 'preact';
 import { useEffect, useState } from 'preact/hooks';
 import { shortenAddress } from '../lib/address';
+import { guardedImport } from '../lib/importGuard';
 import { chainIcon } from '../lib/chainIcon';
 import { Button } from '../ui/Button';
 import type { ChainItem } from '../ui/ChainSelect';
@@ -59,9 +60,12 @@ function useAccountModal(open: boolean): ComponentType<AccountModalProps> | null
   useEffect(() => {
     if (!open || Modal) return;
     let cancelled = false;
-    void import('./AccountModal').then((m) => {
-      if (!cancelled) setModal(() => m.AccountModal);
-    });
+    guardedImport(() => import('./AccountModal')).then(
+      (m) => {
+        if (!cancelled) setModal(() => m.AccountModal);
+      },
+      (e: unknown) => console.error('[accountModal] load failed', e),
+    );
     return () => {
       cancelled = true;
     };
