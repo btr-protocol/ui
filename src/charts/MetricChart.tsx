@@ -20,7 +20,7 @@
 import { NUMERIC_FONT_FAMILY, SCALE_ON, scrollOn, tickMarkFormatter, timeLabel } from '../lib/chart';
 import { cn } from '../lib/cn';
 import { Spinner } from '../ui/Spinner';
-import { ImportFailureNotice } from '../wallet/ImportFailureModal';
+import { ImportFailureNotice } from '../ui/ImportFailureNotice';
 import { ChartShell } from './ChartShell';
 import { chartColors } from './colors';
 import {
