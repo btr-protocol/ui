@@ -2,7 +2,7 @@ import { type ComponentChildren, createContext } from 'preact';
 import { useContext, useState } from 'preact/hooks';
 import { cn } from '../lib/cn';
 
-/* CSS-only loaders: keyframes and tokens live in styles/index.css (`--dur-sweep`, `--ease-linear`), compositor properties only
+/* CSS-only loaders: keyframes live in styles/loaders.css, tokens in styles/tokens.css (`--dur-sweep`, `--ease-linear`), compositor properties only
    (transform / opacity). One visual language for data: a sweep. Everything here is aria-hidden; `Busy` announces once. */
 
 /** True inside a `Busy`: its ONE status announces the loading, so a Figure there stays silent. */
