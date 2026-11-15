@@ -3,7 +3,7 @@ export type ImportFailureKind = 'stale' | 'failed' | 'offline';
 
 /** A dynamic import that failed in a way the app already classified: `message` is the plain, user-facing copy (never the browser's
  *  "Failed to fetch dynamically imported module: <url>"). A browser caches a failed module fetch for the life of the page, so the
- *  only retry is a reload: kit fallbacks show `actionLabel` and reload, except while `kind` is 'offline' (a reload would land on the
+ *  only retry is a reload: kit fallbacks show `actionLabel` and reload, but only while the browser is online (offline a reload would land on the
  *  browser's offline page; the action appears when the connection returns). */
 export class ImportFailure extends Error {
   constructor(

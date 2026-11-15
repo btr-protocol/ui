@@ -19,8 +19,8 @@ export function useOnline(): boolean {
   return on;
 }
 
-/** The Reload action of a failed chunk is offered unless the failure is 'offline' and the connection has not returned. */
-export const canReload = (e: unknown, online: boolean): boolean => !(e instanceof ImportFailure && e.kind === 'offline' && !online);
+/** Reload is offered only while the browser is online, whatever the failure kind (offline there is nothing to reload into; it appears when the connection returns). */
+export const canReload = (_e: unknown, online: boolean): boolean => online;
 
 /** Callback ref: while the element is mounted it is registered as a visible failure notice with the app (see `configureImportGuard`). */
 export function useFailureNotice() {

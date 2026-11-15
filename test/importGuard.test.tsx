@@ -180,3 +180,17 @@ test('configureImportGuard texts override the kit literals', async () => {
   const { unmount } = mount(<ConnectModalHost isOpen onClose={() => {}} />);
   unmount();
 });
+
+test('a failed (not only offline) kind also hides Reload while the browser is offline', async () => {
+  online(false);
+  try {
+    failWith(new ImportFailure('Could not load. Try again.', 'Reload', 'failed'));
+    const { unmount } = mount(<ConnectModalHost isOpen onClose={() => {}} />);
+    await until(() => document.body.textContent?.includes('Could not load') ?? false);
+    expect([...(registered[0]?.querySelectorAll('button') ?? [])].length).toBe(0);
+    online(true);
+    act(() => void window.dispatchEvent(new Event('online')));
+    await until(() => (registered[0]?.querySelectorAll('button').length ?? 0) === 1);
+    unmount();
+  } finally { online(true); }
+});
