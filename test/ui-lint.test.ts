@@ -103,7 +103,6 @@ const RAW_BUTTON_OK: Record<string, string> = {
   'src/ui/Expandable.tsx': 'disclosure header',
   'src/ui/InfoBox.tsx': 'inline help trigger glyph',
   'src/ui/MasterDetail.tsx': 'phone Back row',
-  'src/ui/SearchInput.tsx': 'inline clear (x) glyph inside the input',
   'src/ui/AddressField.tsx': 'inline paste/clear glyphs inside the input',
   'src/ui/WalletItemButton.tsx': 'wallet picker row',
   'src/wallet/WalletConnectTile.tsx': 'WalletConnect tile: a tall picker row with a mark grid, not an action button',

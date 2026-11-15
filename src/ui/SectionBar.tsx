@@ -5,13 +5,14 @@
 //   search   built into the bar, `searchSide` 'left' | 'right': the search cell takes the bar's outer corner on that side
 // Cells are <SectionBarCell>s: a Button, an icon Button, a SegmentedControl, a modal-select trigger (SelectModal) or
 // <SectionBarText> (a count). The bar is the same height with or without title or search. Where the bar sits in a Panel
-// or a Table frame the container draws the edges; `standalone` draws its own.
+// or a Table frame the container draws the edges; `standalone` draws its own. Filter cells are modal selects only
+// (SelectModal / MultiSelectModal triggers, or a SegmentedControl for 2-3 options): never a Dropdown popover.
 import type { ComponentChildren } from 'preact';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { cn } from '../lib/cn';
 import { Button } from './Button';
 import { Icon } from './Icon';
-import { SearchInput } from './SearchInput';
+import { SearchField } from './SearchField';
 
 export interface SectionBarSearch {
   value: string;
@@ -19,6 +20,8 @@ export interface SectionBarSearch {
   placeholder?: string;
   /** Accessible name (default: the placeholder). */
   ariaLabel?: string;
+  /** ms before `onChange` fires (see SearchField). */
+  debounce?: number;
 }
 
 export interface SectionBarProps {
@@ -88,15 +91,9 @@ export function SectionBar({ title, start, end, search, searchSide = 'right', la
           if (!cell.current?.contains(document.activeElement) && !search.value) setOpen(false);
         });
       }}
-      onKeyDown={(e) => {
-        if (e.key === 'Escape' && open) {
-          setOpen(false);
-          (cell.current?.querySelector('.sb-search-btn') as HTMLElement | null)?.focus();
-        }
-      }}
     >
       <Button type="button" variant="ghost" size="sm" className="sb-search-btn" aria-label={search.ariaLabel ?? search.placeholder ?? 'Search'} aria-expanded={open} aria-pressed={!!search.value} onClick={() => setOpen(true)} leftIcon={<Icon name="magnifying-glass" className="h-4 w-4" />} />
-      <SearchInput variant="bare" value={search.value} onChange={search.onChange} placeholder={search.placeholder} ariaLabel={search.ariaLabel} inputRef={input} />
+      <SearchField variant="bar" value={search.value} onChange={search.onChange} placeholder={search.placeholder} ariaLabel={search.ariaLabel} debounce={search.debounce} inputRef={input} />
     </div>
   );
 
