@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.14.2
+- `configureImportGuard(fn)` (exported, call once at boot): every dynamic import the kit makes (`WalletModal`, the WalletConnect glue and its `walletConnect` chunk, the QR chunk, the chain picker modal) goes through `fn`, so an app can classify a chunk a deploy deleted and reject with a plain message instead of "Failed to fetch dynamically imported module: <url>". Unset = the raw promise, no behaviour change.
+- CONSUMERS SHOULD (Safe app, front): call `configureImportGuard` at boot with their stale-chunk recovery.
+
 ## 0.14.1
 - Loaders stylesheet: every loader rule (spinner incl. `:where` sizing, `.spinner-md`, rtl, on-primary colour, keyframes, `.sk`, value placeholder, `.hairline`, busy, `.progress-pending`, lite mode, their reduced-motion block) moved verbatim into `styles/loaders.css`, self-contained on `tokens.css` (no Tailwind layer). `styles/index.css` is now only the ordered imports (fonts, tokens, button-group, `kit.css` = the former body with the Tailwind layers, then `loaders.css` LAST), so the loader rules still sit after `@tailwind utilities` and a Spinner `className` (`hidden`, `text-*`, `bg-*`) behaves exactly as in 0.14.0. New export `@btr-protocol/ui/styles/loaders.css`. CONSUMERS MUST (apps that import only `tokens.css` + `button-group.css`, e.g. the front): add `@import "@btr-protocol/ui/styles/loaders.css";` AFTER their own `@tailwind utilities` (order is the guarantee: imported earlier, utilities and `animate-spin` win over the loader rules), else `Spinner`, `Skeleton`, `ValuePlaceholder`, `Hairline`, `Busy` render zero-size.
 - `Figure`: the focusable reason glyph is `role="img"` with `aria-label` = the reason (said once; no hidden duplicate text; the glyph inside stays hidden). REMOVED: the `hintRejected` label (unused since 0.14.0: a cancelled picker is silent). New deep exports `@btr-protocol/ui/ui/classes` and `@btr-protocol/ui/ui/useDismiss` (`.ts` files the `./ui/*` pattern did not reach).
