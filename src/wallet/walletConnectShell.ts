@@ -4,6 +4,7 @@
 // without the session glue. The glue (`./walletConnect`) is reached ONLY through `loadWc`, so a build with a
 // project id weighs the same as one without until the user opens the pairing path.
 import type { Eip1193Provider } from './wallet';
+import { guardedImport } from '../lib/importGuard';
 
 export interface WalletConnectConfig {
   /** Reown (WalletConnect Cloud) project id: a public client id baked into the build, '' = WalletConnect off. */
@@ -33,7 +34,7 @@ export function configureWalletConnect(c: WalletConnectConfig): void {
 export const walletConnectConfig = (): WalletConnectConfig | undefined => config;
 export const walletConnectEnabled = (): boolean => !!config?.projectId;
 
-export const loadWc = () => import('./walletConnect');
+export const loadWc = () => guardedImport(() => import('./walletConnect'));
 
 /** localStorage flag of a live session (value = its chain): set/cleared by the glue, gates every load. */
 export const WC_FLAG = 'btr-wc-session';

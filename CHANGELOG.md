@@ -1,5 +1,8 @@
 # Changelog
 
+## Unreleased (Safe app pin, not on main; the same change is 0.14.2 on main)
+- `configureImportGuard(fn)`: every dynamic import the kit makes goes through `fn` (see main's 0.14.2).
+
 ## 0.12.3
 - Connect modal, Recent rows: the row is one surface. The remove button no longer sits in a separate cell with its own background: it is a 44 px box overlaying the row's inline end (`.row-x` / `.row-x-btn`, logical properties, RTL safe), so the hover, keyboard-highlighted and focus background and the accent border cover the whole row width. `CloseButton`'s `onClick` now receives the click event.
 - Remove button reveal, hover-capable pointers: hidden at rest, no space and no clicks (a click where it would be lands on the row), so the "Detected" tag has the same right edge in Recent and Installed rows. On row hover or keyboard focus inside it fades in, the tag slides 32 px inline-start (padding transition, none under `prefers-reduced-motion`), and it takes clicks once the slide has run (180 ms), so a quick click aimed at the tag still hits the row. Tab reaches it at any time (name "Remove <wallet> from recent wallets"). While the button has keyboard focus (`:focus-visible` inside, via `:has`; a mouse click leaves nothing stuck) the row shows the hover surface.

@@ -2,6 +2,7 @@
 // guard every signature goes through, and a small signal store for the connected wallet. The connect modal (EIP-6963 +
 // legacy injected + WalletConnect) is `WalletModal`; an app that owns its own connection state passes `onConnect`.
 import { signal } from '@preact/signals';
+import { guardedImport } from '../lib/importGuard';
 import type { Address, Hex } from '../lib/address';
 import { WrongAccountError, accountList, readAccounts, requestAccountPicker, requireActiveAccount, sameAddress } from './accounts';
 
@@ -267,7 +268,7 @@ export async function restoreWallet(entries?: ProviderEntry[]): Promise<Address 
   const last = lastWallet();
   if (!last) return undefined;
   if (last === 'walletconnect') {
-    const { loadWc, store, WC_FLAG } = await import('./walletConnectShell');
+    const { loadWc, store, WC_FLAG } = await guardedImport(() => import('./walletConnectShell'));
     if (!store.get(WC_FLAG)) return undefined;
     const wc = await (await loadWc()).restoreWalletConnect().catch(() => null);
     if (!wc) return walletAddress.peek();

@@ -1,6 +1,7 @@
 import type { ComponentType } from 'preact';
 import { useEffect, useState } from 'preact/hooks';
 import type { WalletModalProps } from './WalletModal';
+import { guardedImport } from '../lib/importGuard';
 import { closeConnectModal, connectModalOpen } from './wallet';
 
 /** THE app-wide connect modal, lazy: mount once; the modal chunk (wallet list, WalletConnect pairing, QR) is fetched on first
@@ -11,7 +12,7 @@ export function ConnectModalHost(props: WalletModalProps) {
   useEffect(() => {
     if (!isOpen || Modal) return;
     let cancelled = false;
-    void import('./WalletModal').then((m) => {
+    void guardedImport(() => import('./WalletModal')).then((m) => {
       if (!cancelled) setModal(() => m.WalletModal);
     });
     return () => {

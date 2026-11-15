@@ -2,6 +2,7 @@ import type { ComponentChildren } from 'preact';
 import type { ComponentProps } from 'preact';
 import { useEffect, useState } from 'preact/hooks';
 import { useOpen } from '../lib/modalRoute';
+import { guardedImport } from '../lib/importGuard';
 import { chainIcon } from '../lib/chainIcon';
 import { cn } from '../lib/cn';
 import { BaseModal, MODAL_PADDING } from './BaseModal';
@@ -125,7 +126,7 @@ interface ChainSelectProps {
 
 type ModalProps = ComponentProps<typeof import('./ChainSelectModal').ChainSelectModal>;
 type ModalModule = typeof import('./ChainSelectModal');
-const loadModal = (): Promise<ModalModule> => import('./ChainSelectModal');
+const loadModal = (): Promise<ModalModule> => guardedImport(() => import('./ChainSelectModal'));
 
 /** The modal chunk, fetched on first open: one retry on a rejected import, then an inline error with
  *  a Retry button (never a blank screen); a minimal pending state while it loads. `load` is a test seam. */
