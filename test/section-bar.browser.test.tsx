@@ -244,3 +244,11 @@ t('focus: no ring, the search cell takes the hover tone', async () => {
   expect(m.after).not.toBe(m.before);
   await page.close();
 });
+
+t('busy search shows the kit Spinner and aria-busy', async () => {
+  const page = await open(1440);
+  await page.fill('#sv-boxed input', 'busy');
+  expect(await page.locator('#sv-boxed .spinner').count()).toBe(1);
+  expect(await page.getAttribute('#sv-boxed input', 'aria-busy')).toBe('true');
+  await page.close();
+});

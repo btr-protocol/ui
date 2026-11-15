@@ -14,6 +14,7 @@ import { Button } from './Button';
 import { Tooltip } from './FloatingPanel';
 import { Icon } from './Icon';
 import { Input, type InputProps } from './Input';
+import { Spinner } from './Spinner';
 
 export type SearchFieldVariant = 'bar' | 'modal' | 'boxed';
 
@@ -24,6 +25,8 @@ export interface SearchFieldProps {
   /** Accessible name (default: the placeholder). */
   ariaLabel?: string;
   variant?: SearchFieldVariant;
+  /** A query is pending (a server search the user just typed): the kit `Spinner` shows before the clear button, the input is `aria-busy`. */
+  busy?: boolean;
   /** ms: `onChange` fires this long after the last keystroke (clear is immediate). Default: every keystroke. */
   debounce?: number;
   onKeyDown?: (e: JSX.TargetedKeyboardEvent<HTMLInputElement>) => void;
@@ -43,7 +46,7 @@ const SHELL: Record<SearchFieldVariant, string> = {
   boxed: 'h-[var(--ctl-m)] w-[var(--search-w)] max-w-full px-3 rounded-sm border border-border bg-bg-2 transition-colors focus-within:bg-bg-3',
 };
 
-export function SearchField({ value, onChange, placeholder = 'Search...', ariaLabel, variant = 'boxed', debounce = 0, onKeyDown, inputRef, stopPropagation = false, className, inputProps }: SearchFieldProps) {
+export function SearchField({ value, onChange, placeholder = 'Search...', ariaLabel, variant = 'boxed', debounce = 0, busy = false, onKeyDown, inputRef, stopPropagation = false, className, inputProps }: SearchFieldProps) {
   const fallback = useRef<HTMLInputElement>(null);
   const ref = (inputRef ?? fallback) as Ref<HTMLInputElement>;
   const el = () => (ref as { current: HTMLInputElement | null }).current;
@@ -91,10 +94,12 @@ export function SearchField({ value, onChange, placeholder = 'Search...', ariaLa
           }
         }}
         aria-label={ariaLabel ?? placeholder}
+        aria-busy={busy || undefined}
         className="min-w-0 flex-1 placeholder:text-fg-2"
         // Preact-flavoured intrinsic attrs (autocomplete, spellcheck) on a compat-typed component: the DOM takes them, the two prop tables differ.
         {...(inputProps as InputProps)}
       />
+      {busy && <Spinner />}
       {shown && (
         <Tooltip content="Clear" side="bottom">
           <Button

@@ -20,7 +20,7 @@ import { SearchInput } from './SearchInput';
 import { SectionBar, type SectionBarProps } from './SectionBar';
 
 export const DATA_TABLE_HEADER =
-  'border-b border-border bg-bg-3 text-xs uppercase tracking-wide text-fg-1 font-semibold';
+  'border-b border-border bg-bg-2 text-xs uppercase tracking-wide text-fg-1 font-semibold';
 export const DATA_TABLE_ROW = 'transition-colors hover:bg-bg-2';
 /**
  * The one row-actions reveal, shared by every list/table row (notifications log, pools table).
@@ -53,7 +53,7 @@ const COMPACT_ROW_H = 28;
  * virtual and non-virtual bodies, or between desktop and the mobile stack.
  */
 /** Header cell: sticky so a scrolled body keeps its labels. */
-const TABLE_HEAD_CELL = 'px-3 py-1.5 coarse:py-3 font-medium bg-bg-3 sticky top-0 z-raised';
+const TABLE_HEAD_CELL = 'px-3 py-1.5 coarse:py-3 font-medium bg-bg-2 sticky top-0 z-raised';
 /** A sortable header is a click target and must not select its own label on double-click. */
 const TABLE_HEAD_SORTABLE = 'cursor-pointer select-none hover:text-fg-1';
 /** Body cell. Vertical padding is added per body: the virtual one pays its rhythm with a fixed

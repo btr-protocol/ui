@@ -15,7 +15,7 @@
   min-width: 0;
   overflow: hidden; /* clips the cells to the corner radius; the scroller below does the sideways scroll */
   --sb-hover: color-mix(in srgb, var(--fg-0) 7%, var(--bg-3)); /* the hover tone: a step off the bar, in either theme */
-  background: var(--bg-3); /* the table column header's tone (DATA_TABLE_HEADER): bar and column header read as one band */
+  background: var(--bg-3); /* the section-header tone; a table's column header row is one step lighter (--bg-2, DATA_TABLE_HEADER), its rows --bg-1 */
   border-bottom: var(--border);
   border-start-start-radius: var(--sb-r);
   border-start-end-radius: var(--sb-r);

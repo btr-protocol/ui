@@ -29,7 +29,7 @@ const Frame = ({ id, before, className = '', children }: { id: string; before?: 
 );
 const Sample = () => (
   <table className="w-full text-sm">
-    <thead><tr className="border-b border-border bg-bg-3 text-xs uppercase text-fg-1">{COLS.map((c) => <th key={c.key} className={`px-3 py-1.5 font-medium ${c.align === 'right' ? 'text-right' : 'text-left'}`}>{c.label}</th>)}</tr></thead>
+    <thead><tr className="border-b border-border bg-bg-2 text-xs uppercase text-fg-1">{COLS.map((c) => <th key={c.key} className={`px-3 py-1.5 font-medium ${c.align === 'right' ? 'text-right' : 'text-left'}`}>{c.label}</th>)}</tr></thead>
     <tbody>{ROWS.map((r) => <tr key={r.id} className="border-b border-border last:border-0"><td className="px-3 py-2">{r.pool}</td><td className="px-3 py-2">{r.chain}</td><td className="px-3 py-2 text-right">{r.tvl}</td></tr>)}</tbody>
   </table>
 );
@@ -104,7 +104,7 @@ function SearchVariants() {
       <div id="sv" className="grid gap-3 sm:grid-cols-2">
         <Frame id="sv-bar" className="sm:col-span-2"><SectionBar title="bar" search={{ value: b, onChange: setB, placeholder: 'Search pools' }} /><p className="px-3 py-2 text-xs text-fg-2">A cell of the bar: the bar supplies box, corner, divider.</p></Frame>
         <Frame id="sv-modal"><div className="h-12 border-b border-border bg-bg-1 px-3 flex items-center"><SearchField variant="modal" value={m} onChange={setM} placeholder="Search pools" /></div><p className="px-3 py-2 text-xs text-fg-2">A modal / list header: no box.</p></Frame>
-        <Frame id="sv-boxed"><div className="p-3"><SearchField variant="boxed" value={r} onChange={setR} placeholder="Search pools" /></div><p className="px-3 pb-2 text-xs text-fg-2">Standalone: its own box.</p></Frame>
+        <Frame id="sv-boxed"><div className="p-3"><SearchField variant="boxed" value={r} onChange={setR} placeholder="Search pools" busy={r === 'busy'} /></div><p className="px-3 pb-2 text-xs text-fg-2">Standalone: its own box.</p></Frame>
       </div>
       <div id="sv-extra" className="mt-2 grid gap-2 sm:grid-cols-2">
         <SearchField variant="boxed" value={d} onChange={(v) => { setD(v); (window as unknown as { __deb: string[] }).__deb = [...((window as unknown as { __deb?: string[] }).__deb ?? []), v]; }} debounce={200} placeholder="Debounced" className="sv-deb" />

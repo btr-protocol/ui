@@ -12,6 +12,7 @@ import { useEffect, useRef, useState } from 'preact/hooks';
 import { cn } from '../lib/cn';
 import { Button } from './Button';
 import { Icon } from './Icon';
+import { Hairline } from './Loaders';
 import { SearchField } from './SearchField';
 
 export interface SectionBarSearch {
@@ -22,6 +23,8 @@ export interface SectionBarSearch {
   ariaLabel?: string;
   /** ms before `onChange` fires (see SearchField). */
   debounce?: number;
+  /** A search is pending (kit Spinner in the field). */
+  busy?: boolean;
 }
 
 export interface SectionBarProps {
@@ -35,6 +38,8 @@ export interface SectionBarProps {
   label?: string;
   /** Draw the bar's own top and side edges (no container supplies them). */
   standalone?: boolean;
+  /** The section's data is refreshing in the background: the kit `Hairline` sweeps along the bar's top edge. */
+  refreshing?: boolean;
   className?: string;
 }
 
@@ -48,7 +53,7 @@ export function SectionBarText({ children, className }: { children?: ComponentCh
   return <div className={cn('sb-cell sb-text text-xs text-fg-2', className)}>{children}</div>;
 }
 
-export function SectionBar({ title, start, end, search, searchSide = 'right', label, standalone = false, className }: SectionBarProps) {
+export function SectionBar({ title, start, end, search, searchSide = 'right', label, standalone = false, refreshing = false, className }: SectionBarProps) {
   const [open, setOpen] = useState(false); // phone only: the collapsed icon cell is expanded over the bar
   const input = useRef<HTMLInputElement>(null);
   const cell = useRef<HTMLDivElement>(null);
@@ -93,12 +98,13 @@ export function SectionBar({ title, start, end, search, searchSide = 'right', la
       }}
     >
       <Button type="button" variant="ghost" size="sm" className="sb-search-btn" aria-label={search.ariaLabel ?? search.placeholder ?? 'Search'} aria-expanded={open} aria-pressed={!!search.value} onClick={() => setOpen(true)} leftIcon={<Icon name="magnifying-glass" className="h-4 w-4" />} />
-      <SearchField variant="bar" value={search.value} onChange={search.onChange} placeholder={search.placeholder} ariaLabel={search.ariaLabel} debounce={search.debounce} inputRef={input} />
+      <SearchField variant="bar" value={search.value} onChange={search.onChange} placeholder={search.placeholder} ariaLabel={search.ariaLabel} debounce={search.debounce} busy={search.busy} inputRef={input} />
     </div>
   );
 
   return (
     <div className={cn('section-bar', className)} data-standalone={standalone || undefined} data-search-side={search ? searchSide : undefined}>
+      <Hairline active={refreshing} />
       {searchSide === 'left' && searchCell}
       {title != null && (
         <h2 className="sb-cell sb-title text-sm font-semibold text-fg-0">
