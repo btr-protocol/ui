@@ -5,6 +5,8 @@
 - ALL kit dynamic imports are guarded: WalletModal, AccountModal, the WalletConnect glue and QR chunks, the chain picker modal, lightweight-charts (`getTDLC`).
 - `ImportFailure(message, actionLabel = 'Reload')` (exported): what a guard rejects with for a gone chunk. `ConnectModalHost` catches a failed modal chunk and shows the message with Reload and Close in place (it left a dead connect button before). The wallet modal's pairing error button reloads the page (label = `actionLabel`) when the failure is an `ImportFailure`: a browser caches a failed module fetch, so re-running the import cannot succeed.
 - `guardedImport` never breaks a caller: a guard that throws, returns nothing or resolves to nothing becomes a rejected promise (`ImportFailure` for the last two).
+- `ImportFailure(message, actionLabel, kind)`: `kind` is 'stale' | 'failed' | 'offline'. Kit fallbacks offer Reload unless the kind is 'offline' and the browser is offline (re-evaluated on the `online` event). New `configureImportGuard(fn, { registerNotice })`: the kit's failure notices (fallback modal, pairing error) register their element while mounted, so the app can tell which failure message is visible (default no-op).
+- The connect and account fallbacks are one `ImportFailureModal` (a normal modal body: plain message + Reload, the modal's own close dismisses it); a failed `AccountModal` chunk used to leave a dead account chip. `guardedImport` also normalises a non-Error rejection to an `ImportFailure`.
 - CONSUMERS SHOULD (Safe app, front): call `configureImportGuard` at boot with their stale-chunk recovery; reject with a subclass of `ImportFailure`.
 
 ## 0.14.1
