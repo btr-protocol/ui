@@ -2,6 +2,7 @@ import type { ComponentType } from 'preact';
 import { useEffect, useState } from 'preact/hooks';
 import { shortenAddress } from '../lib/address';
 import { guardedImport } from '../lib/importGuard';
+import { ImportFailureModal } from './ImportFailureModal';
 import { chainIcon } from '../lib/chainIcon';
 import { Button } from '../ui/Button';
 import type { ChainItem } from '../ui/ChainSelect';
@@ -55,8 +56,9 @@ interface WalletButtonProps {
 }
 
 /** The account modal is fetched on first open: the chip stays light in an app's entry. */
-function useAccountModal(open: boolean): ComponentType<AccountModalProps> | null {
+function useAccountModal(open: boolean): [ComponentType<AccountModalProps> | null, Error | null, () => void] {
   const [Modal, setModal] = useState<ComponentType<AccountModalProps> | null>(null);
+  const [failure, setFailure] = useState<Error | null>(null);
   useEffect(() => {
     if (!open || Modal) return;
     let cancelled = false;
@@ -64,13 +66,16 @@ function useAccountModal(open: boolean): ComponentType<AccountModalProps> | null
       (m) => {
         if (!cancelled) setModal(() => m.AccountModal);
       },
-      (e: unknown) => console.error('[accountModal] load failed', e),
+      (e: unknown) => {
+        console.error('[accountModal] load failed', e);
+        if (!cancelled) setFailure(e as Error);
+      },
     );
     return () => {
       cancelled = true;
     };
   }, [open, Modal]);
-  return Modal;
+  return [Modal, failure, () => setFailure(null)];
 }
 
 const storeSwitch = async (a: string) => {
@@ -98,7 +103,7 @@ export function WalletButton({
   labels,
 }: WalletButtonProps) {
   const [showAccountModal, setShowAccountModal] = useState(false);
-  const AccountModal = useAccountModal(showAccountModal);
+  const [AccountModal, accountFailure, clearFailure] = useAccountModal(showAccountModal);
 
   if (!address) {
     return (
@@ -142,6 +147,15 @@ export function WalletButton({
         </Button>
       </Tooltip>
 
+      {showAccountModal && accountFailure && !AccountModal && (
+        <ImportFailureModal
+          failure={accountFailure}
+          onClose={() => {
+            setShowAccountModal(false);
+            clearFailure();
+          }}
+        />
+      )}
       {AccountModal && (
         <AccountModal
           isOpen={showAccountModal}

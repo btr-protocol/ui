@@ -34,6 +34,7 @@ import {
 } from './wallet';
 import { OTHER_IDS, OTHER_MAX, type RecentRow, otherHref, sectionWallets } from './walletSections';
 import { readRecent, recentEntry, recordRecent, removeRecent } from './recentWallets';
+import { canReload, useFailureNotice, useOnline } from './ImportFailureModal';
 import { walletConnectEnabled } from './walletConnectShell';
 import {
   browseHref,
@@ -144,7 +145,7 @@ export function WalletModal({
     uri,
     qr,
     error: pairError,
-    reloadLabel,
+    importFailure,
     restart,
   } = useWalletConnection({
     enabled: pairing,
@@ -244,6 +245,8 @@ export function WalletModal({
   const mine = apps.mine.filter((w) => !recentIds.includes(w.id));
   const popular = apps.popular.filter((w) => !recentIds.includes(w.id));
   const error = err || pairError;
+  const online = useOnline();
+  const noticeRef = useFailureNotice();
   const copyGlyph = <Icon name={copied ? 'check-circle' : 'copy'} className="w-4 h-4" />;
 
   const row = (w: WalletDef) => {
@@ -331,15 +334,23 @@ export function WalletModal({
     >
       <>
         {error && (
-          <div className={`${MODAL_PADDING} pt-4`}>
+          <div ref={importFailure ? noticeRef : undefined} className={`${MODAL_PADDING} pt-4`}>
             <Notice
               tone="error"
               role="alert"
               action={
                 pairError ? (
-                  <Button size="xs" onClick={reloadLabel ? () => location.reload() : retry}>
-                    {reloadLabel ?? l.tryAgain}
-                  </Button>
+                  importFailure ? (
+                    canReload(importFailure, online) ? (
+                      <Button size="xs" onClick={() => location.reload()}>
+                        {importFailure.actionLabel}
+                      </Button>
+                    ) : undefined
+                  ) : (
+                    <Button size="xs" onClick={retry}>
+                      {l.tryAgain}
+                    </Button>
+                  )
                 ) : undefined
               }
             >
