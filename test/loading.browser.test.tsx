@@ -203,12 +203,13 @@ t('tokens.css + loaders.css alone: Spinner sm/md have a box and a running turn, 
   for (const light of [false, true]) {
     const page = await open('bare', { light });
     const m = await page.evaluate(() => {
-      const rem = parseFloat(getComputedStyle(document.documentElement).fontSize);
-      const sp = [...document.querySelectorAll('.spinner')].map((e) => { const r = e.getBoundingClientRect(); const cs = getComputedStyle(e); return { w: r.width, h: r.height, name: cs.animationName, state: cs.animationPlayState, mask: cs.maskImage !== 'none' || cs.webkitMaskImage !== 'none' }; });
+      // Layout size, not getBoundingClientRect: the spinner is turning, and the bounding box of a rotated square is larger than the square.
+      const unit = (v: string) => { const e = document.createElement('i'); e.style.cssText = `position:absolute;width:${v}`; document.body.appendChild(e); const w = getComputedStyle(e).width; e.remove(); return w; };
+      const sp = [...document.querySelectorAll('.spinner')].map((e) => { const cs = getComputedStyle(e); return { w: cs.width, h: cs.height, name: cs.animationName, state: cs.animationPlayState, mask: cs.maskImage !== 'none' || cs.webkitMaskImage !== 'none' }; });
       const sk = document.getElementById('sk')!; const r = sk.getBoundingClientRect(); const a = getComputedStyle(sk, '::after');
-      return { rem, sp, sk: { w: r.width, h: r.height, pos: getComputedStyle(sk).position, bg: getComputedStyle(sk).backgroundColor, name: a.animationName, state: a.animationPlayState }, anim: document.getAnimations().length };
+      return { want: [unit('1rem'), unit('1.5rem')], sp, sk: { w: r.width, h: r.height, pos: getComputedStyle(sk).position, bg: getComputedStyle(sk).backgroundColor, name: a.animationName, state: a.animationPlayState }, anim: document.getAnimations().length };
     });
-    expect(m.sp.map((s) => [s.w / m.rem, s.h / m.rem].map((r) => Math.round(r * 50) / 50))).toEqual([[1, 1], [1.5, 1.5]]); // 1rem and 1.5rem (the root size is fluid)
+    expect(m.sp.map((s) => [s.w, s.h])).toEqual([[m.want[0], m.want[0]], [m.want[1], m.want[1]]]); // exactly 1rem and 1.5rem, whatever the root size is
     for (const s of m.sp) expect(s).toMatchObject({ name: 'loader-spin', state: 'running', mask: true });
     expect(m.sk).toMatchObject({ w: 80, h: 12, pos: 'relative', name: 'loader-sweep', state: 'running' });
     expect(m.sk.bg).not.toBe('rgba(0, 0, 0, 0)');
