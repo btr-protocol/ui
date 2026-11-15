@@ -114,8 +114,7 @@
     transform: none !important;
     opacity: 0 !important;
   }
-  .spinner,
-  .spinner.animate-spin { /* the second selector outranks the global `.animate-spin` 2 s rule: the spinner stays at 2.4 s wherever this file is imported */
+  .spinner {
     animation-duration: 2.4s !important;
     animation-iteration-count: infinite !important;
   }

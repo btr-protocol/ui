@@ -54,7 +54,7 @@ function App() {
         <Hairline />
         <div className="mb-3 text-fg-2">Card: refreshing in the background</div>
         <Skeleton lines={3} />
-        <div className="mt-3 flex items-center gap-2"><span>TVL</span><ValuePlaceholder ch={8} /><span id="solo"><Figure ch={6} cell={{ s: 'loading', since: Date.now() }} format={fmt} /></span></div>
+        <div className="mt-3 flex items-center gap-2"><span>TVL</span><ValuePlaceholder ch={8} /><span id="cascade"><Spinner className="hidden text-warning bg-bg-3" /></span><span id="plain"><Spinner /></span><span id="solo"><Figure ch={6} cell={{ s: 'loading', since: Date.now() }} format={fmt} /></span></div>
       </div>
       <div className="flex items-center gap-4">
         <Button variant="primary" size="sm" leftIcon={<Spinner />}>Signing</Button>

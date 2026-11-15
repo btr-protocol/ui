@@ -130,7 +130,7 @@ t('a 200-row loading table in Busy: one status node that stays mounted, aria-bus
 t('Figure: every state has its own accessible text; a measured zero prints as zero; the n/a glyph is the one hyphen', async () => {
   const page = await open('all');
   await page.locator('[data-state=na]').waitFor();
-  const rows = await page.evaluate(() => [...document.querySelectorAll('tbody tr')].map((r) => { const f = r.querySelector('[data-state]') as HTMLElement; return { state: f.dataset.state!, text: f.textContent!.trim(), sk: !!f.querySelector('.sk'), warn: !!f.querySelector('svg'), retry: f.querySelector('[aria-label^=Retry]')?.getAttribute('aria-label') ?? null, focusable: !!f.querySelector('[tabindex="0"]') }; }));
+  const rows = await page.evaluate(() => [...document.querySelectorAll('tbody tr')].map((r) => { const f = r.querySelector('[data-state]') as HTMLElement; return { state: f.dataset.state!, text: f.textContent!.trim() + [...f.querySelectorAll('[role=img]')].map((i) => i.getAttribute('aria-label')).join(''), sk: !!f.querySelector('.sk'), warn: !!f.querySelector('svg'), retry: f.querySelector('[aria-label^=Retry]')?.getAttribute('aria-label') ?? null, focusable: !!f.querySelector('[tabindex="0"]') }; }));
   const by = (i: number) => rows[i]!;
   expect(by(0).text).toBe('1234.50');
   expect(by(1).text).toBe('0.00');
@@ -150,6 +150,28 @@ t('Figure: every state has its own accessible text; a measured zero prints as ze
   expect(await page.locator('#solo').textContent()).toBe('Loading');
   // axe aria-hidden-focus: no focusable element is, or sits inside, an aria-hidden subtree
   expect(await page.evaluate(() => [...document.querySelectorAll('[tabindex],button,a[href],input')].filter((e) => e.closest('[aria-hidden=true]')).length)).toBe(0);
+});
+
+t('the reason glyph: accessible name (computed) is the reason, said once; no hidden duplicate text', async () => {
+  const page = await open('all');
+  const g = page.locator('[data-state=unavailable] [role=img]').first();
+  await g.focus();
+  expect(await page.locator(':focus').ariaSnapshot()).toContain('img "Unavailable: Could not load"');
+  const dup = await page.evaluate(() => [...document.querySelectorAll('[data-state=unavailable],[data-state=na]')].filter((f) => /^(Unavailable|Not applicable)/.test(f.textContent!.trim())).length);
+  expect(dup).toBe(0); // the words are not also text content (no double reading)
+  expect(await page.locator('[data-state=na] [role=img]').getAttribute('aria-label')).toBe('Not applicable: No fees booked in this window');
+  expect(await page.locator('[data-state=na] [tabindex="0"]').count()).toBe(1);
+});
+
+t('cascade as at 0.14.0: a Spinner className (hidden, text-*, bg-*) never beats the kit rule (loaders sit after the utilities)', async () => {
+  const page = await open('all');
+  const m = await page.evaluate(() => {
+    const a = getComputedStyle(document.querySelector('#cascade .spinner')!), b = getComputedStyle(document.querySelector('#plain .spinner')!);
+    return { display: a.display, color: a.color, plainColor: b.color, img: a.backgroundImage };
+  });
+  expect(m.display).toBe('inline-block');
+  expect(m.color).toBe(m.plainColor);
+  expect(m.img).toContain('conic-gradient');
 });
 
 t('the Retry button is visible in light and dark: a box, and 3:1 contrast against its background', async () => {
@@ -186,7 +208,7 @@ t('tokens.css + loaders.css alone: Spinner sm/md have a box and a running turn, 
       const sk = document.getElementById('sk')!; const r = sk.getBoundingClientRect(); const a = getComputedStyle(sk, '::after');
       return { rem, sp, sk: { w: r.width, h: r.height, pos: getComputedStyle(sk).position, bg: getComputedStyle(sk).backgroundColor, name: a.animationName, state: a.animationPlayState }, anim: document.getAnimations().length };
     });
-    expect(m.sp.map((s) => [s.w, s.h])).toEqual([[m.rem, m.rem], [1.5 * m.rem, 1.5 * m.rem]]);
+    expect(m.sp.map((s) => [s.w / m.rem, s.h / m.rem].map((r) => Math.round(r * 50) / 50))).toEqual([[1, 1], [1.5, 1.5]]); // 1rem and 1.5rem (the root size is fluid)
     for (const s of m.sp) expect(s).toMatchObject({ name: 'loader-spin', state: 'running', mask: true });
     expect(m.sk).toMatchObject({ w: 80, h: 12, pos: 'relative', name: 'loader-sweep', state: 'running' });
     expect(m.sk.bg).not.toBe('rgba(0, 0, 0, 0)');
