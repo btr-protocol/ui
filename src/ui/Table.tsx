@@ -7,7 +7,9 @@ import { SEVERITY_ICON } from '../lib/severity';
 import { virtualWindow } from '../lib/virtualWindow';
 import { Empty, PageState } from './Feedback';
 import { Tooltip } from './FloatingPanel';
+import { type Cell } from '../lib/cell';
 import { DASH, type MetricPhase } from '../lib/metricPhase';
+import { Figure } from './Figure';
 import { cn } from '../lib/cn';
 import type { ComponentChildren, JSX } from 'preact';
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
@@ -861,67 +863,16 @@ export function MetricState({
   className,
   skeletonClassName = 'w-12',
 }: MetricStateProps) {
-  if (phase === 'loading') {
-    return (
-      <span
-        role="status"
-        aria-label="Loading"
-        className={cn(
-          'inline-block h-3.5 rounded-md bg-bg-3 animate-pulse align-middle',
-          skeletonClassName,
-          className,
-        )}
-      />
-    );
-  }
-
-  if (phase === 'live' && value != null && value !== DASH) {
-    return <span className={className}>{value}</span>;
-  }
-
-  if (phase === 'error') {
-    return (
-      <Tooltip
-        content={reason ? `Metrics unavailable: ${reason}` : 'Metrics service unreachable'}
-        side="bottom"
-      >
-        <span
-          className={cn('inline-flex items-center text-warning', className)}
-          aria-label={reason ? `Metrics unavailable: ${reason}` : 'Metrics service unreachable'}
-        >
-          <Icon name={SEVERITY_ICON.error as IconName} size={11} aria-hidden />
-        </span>
-      </Tooltip>
-    );
-  }
-
-  if (phase === 'unfillable') {
-    return (
-      <Tooltip
-        content={reason ?? 'The book cannot fill this size, so no price is quoted.'}
-        side="bottom"
-      >
-        <span
-          className={cn('inline-flex items-center text-warning', className)}
-          aria-label={reason ?? 'Unfillable'}
-        >
-          <Icon name="x-circle" size={11} aria-hidden />
-        </span>
-      </Tooltip>
-    );
-  }
-
-  // A lagging indexer blocks nothing: a calm dash, never a warning glyph on an informational cell.
-  return (
-    <Tooltip
-      content={
-        phase === 'stale'
-          ? 'Updating: shown once the next report lands.'
-          : (emptyHint ?? 'Not reported for this window yet.')
-      }
-      side="bottom"
-    >
-      <span className={cn('text-fg-3', className)}>{DASH}</span>
-    </Tooltip>
-  );
+  // One renderer: the phase picks the Cell, `Figure` draws it.
+  const cell: Cell<string> =
+    phase === 'loading'
+      ? { s: 'loading' }
+      : phase === 'live' && value != null && value !== DASH
+        ? { s: 'value', v: value }
+        : phase === 'error'
+          ? { s: 'unavailable', reason: 'error', detail: reason ?? 'Metrics service unreachable' }
+          : phase === 'unfillable'
+            ? { s: 'na', why: reason ?? 'The book cannot fill this size, so no price is quoted.' }
+            : { s: 'na', why: phase === 'stale' ? 'Updating: shown once the next report lands.' : (emptyHint ?? 'Not reported for this window yet.') };
+  return <Figure cell={cell} format={(v) => v} className={className} placeholderClassName={skeletonClassName} />;
 }

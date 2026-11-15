@@ -11,8 +11,8 @@ export interface ProgressStepsProps {
 const MAX_SEGMENTS = 12;
 
 /** m-of-n progress (signatures 2/3, steps 1/4) as a readable bar: one segment per step, the first `done` filled green, the
- *  missing ones a moving shimmer (a loader: "still waiting"), then the count. One size everywhere (a list row and a card read
- *  the same). Reduced motion freezes the shimmer (global switch). The accessible name is "done/total". */
+ *  missing ones the kit's sweep (a loader: "still waiting"), then the count. One size everywhere (a list row and a card read
+ *  the same). Reduced motion holds it still. The accessible name is "done/total". */
 export function ProgressSteps({ done, total, className }: ProgressStepsProps) {
   const d = Math.max(0, Math.min(done, total));
   const segs = total > 0 && total <= MAX_SEGMENTS;
@@ -22,7 +22,7 @@ export function ProgressSteps({ done, total, className }: ProgressStepsProps) {
         <span aria-hidden="true" className="flex h-2 w-24 shrink-0 gap-0.5 overflow-hidden rounded-full">
           {segs
             ? Array.from({ length: total }, (_, i) => (
-                <span key={i} className={cn('h-full flex-1', i < d ? 'bg-green' : 'progress-pending')} style={i < d ? undefined : { animationDelay: `${(i - d) * 150}ms` }} />
+                <span key={i} className={cn('h-full flex-1', i < d ? 'bg-green' : 'progress-pending')} />
               ))
             : (
                 <>

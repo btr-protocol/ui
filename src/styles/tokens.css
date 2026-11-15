@@ -27,6 +27,9 @@
   --dur-2: 180ms;
   --dur-3: 280ms;
   --ease: cubic-bezier(0.2, 0, 0, 1);
+  --ease-linear: linear;
+  --dur-spin: 900ms; /* loaders: the spinner turn and the data sweep (styles/index.css) */
+  --dur-sweep: 1400ms;
 }
 
 /* Below lg the fixed bottom bar is the tab bar (layout/TabBar.tsx), not the 2rem footer. */
