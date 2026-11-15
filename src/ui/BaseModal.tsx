@@ -339,7 +339,6 @@ export function BaseModal({
               {closable && (
                 <CloseButton
                   onClick={() => onClose(false)}
-                  size={18}
                   aria-label={`Close ${title}`}
                 />
               )}

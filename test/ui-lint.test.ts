@@ -88,7 +88,6 @@ test('Button wrappers (components that forward className / spread props into a B
 // (icon-only chrome, a tab/segment/row/menu item, a notice-tinted action...). file -> why. Anything else with ad-hoc sizing must be a <Button>.
 const RAW_BUTTON_OK: Record<string, string> = {
   'src/ui/Button.tsx': 'the definition',
-  'src/ui/CloseButton.tsx': 'icon-only dismiss glyph with its own hit-area contract',
   'src/ui/Feedback.tsx': 'notice-action is tinted by the notice tone (.notice-action); Toast dismiss is an icon',
   'src/ui/AddrActions.tsx': 'icon-only copy / explorer glyph buttons inline with text',
   'src/ui/Table.tsx': 'sortable header cell and row-expander: table chrome, not an action button',
@@ -132,7 +131,7 @@ test('Button sizes are the scale of lib/design.ts only', async () => {
     for (const attrs of buttonTags(src)) {
       const m = /size=(?:"([^"]*)"|\{'([^']*)'\})/.exec(attrs);
       const v = m?.[1] ?? m?.[2];
-      if (v && !['xs', 'sm', 'default'].includes(v)) bad.push(`${f}: size="${v}"`);
+      if (v && !['xs', 'sm', 'md'].includes(v)) bad.push(`${f}: size="${v}"`);
     }
   }
   expect(bad).toEqual([]);

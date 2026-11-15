@@ -118,7 +118,7 @@ export function WalletButton({
           className={className}
           onClick={() => setShowAccountModal(true)}
           aria-label={`${labels?.wallet ?? 'Wallet'} ${shortenAddress(address)} on ${chainName}, open account`}
-          leftIcon={
+          icon={
             gate.mismatch ? (
               <Icon name="warning" className="w-4 h-4 shrink-0 text-warning" />
             ) : wallet ? (

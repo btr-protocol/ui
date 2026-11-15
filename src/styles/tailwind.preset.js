@@ -145,49 +145,13 @@ export default {
           display: 'none',
         },
 
-        // Toolbar items
-        '.toolbar-btn': {
-          height: '2rem',
-          'padding-left': '0.5rem',
-          'padding-right': '0.5rem',
-          display: 'flex',
-          'align-items': 'center',
-          cursor: 'pointer',
-          color: 'var(--fg-2)',
-          'font-weight': '500',
-          'transition-property': 'color, background-color',
-          'transition-duration': 'var(--dur-2)',
-        },
-        '@media (hover: hover)': {
-          '.toolbar-btn:hover': { color: 'var(--fg-1)', 'background-color': 'var(--bg-2)' },
-          '.toolbar-item:hover': { 'background-color': 'var(--bg-2)' },
-        },
-        // A finger needs the 44px (--ctl-m) target; the glyphs keep their desktop size.
+        // `.tap-min`: the opt-in floor for any control smaller than --ctl-m on touch (glyphs keep size).
         '@media (pointer: coarse)': {
-          // `.tap-min` is the opt-in floor for any control smaller than --ctl-m on touch (glyphs keep size).
-          '.toolbar-btn, .toolbar-item, .tap-min': {
+          '.tap-min': {
             'min-height': 'var(--ctl-m)',
             'min-width': 'var(--ctl-m)',
             'justify-content': 'center',
           },
-        },
-        '.toolbar-btn-active': {
-          'background-color': 'var(--bg-primary)',
-          color: 'var(--fg-primary)',
-        },
-        '.toolbar-item': {
-          height: '2rem',
-          'padding-left': '0.5rem',
-          'padding-right': '0.5rem',
-          display: 'flex',
-          'align-items': 'center',
-          gap: '0.375rem',
-          'font-size': '0.75rem',
-          'font-weight': '500',
-          color: 'var(--fg-1)',
-          'border-right': '1px solid var(--border-color)',
-          'transition-property': 'background-color',
-          'transition-duration': 'var(--dur-2)',
         },
 
         // Floating panels (tooltips, popovers, dropdowns)

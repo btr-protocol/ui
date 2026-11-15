@@ -70,7 +70,7 @@ export function ChartPanel({ title, value, date, valueRef, dateRef, controls, ta
       aria-label={open ? fullscreenLabels.close : fullscreenLabels.open}
       title={open ? fullscreenLabels.close : fullscreenLabels.open}
       aria-expanded={open}
-      leftIcon={<Icon name={open ? 'x' : 'corners-out'} className="h-4 w-4" />}
+      icon={<Icon name={open ? 'x' : 'corners-out'} />}
     />
   ) : null;
   // DOM order = reading order: the table first when it sits left, after the chart when it sits right.

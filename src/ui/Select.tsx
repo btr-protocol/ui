@@ -1,4 +1,4 @@
-import { DROPDOWN_ITEM_SIZES, SIZE_CHECK, type Size } from '../lib/design';
+import { DROPDOWN_ITEM_SIZES, type Size } from '../lib/design';
 import type { DropdownItem, SelectionItem } from '../lib/uiTypes';
 import { BaseModal, MODAL_PADDING, type ModalSize } from './BaseModal';
 import { Button, type ButtonProps } from './Button';
@@ -314,17 +314,13 @@ export function Dropdown<T = string>({
       aria-haspopup="listbox"
       aria-expanded={isOpen}
       aria-label={ariaLabel}
-      size={size}
+      size={size === 'default' ? 'md' : size}
       variant={variant}
-      leftIcon={leftIcon}
+      icon={<Icon name="caret-down" className={cn('transition-transform', isOpen && 'rotate-180')} />}
+      iconPosition="end"
       className={cn('justify-between text-left', className)}
-      rightIcon={
-        <Icon
-          name="caret-down"
-          className={cn(SIZE_CHECK[size], 'transition-transform', isOpen && 'rotate-180')}
-        />
-      }
     >
+      {leftIcon}
       <span className="flex min-w-0 flex-1 items-center gap-1 text-left">
         <span className="truncate">{getDisplayLabel()}</span>
         {adornment && <span className="shrink-0 inline-flex items-center">{adornment}</span>}
@@ -733,7 +729,7 @@ export function SelectionModal({
             value={
               <div className="flex items-center gap-2">
                 <Button
-                  size="default"
+                  size="md"
                   onClick={allSelected ? handleDeselectAll : handleSelectAll}
                   disabled={allSelected && tempSelected.length === minSelections}
                 >
@@ -743,7 +739,7 @@ export function SelectionModal({
                       : L.unselectAll
                     : L.selectAll}
                 </Button>
-                <Button variant="primary" size="default" onClick={handleApply}>
+                <Button variant="primary" size="md" onClick={handleApply}>
                   {applyLabel}
                 </Button>
               </div>

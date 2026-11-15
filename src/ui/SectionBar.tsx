@@ -97,7 +97,7 @@ export function SectionBar({ title, start, end, search, searchSide = 'right', la
         });
       }}
     >
-      <Button type="button" variant="ghost" size="sm" className="sb-search-btn" aria-label={search.ariaLabel ?? search.placeholder ?? 'Search'} aria-expanded={open} aria-pressed={!!search.value} onClick={() => setOpen(true)} leftIcon={<Icon name="magnifying-glass" className="h-4 w-4" />} />
+      <Button type="button" variant="ghost" size="sm" className="sb-search-btn" aria-label={search.ariaLabel ?? search.placeholder ?? 'Search'} aria-expanded={open} aria-pressed={!!search.value} onClick={() => setOpen(true)} icon={<Icon name="magnifying-glass" />} />
       <SearchField variant="bar" value={search.value} onChange={search.onChange} placeholder={search.placeholder} ariaLabel={search.ariaLabel} debounce={search.debounce} busy={search.busy} inputRef={input} />
     </div>
   );

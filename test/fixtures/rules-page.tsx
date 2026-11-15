@@ -42,8 +42,8 @@ function App() {
       <div id="host" style={{ width: q.get('w') ? `${q.get('w')}px` : '100%' }} className="p-2">
         <div id="lone" className="flex"><Button size="sm" className="w-full">{long}</Button></div>
         <ButtonGroup aria-label="Signing" wrap className="w-full">
-          <Button size="sm" aria-label="Copy" leftIcon={<Icon name="copy" size={16} />} />
-          <Button size="sm" aria-label="Cancel" leftIcon={<Icon name="x" size={16} />} />
+          <Button size="sm" aria-label="Copy" icon={<Icon name="copy" />} />
+          <Button size="sm" aria-label="Cancel" icon={<Icon name="x" />} />
           <Button size="sm">Reject</Button>
           <Button size="sm" variant="primary">{long}</Button>
         </ButtonGroup>
@@ -56,7 +56,7 @@ function App() {
   if (v === 'select')
     return (
       <div className="p-4">
-        <SelectModal routeKey="r" label="Mode" value="a" onChange={(v) => { (window as unknown as { __picked: string[] }).__picked = [...((window as unknown as { __picked?: string[] }).__picked ?? []), v]; }} items={items} triggerPrefix={<><Icon name="check-circle" size={16} /><span>Simulated ·</span></>} />
+        <SelectModal routeKey="r" label="Mode" value="a" onChange={(v) => { (window as unknown as { __picked: string[] }).__picked = [...((window as unknown as { __picked?: string[] }).__picked ?? []), v]; }} items={items} triggerPrefix={<><Icon name="check-circle" /><span>Simulated ·</span></>} />
         <SelectModal routeKey="r2" label="Many" value="" onChange={() => {}} items={many} />
       </div>
     );

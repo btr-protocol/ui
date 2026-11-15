@@ -6,14 +6,14 @@ import { click, mount, until, useDom } from './dom';
 useDom();
 
 test('Button: label is nowrap and truncates; icon-only and primary carry the group hooks', () => {
-  const text = render(<Button size="sm" leftIcon={<Icon name="copy" />}>A long label</Button>);
+  const text = render(<Button size="sm" icon={<Icon name="copy" />}>A long label</Button>);
   expect(text).toContain('whitespace-nowrap');
   expect(text).toContain('min-w-0 truncate');
   expect(render(<Button>{3} items</Button>)).toContain('data-label');
   expect(render(<Button>Pick <b>all</b></Button>)).toContain('data-label');
   expect(render(<Button><b>all</b></Button>)).not.toContain('data-label');
   expect(text).not.toContain('data-icon-only');
-  const icon = render(<Button aria-label="Copy" leftIcon={<Icon name="copy" />} />);
+  const icon = render(<Button aria-label="Copy" icon={<Icon name="copy" />} />);
   expect(icon).toContain('data-icon-only');
   expect(render(<Button variant="primary">Go</Button>)).toContain('data-primary');
   expect(render(<Button>Go</Button>)).not.toContain('data-primary');

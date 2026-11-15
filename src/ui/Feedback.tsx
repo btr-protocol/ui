@@ -450,7 +450,7 @@ export function Toast({
             onDismiss();
           }}
           className="shrink-0"
-          leftIcon={<Icon name="x" className="w-3 h-3" />}
+          icon={<Icon name="x" />}
           aria-label="Dismiss notification"
         />
       )}

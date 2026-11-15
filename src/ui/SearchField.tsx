@@ -37,7 +37,7 @@ export interface SearchFieldProps {
   inputProps?: Partial<InputProps>;
 }
 
-const CLEAR_ICON = <Icon name="x" className="h-3 w-3" />;
+const CLEAR_ICON = <Icon name="x" />;
 
 /** What each presentation adds to the same markup. */
 const SHELL: Record<SearchFieldVariant, string> = {
@@ -108,7 +108,7 @@ export function SearchField({ value, onChange, placeholder = 'Search...', ariaLa
             size="xs"
             data-search-clear=""
             aria-label="Clear search"
-            leftIcon={CLEAR_ICON}
+            icon={CLEAR_ICON}
             onClick={(e) => {
               stop(e);
               push('');

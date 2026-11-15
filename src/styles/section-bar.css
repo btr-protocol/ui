@@ -1,6 +1,5 @@
 /* SectionBar (ui/SectionBar.tsx): the top edge of a section, card or table. ONE fixed-height bar of
-   full-height cells separated by 1px dividers (the chart toolbar's language, `.toolbar-btn` /
-   `.toolbar-item`). Height is the control token (--ctl-m: 32 desktop, 44 touch), identical with or
+   full-height cells separated by 1px dividers (the chart toolbar's language). Height is the control token (--ctl-m: 32 desktop, 44 touch), identical with or
    without title, search or controls. The search is a cell: it owns no border or radius except the
    bar's outer corner on its side. Everything reads tokens; no colour literals. */
 .section-bar {
@@ -89,6 +88,27 @@
 .sb-cell :focus-visible {
   outline-offset: -2px; /* inside the cell: the bar clips an outset ring */
 }
+/* Cell context for the ONE Button: full bar height; an icon-only cell is a square at BAR height (also for xs / md buttons). */
+.sb-cell [data-icon-only] {
+  width: var(--sb-h);
+  min-width: var(--sb-h);
+}
+/* `collapse` n: below the bar's width the label drops and the cell is icon-only (same rule as `data-icon-only`). 1 goes first,
+   3 last; a Button without `collapse` (the primary) keeps its label until the bar scrolls. Container query thresholds are literals
+   (a query cannot read a var): 44 / 34 / 26 rem of BAR width. */
+@container section-bar (max-width: 44rem) {
+  .sb-cell .btn[data-collapse='1'] > .btn-label { display: none; }
+  .sb-cell .btn[data-collapse='1'] { width: var(--sb-h); min-width: var(--sb-h); padding: 0; gap: 0; flex: none; }
+}
+@container section-bar (max-width: 34rem) {
+  .sb-cell .btn[data-collapse='2'] > .btn-label { display: none; }
+  .sb-cell .btn[data-collapse='2'] { width: var(--sb-h); min-width: var(--sb-h); padding: 0; gap: 0; flex: none; }
+}
+@container section-bar (max-width: 26rem) {
+  .sb-cell .btn[data-collapse='3'] > .btn-label { display: none; }
+  .sb-cell .btn[data-collapse='3'] { width: var(--sb-h); min-width: var(--sb-h); padding: 0; gap: 0; flex: none; }
+}
+
 /* A tab strip or button group in a cell: the cell supplies the edge, the strip keeps only its inner dividers. */
 .sb-cell .btn-group {
   align-self: stretch;

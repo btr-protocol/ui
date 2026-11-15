@@ -12,9 +12,16 @@
   border-radius: var(--btn-group-r);
   background: var(--bg-1);
 }
+.btn-group > :not([data-icon-only]) {
+  position: relative;
+  min-width: 0; /* a text cell may shrink (it truncates); an icon-only cell never does (button.css) */
+}
 .btn-group > * {
   position: relative;
-  min-width: 0;
+}
+/* An icon-only cell behind a Tooltip / Dropdown wrapper: the wrapper is as rigid as the square inside it. */
+.btn-group > :has(> [data-icon-only]) {
+  flex: none;
 }
 .btn-group :is(button, a, [role='button']) {
   border-width: 0;
@@ -52,11 +59,6 @@
 }
 .btn-group-wrap > * {
   flex: 1 1 auto;
-}
-/* Icon-only cells (copy, cancel, re-simulate) are compact squares, never stretched; the primary takes the spare width. A Tooltip
-   or Dropdown wrapper counts as its trigger (`:has`). Wrap groups ONLY: a group a caller splits itself (`[&>*]:flex-1`) is theirs. */
-.btn-group-wrap > :is([data-icon-only], :has(> [data-icon-only])) {
-  flex: none;
 }
 .btn-group-wrap > :is([data-primary], :has(> [data-primary])) {
   flex: 100 1 auto;

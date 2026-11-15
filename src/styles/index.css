@@ -1,5 +1,6 @@
 @import "./fonts.css";
 @import "./tokens.css";
+@import "./button.css";
 @import "./button-group.css";
 @import "./section-bar.css";
 
@@ -340,10 +341,6 @@ select[aria-invalid="true"]:focus {
 }
 
 /* Enforce font-title on all interactive UI elements */
-.toolbar-btn,
-.toolbar-btn span,
-.toolbar-item,
-.toolbar-item span,
 button,
 button span,
 select,

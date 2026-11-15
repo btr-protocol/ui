@@ -179,13 +179,10 @@ export function ChainSelect({ chains, value, onChange, title, routeKey, allLabel
         type="button"
         size="sm"
         onClick={() => setOpen(true)}
-        leftIcon={
-          current ? (
-            (current.triggerIcon ?? current.icon ?? <ChainGlyph chainId={current.id} name={current.name} role="trigger" />)
-          ) : undefined
-        }
-        rightIcon={<Icon name="caret-down" className="w-3.5 h-3.5 text-fg-3 shrink-0" />}
+        icon={<Icon name="caret-down" />}
+        iconPosition="end"
       >
+        {current ? (current.triggerIcon ?? current.icon ?? <ChainGlyph chainId={current.id} name={current.name} role="trigger" />) : null}
         <span className="truncate max-w-40">{current?.name ?? (value == null ? (allLabel ?? '') : `Chain ${value}`)}</span>
       </Button>
       {/* Fetched on first open: the trigger sits in every app header, the modal (list, sort, switch) does not. */}

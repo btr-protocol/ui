@@ -198,7 +198,7 @@ export function AccountModal({
                 variant="ghost"
                 size="sm"
                 aria-label={l.disconnect}
-                leftIcon={<Icon name="sign-out" />}
+                icon={<Icon name="sign-out" />}
                 onClick={() => {
                   onDisconnect();
                   close();

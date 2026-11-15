@@ -75,7 +75,7 @@ export function SelectModal<T extends string>({ value, onChange, items, label, t
   const cur = items.find((i) => i.value === value);
   return (
     <>
-      <Button type="button" size="sm" onClick={() => setOpen(true)} aria-haspopup="dialog" aria-expanded={open} rightIcon={<Icon name="caret-down" className="h-3.5 w-3.5 shrink-0 text-fg-3" />}>
+      <Button type="button" size="sm" onClick={() => setOpen(true)} aria-haspopup="dialog" aria-expanded={open} icon={<Icon name="caret-down" />} iconPosition="end">
         {triggerPrefix}
         {triggerIcon && cur?.icon && typeof cur.icon !== 'string' ? <span className="flex h-5 w-5 shrink-0 items-center justify-center [&>*]:h-5 [&>*]:w-5 [&>*]:text-2xs">{cur.icon}</span> : null}
         <span className="min-w-0 max-w-[10rem] truncate">{cur?.label ?? label}</span>
@@ -117,7 +117,7 @@ export function MultiSelectModal<T extends string>({ value, onChange, items, lab
   const all = items.length > 0 && value.length >= items.length;
   return (
     <>
-      <Button type="button" size="sm" disabled={disabled} onClick={() => setOpen(true)} aria-haspopup="dialog" aria-expanded={open} rightIcon={<Icon name="caret-down" className="h-3.5 w-3.5 shrink-0 text-fg-3" />}>
+      <Button type="button" size="sm" disabled={disabled} onClick={() => setOpen(true)} aria-haspopup="dialog" aria-expanded={open} icon={<Icon name="caret-down" />} iconPosition="end">
         {(triggerContent ?? triggerLabel) ? (triggerContent ?? <span>{triggerLabel}</span>) : <><span>{label}</span><span className="text-fg-2">{all ? allLabel : value.length}</span></>}
       </Button>
       <SelectionModal

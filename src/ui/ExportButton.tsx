@@ -14,7 +14,7 @@ export interface ExportButtonProps {
 /** One small download button (CSV, JSON, YAML): the same control wherever an export lives. */
 export function ExportButton({ label, filename, build, mime = 'text/csv', title }: ExportButtonProps) {
   return (
-    <Button type="button" size="sm" title={title ?? `Download ${filename}`} onClick={() => downloadText(filename, build(), mime)} leftIcon={<Icon name="download" className="h-3.5 w-3.5" />}>
+    <Button type="button" size="sm" title={title ?? `Download ${filename}`} onClick={() => downloadText(filename, build(), mime)} icon={<Icon name="download" />}>
       {label}
     </Button>
   );

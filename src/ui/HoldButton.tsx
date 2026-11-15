@@ -2,7 +2,7 @@ import { haptic } from '../lib/haptic';
 import { cn } from '../lib/cn';
 import type { ComponentChildren } from 'preact';
 import { useEffect, useReducer, useRef, useState } from 'preact/hooks';
-import { Button, type ButtonProps } from './Button';
+import { Button, type ButtonBaseProps } from './Button';
 
 /** How long a keyboard / TalkBack "arm" stays live before it lapses. */
 export const ARM_MS = 4000;
@@ -47,7 +47,7 @@ function step(s: HoldState, e: HoldEvent, ms: number): HoldState {
   }
 }
 
-interface HoldButtonProps extends Omit<ButtonProps, 'onClick' | 'children'> {
+interface HoldButtonProps extends Omit<ButtonBaseProps, 'onClick' | 'children'> {
   /** Hold time in ms; 0 = an ordinary tap. */
   hold: number;
   onConfirm: () => void;

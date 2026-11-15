@@ -299,7 +299,7 @@ export function WalletModal({
             onClick={(e) => (mobile && uri && def ? launch(def, e) : setMore(true))}
           />
         )}
-        <CloseButton className="row-x-btn text-fg-2" size={16} disabled={connecting !== null} aria-label={fill(l.removeRecent, recent.name)} onClick={(e) => remove(e, recent.id)} />
+        <CloseButton className="row-x-btn text-fg-2" disabled={connecting !== null} aria-label={fill(l.removeRecent, recent.name)} onClick={(e) => remove(e, recent.id)} />
       </div>
     );
   };
@@ -443,7 +443,7 @@ export function WalletModal({
                   </div>
                 )}
                 {qr !== '' && !pairError && <p className="text-sm text-fg-2 text-center max-w-[280px]">{l.qrScan}</p>}
-                <Button disabled={!uri} onClick={copy} leftIcon={copyGlyph}>
+                <Button disabled={!uri} onClick={copy} icon={copyGlyph}>
                   {copied ? l.copied : l.copyLink}
                 </Button>
               </div>

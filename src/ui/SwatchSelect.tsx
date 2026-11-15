@@ -36,7 +36,7 @@ export function SwatchSelect({ value, defaultIndex, isDefault, onChange, label, 
   );
   return (
     <>
-      <Button type="button" variant="ghost" size="xs" className={cn('tap-min shrink-0', className)} aria-label={label} title={label} aria-haspopup="dialog" aria-expanded={open} onClick={() => setOpen(true)} leftIcon={<Icon name="palette" className="h-3 w-3" />} />
+      <Button type="button" variant="ghost" size="xs" className={cn('tap-min shrink-0', className)} aria-label={label} title={label} aria-haspopup="dialog" aria-expanded={open} onClick={() => setOpen(true)} icon={<Icon name="palette" />} />
       <SelectionModal
         isOpen={open}
         onClose={() => setOpen(false)}

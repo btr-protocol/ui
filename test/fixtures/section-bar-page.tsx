@@ -71,7 +71,7 @@ function Bars({ body }: { body: 'table' | 'card' }) {
         <SectionBar title="Orders" label="Orders view"
           start={<SectionBarCell><SegmentedControl size="sm" aria-label="Status" options={TABS} value={tab} onChange={setTab} /></SectionBarCell>}
           end={<>
-            <SectionBarCell><Button variant="ghost" size="sm" aria-label="Refresh" leftIcon={<Icon name="refresh-cw" className="h-4 w-4" />} /></SectionBarCell>
+            <SectionBarCell><Button variant="ghost" size="sm" aria-label="Refresh" icon={<Icon name="refresh-cw" />} /></SectionBarCell>
             <SectionBarCell><Button variant="ghost" size="sm">Export</Button></SectionBarCell>
           </>} />
         {B}

@@ -86,7 +86,7 @@ export function Figure<T>({ cell: input, format, ch, className, placeholderClass
             <Icon name={cell.reason === 'unfillable' ? 'x-circle' : 'warning'} size={11} aria-hidden />
           </span>,
           said,
-          cell.retry && <Button size="xs" variant="ghost" aria-label={label ? `Retry ${label}` : 'Retry'} leftIcon={<Icon name="refresh-cw" size={12} />} onClick={cell.retry} />,
+          cell.retry && <Button size="xs" variant="ghost" aria-label={label ? `Retry ${label}` : 'Retry'} icon={<Icon name="refresh-cw" />} onClick={cell.retry} />,
         ),
       );
     }

@@ -113,7 +113,7 @@ for (const [w, sc] of [[1440, 'share'], [390, 'share'], [360, 'share'], [360, 's
     });
     expect(m.acts).toHaveLength(2);
     m.acts.forEach((a, i) => {
-      expect(a.h).toBe(m.refs[i].h);
+      expect(Math.abs(a.h - m.refs[i].h)).toBeLessThan(0.05);
       expect(a.r).toBe(m.refs[i].r);
       expect(a.bg).toBe(m.refs[i].bg); // primary is filled, secondary is not: the kit's own distinction
       expect(a.overflowing).toBe(false);

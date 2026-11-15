@@ -45,7 +45,8 @@ export function ChainMultiSelect({
         onClick={() => setOpen(true)}
         aria-haspopup="dialog"
         aria-expanded={open}
-        rightIcon={<Icon name="caret-down" className="h-3.5 w-3.5 shrink-0 text-fg-3" />}
+        icon={<Icon name="caret-down" />}
+        iconPosition="end"
       >
         <span>{label}</span>
         {all ? (

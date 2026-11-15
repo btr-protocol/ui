@@ -18,7 +18,7 @@ test('group: the tablist is a ButtonGroup and every tab a Button, with tab seman
   const t = tabs(host);
   expect(t.map((x) => x.getAttribute('aria-selected'))).toEqual(['false', 'false', 'true', 'false']);
   expect(t.map((x) => x.tabIndex)).toEqual([-1, -1, 0, -1]);
-  expect(t[0]!.className).toContain('h-[var(--ctl-m)]'); // Button sm: the ButtonGroup height
+  expect(t[0]!.getAttribute('data-size')).toBe('sm'); // Button sm: the ButtonGroup height
   expect(t[1]!.getAttribute('aria-disabled')).toBe('true');
   expect(t[1]!.getAttribute('title')).toBe('off');
   expect(host.querySelector('[role=tabpanel]')).toBeNull();
@@ -112,9 +112,9 @@ test('href tabs are real anchors with tab semantics; a plain click selects witho
 
 test('xs rides Button xs height; sm and md ride Button sm', () => {
   const h = (size: 'xs' | 'sm' | 'md') => ssr(<SegmentedControl aria-label="S" size={size} options={O} value="a" onChange={() => {}} />);
-  expect(h('xs')).toContain('h-[var(--ctl-s)]');
-  expect(h('sm')).toContain('h-[var(--ctl-m)]');
-  expect(h('md')).toContain('h-[var(--ctl-m)]');
+  expect(h('xs')).toContain('data-size="xs"');
+  expect(h('sm')).toContain('data-size="sm"');
+  expect(h('md')).toContain('data-size="sm"');
 });
 
 test('manual activation: arrows only move focus, Enter / click selects', () => {

@@ -49,8 +49,8 @@ function App() {
         <div className="mt-3 flex items-center gap-2"><span>TVL</span><ValuePlaceholder ch={8} /><span id="solo"><Figure ch={6} cell={{ s: 'loading', since: Date.now() }} format={fmt} /></span></div>
       </div>
       <div className="flex items-center gap-4">
-        <Button variant="primary" size="sm" leftIcon={<Spinner />}>Signing</Button>
-        <Button size="sm" disabled leftIcon={<Spinner />}>Waiting</Button>
+        <Button variant="primary" size="sm" icon={<Spinner />}>Signing</Button>
+        <Button size="sm" disabled icon={<Spinner />}>Waiting</Button>
         <Spinner size="md" />
         <Skeleton className="h-24 w-40" />
       </div>

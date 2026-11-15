@@ -41,7 +41,7 @@ test('swatchColor wraps over the 12 series tokens', () => {
 test('SegmentedControl md is a ButtonGroup of Button sm (control height token, same as Input/Button sm)', () => {
   const o = [{ value: 'a', label: 'A' }];
   expect(render(<SegmentedControl aria-label="Sections" options={o} value="a" onChange={() => {}} />)).toContain('btn-group');
-  expect(render(<SegmentedControl aria-label="Sections" options={o} value="a" onChange={() => {}} />)).toContain('h-[var(--ctl-m)]');
+  expect(render(<SegmentedControl aria-label="Sections" options={o} value="a" onChange={() => {}} />)).toContain('data-size="sm"');
 });
 
 test('selected master row cells that pin a text colour follow it (css rule)', async () => {

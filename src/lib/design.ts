@@ -29,12 +29,6 @@ export const SIZE_HEIGHTS = {
   default: 'h-[var(--ctl-l)]',
 } as const;
 
-export const SIZE_ICON_WIDTHS = {
-  xs: 'w-[var(--ctl-s)]',
-  sm: 'w-[var(--ctl-m)]',
-  default: 'w-[var(--ctl-l)]',
-} as const;
-
 export const SIZE_PADDINGS = {
   xs: 'px-2',
   sm: 'px-3',
@@ -47,28 +41,10 @@ export const SIZE_TEXT = {
   default: 'text-base',
 } as const;
 
-/**
- * A leading icon reads as lighter than a glyph of text, so the padding that looks right before a
- * word looks too wide before an icon. Pull it back by a fraction of a step so the optical left
- * inset matches the right one. Leading only: a trailing icon sits against the right padding, which
- * `PADDING_X.right` already trims.
- */
-export const SIZE_LEADING_ICON_OFFSET = {
-  xs: '-ml-0.5',
-  sm: '-ml-0.5',
-  default: '-ml-1',
-} as const;
-
 export const SIZE_GAPS = {
   xs: 'gap-1',
   sm: 'gap-1.5',
   default: 'gap-1.5',
-} as const;
-
-export const SIZE_CHECK = {
-  xs: 'w-3 h-3',
-  sm: 'w-3.5 h-3.5',
-  default: 'w-4 h-4',
 } as const;
 
 /** Menu rows: compact under a mouse, ctl-tall under a finger. */
