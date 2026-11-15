@@ -7,7 +7,9 @@ import { SEVERITY_ICON } from '../lib/severity';
 import { virtualWindow } from '../lib/virtualWindow';
 import { Empty, PageState } from './Feedback';
 import { Tooltip } from './FloatingPanel';
+import { type Cell } from '../lib/cell';
 import { DASH, type MetricPhase } from '../lib/metricPhase';
+import { Figure } from './Figure';
 import { cn } from '../lib/cn';
 import type { ComponentChildren, JSX } from 'preact';
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
@@ -851,6 +853,8 @@ export interface MetricStateProps {
   className?: string;
   /** Skeleton width while loading. */
   skeletonClassName?: string;
+  /** Characters reserved for the figure, so the loading to value swap does not shift the layout. */
+  ch?: number;
 }
 
 export function MetricState({
@@ -860,68 +864,22 @@ export function MetricState({
   emptyHint,
   className,
   skeletonClassName = 'w-12',
+  ch = 6,
 }: MetricStateProps) {
-  if (phase === 'loading') {
-    return (
-      <span
-        role="status"
-        aria-label="Loading"
-        className={cn(
-          'inline-block h-3.5 rounded-md bg-bg-3 animate-pulse align-middle',
-          skeletonClassName,
-          className,
-        )}
-      />
-    );
-  }
-
-  if (phase === 'live' && value != null && value !== DASH) {
-    return <span className={className}>{value}</span>;
-  }
-
-  if (phase === 'error') {
-    return (
-      <Tooltip
-        content={reason ? `Metrics unavailable: ${reason}` : 'Metrics service unreachable'}
-        side="bottom"
-      >
-        <span
-          className={cn('inline-flex items-center text-warning', className)}
-          aria-label={reason ? `Metrics unavailable: ${reason}` : 'Metrics service unreachable'}
-        >
-          <Icon name={SEVERITY_ICON.error as IconName} size={11} aria-hidden />
-        </span>
-      </Tooltip>
-    );
-  }
-
-  if (phase === 'unfillable') {
-    return (
-      <Tooltip
-        content={reason ?? 'The book cannot fill this size, so no price is quoted.'}
-        side="bottom"
-      >
-        <span
-          className={cn('inline-flex items-center text-warning', className)}
-          aria-label={reason ?? 'Unfillable'}
-        >
-          <Icon name="x-circle" size={11} aria-hidden />
-        </span>
-      </Tooltip>
-    );
-  }
-
-  // A lagging indexer blocks nothing: a calm dash, never a warning glyph on an informational cell.
-  return (
-    <Tooltip
-      content={
-        phase === 'stale'
-          ? 'Updating: shown once the next report lands.'
-          : (emptyHint ?? 'Not reported for this window yet.')
-      }
-      side="bottom"
-    >
-      <span className={cn('text-fg-3', className)}>{DASH}</span>
-    </Tooltip>
-  );
+  // The loading clock starts when the phase is first seen loading and resets when it leaves, so the deadline is per load.
+  const since = useRef<number>();
+  if (phase === 'loading') since.current ??= Date.now();
+  else since.current = undefined;
+  // One renderer: the phase picks the Cell, `Figure` draws it.
+  const cell: Cell<string> =
+    phase === 'loading'
+      ? { s: 'loading', since: since.current! }
+      : phase === 'live' && value != null && value !== DASH
+        ? { s: 'value', v: value }
+        : phase === 'error'
+          ? { s: 'unavailable', reason: 'error', detail: reason ?? 'Metrics service unreachable' }
+          : phase === 'unfillable'
+            ? { s: 'unavailable', reason: 'unfillable', detail: reason ?? 'the book cannot fill this size, so no price is quoted' }
+            : { s: 'na', why: phase === 'stale' ? 'Updating: shown once the next report lands.' : (emptyHint ?? 'Not reported for this window yet.') };
+  return <Figure cell={cell} format={(v) => v} ch={ch} className={className} placeholderClassName={skeletonClassName} />;
 }

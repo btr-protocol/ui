@@ -123,10 +123,9 @@ for (const [w, sc] of [[1440, 'share'], [390, 'share'], [360, 'share'], [360, 's
   });
 
 // Addresses in the notice text and the row caption are never split or cut.
-for (const [w, sc] of [[360, 'share'], [360, 'share-fr'], [390, 'reject']] as const)
+for (const [w, sc] of [[360, 'share'], [360, 'share-fr'], [390, 'share']] as const)
   t(`no address is split across lines and no row caption is truncated (${w}px, ${sc})`, async () => {
     const page = await open(sc, w);
-    if (sc === 'reject') { await page.getByRole('button', { name: /^Switch wallet to/ }).click(); await page.getByText(/Request cancelled/).waitFor({ timeout: 5000 }); }
     const m = await page.evaluate(() => {
       const dlg = document.querySelector('[role=dialog]')!;
       const spans = [...dlg.querySelectorAll('li span.whitespace-nowrap')].map((e) => ({ t: e.textContent, lines: e.getClientRects().length }));
@@ -151,16 +150,11 @@ t('clicking the account row activates the wallet that holds it: no mismatch row,
   expect(decodeURIComponent(await headerIcon(page))).toContain('#00ffff'); // Rabby's announced mark
 });
 
-t('rejected in the other wallet: a list row names it; nothing is switched', async () => {
+t('the user cancels in the other wallet (4001): silent, no row, nothing is switched', async () => {
   const page = await open('reject');
   await page.getByRole('button', { name: /Switch wallet to/ }).click();
-  await page.getByText(/Request cancelled in Rabby/).waitFor({ timeout: 5000 });
-  const m = await page.evaluate(() => {
-    const dlg = document.querySelector('[role=dialog]')!;
-    const row = [...dlg.querySelectorAll('li')].find((d) => d.textContent?.startsWith('Request cancelled') && d.classList.contains('border-b'))!;
-    return { radius: getComputedStyle(row).borderRadius, alert: row.querySelector('[role=alert]') !== null };
-  });
-  expect(m).toEqual({ radius: '0px', alert: true });
+  await page.waitForTimeout(400);
+  expect(await page.getByText(/Request cancelled/).count()).toBe(0);
   expect((await state(page)).wallet).toBe('Ambire');
 });
 
@@ -194,7 +188,7 @@ if (shots)
       await shot(page, `r3-after-${w}-${theme}`);
       page = await open('reject', w, theme);
       await page.getByRole('button', { name: /Switch wallet to/ }).click();
-      await page.getByText(/Request cancelled in Rabby/).waitFor({ timeout: 5000 });
+      await settled(page);
       await shot(page, `r3-rejected-${w}-${theme}`);
     }, 90000);
   t('screenshots 360 dark FR', async () => {
@@ -202,6 +196,6 @@ if (shots)
     await shot(page, 'r3-mismatch-fr-360-dark');
     page = await open('reject-fr', 360, 'dark');
     await page.getByRole('button', { name: /Passer sur/ }).click();
-    await page.getByText(/Request cancelled in Rabby/).waitFor({ timeout: 5000 });
+    await settled(page);
     await shot(page, 'r3-rejected-fr-360-dark');
   }, 90000);

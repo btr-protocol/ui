@@ -91,7 +91,7 @@ test('WalletItemButton: connecting loader sits in a fixed centred slot that is t
   expect(slot!.children.length).toBe(0);
   idle.unmount();
   const busy = mount(<WalletItemButton name="Rabby" icon={<i />} isConnecting onClick={() => {}} />);
-  expect(busy.host.querySelector('span.h-5.w-5 .animate-spin')).not.toBeNull();
+  expect(busy.host.querySelector('span.h-5.w-5 .spinner')).not.toBeNull();
   busy.unmount();
 });
 

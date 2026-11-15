@@ -16,11 +16,13 @@ test('ProgressSteps: a readable bar, filled segments, a shimmer per missing sign
   expect(many).toContain('width:10%');
 });
 
-test('the missing-step shimmer is an infinite sweep over the 3:1 control line', async () => {
+test('the missing-step shimmer is the kit sweep (transform) over the 3:1 control line, no per-cell delay', async () => {
   const css = await Bun.file('src/styles/index.css').text();
-  const rule = css.slice(css.indexOf('.progress-pending {'), css.indexOf('@keyframes progress-sweep'));
+  const rule = css.slice(css.indexOf('.progress-pending {'), css.indexOf('/* ── Reduced motion'));
   expect(rule).toContain('var(--line-ui)');
-  expect(rule).toContain('infinite');
+  expect(rule).toContain('loader-sweep var(--dur-sweep)');
+  expect(rule).not.toContain('background-position');
+  expect(render(<ProgressSteps done={0} total={3} />)).not.toContain('animation-delay');
 });
 
 test('StatusChip tones and StatusList rows', () => {

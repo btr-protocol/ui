@@ -78,7 +78,7 @@ export function AccountModal({
   const [busy, setBusy] = useState<string>();
   const [err, setErr] = useState('');
   const l = { ...ACCOUNT_LABELS, ...labels };
-  const [hint, setHint] = useState<{ address: string; kind: 'rejected' | 'not-shared' | 'ambiguous' | 'failed'; wallet?: string }>();
+  const [hint, setHint] = useState<{ address: string; kind: 'not-shared' | 'ambiguous' | 'failed'; wallet?: string }>();
   const announced = useProviders();
   const abort = useRef<AbortController>();
   const gate = accountGate(activeAddress, sessionAddress);
@@ -113,20 +113,23 @@ export function AccountModal({
       let undo: (() => Promise<void>) | undefined;
       if (walletEntry.value && !sameAddress(a, walletAddress.value)) {
         const r = await activateAccount(a, { entries: announced.length ? announced : undefined, signal: ac.signal });
-        if (!r.ok) return r.reason === 'cancelled' ? undefined : setHint({ address: a, kind: r.reason, wallet: r.wallet?.name });
+        if (!r.ok) return r.reason === 'cancelled' || r.reason === 'rejected' ? undefined : setHint({ address: a, kind: r.reason, wallet: r.wallet?.name });
         undo = r.undo;
       }
       if (ac.signal.aborted) return void (await undo?.());
       let done = false;
+      let declined = false; // the user turned the app's own step down in the wallet (EIP-1193 4001): a cancel, never an error row
       try {
         done = (await onSwitchAccount(a)) !== false;
-      } catch {}
+      } catch (e) {
+        declined = (e as { code?: number })?.code === 4001;
+      }
       // A failed app step puts the previous wallet back even when the modal was closed or a newer click took over meanwhile.
       if (done) return ac.signal.aborted ? undefined : close();
       await undo?.();
-      if (!ac.signal.aborted) setHint({ address: a, kind: 'failed' });
+      if (!ac.signal.aborted && !declined) setHint({ address: a, kind: 'failed' });
     });
-  const hintKey = { rejected: 'hintRejected', 'not-shared': 'hintNotShared', ambiguous: 'hintAmbiguous', failed: 'hintFailed' } as const;
+  const hintKey = { 'not-shared': 'hintNotShared', ambiguous: 'hintAmbiguous', failed: 'hintFailed' } as const;
   const hintText = hint && fillNodes(l[hintKey[hint.kind]], { addr: shortAddr(hint.address), wallet: hint.wallet ?? l.wallet, action: l.connectOther }, ['addr']);
   const busyNow = busy !== undefined;
   const hasNotices = !!err || !!hintText || (gate.mismatch && !!gate.active && !!gate.expected);
