@@ -1,5 +1,5 @@
 // Page for test/loading.browser.test.tsx: every loader primitive and every Figure state, in a table, a card and a button.
-// ?v=all (default) | swap (ValuePlaceholder <-> value, window.__flip()) | busy (200 loading rows in Busy, window.__busy(bool)).
+// ?v=bare (no Tailwind: the loaders stylesheet alone) | all (default) | swap (ValuePlaceholder <-> value, window.__flip()) | busy (200 loading rows in Busy, window.__busy(bool)).
 import { render } from 'preact';
 import { useState } from 'preact/hooks';
 import type { Cell } from '../../src/lib/cell';
@@ -28,6 +28,14 @@ function App() {
   (window as unknown as { __busy: (b: boolean) => void }).__busy = setBusy;
   if (v === 'swap')
     return <div className="p-4"><span id="fig" className="text-sm"><Figure ch={10} cell={loaded ? { s: 'value', v: 42 } : { s: 'loading', since: Date.now() }} format={fmt} /></span></div>;
+  if (v === 'bare')
+    return (
+      <div id="bare">
+        <Spinner />
+        <Spinner size="md" />
+        <span id="sk" className="sk" style="display:block;width:80px;height:12px" />
+      </div>
+    );
   if (v === 'busy')
     return (
       <Busy busy={busy} label="Loading pools">
@@ -46,7 +54,7 @@ function App() {
         <Hairline />
         <div className="mb-3 text-fg-2">Card: refreshing in the background</div>
         <Skeleton lines={3} />
-        <div className="mt-3 flex items-center gap-2"><span>TVL</span><ValuePlaceholder ch={8} /><span id="solo"><Figure ch={6} cell={{ s: 'loading', since: Date.now() }} format={fmt} /></span></div>
+        <div className="mt-3 flex items-center gap-2"><span>TVL</span><ValuePlaceholder ch={8} /><span id="cascade"><Spinner className="hidden text-warning bg-bg-3" /></span><span id="plain"><Spinner /></span><span id="solo"><Figure ch={6} cell={{ s: 'loading', since: Date.now() }} format={fmt} /></span></div>
       </div>
       <div className="flex items-center gap-4">
         <Button variant="primary" size="sm" leftIcon={<Spinner />}>Signing</Button>

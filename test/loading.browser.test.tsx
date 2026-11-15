@@ -1,7 +1,7 @@
 // Real-browser checks of the loaders (Chromium via playwright-core): width-stable value swap, compositor-only sweep, reduced motion,
-// one role=status in Busy, every Figure state distinct. SHOT_DIR=<dir> also saves renders. Needs Chromium (`bunx playwright install chromium`).
+// one always-mounted role=status per Busy, plain hidden text for a lone loading Figure, every Figure state distinct, the loaders stylesheet alone. SHOT_DIR=<dir> also saves renders. Needs Chromium (`bunx playwright install chromium`).
 import { afterAll, afterEach, beforeAll, expect, test } from 'bun:test';
-import { existsSync, mkdirSync, readdirSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 
@@ -35,6 +35,9 @@ async function setup() {
   const tw = Bun.spawnSync([join(root, 'node_modules/.bin/tailwindcss'), '-c', join(cache, 'tw.config.js'), '-i', join(cache, 'in.css'), '-o', join(cache, 'page.css')], { stderr: 'pipe' });
   if (tw.exitCode) throw new Error(tw.stderr.toString());
   writeFileSync(join(cache, 'index.html'), '<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><link rel="stylesheet" href="page.css"></head><body><script src="page.js"></script></body></html>');
+  // The loaders stylesheet ALONE: tokens.css + loaders.css, no Tailwind, no index.css (what an app that imports only the tokens gets).
+  writeFileSync(join(cache, 'bare.css'), ['tokens.css', 'loaders.css'].map((f) => readFileSync(join(root, 'src/styles', f), 'utf8')).join('\n'));
+  writeFileSync(join(cache, 'bare.html'), '<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="bare.css"></head><body><script src="page.js"></script></body></html>');
   const { chromium: pw } = await import('playwright-core');
   return pw.launch({ executablePath: exe });
 }
@@ -62,13 +65,13 @@ afterEach(async () => {
 }, 30000);
 
 
-type V = 'all' | 'swap' | 'busy';
+type V = 'all' | 'swap' | 'busy' | 'bare';
 async function open(v: V, o: { width?: number; light?: boolean; reduced?: boolean } = {}) {
   const ctx = await browser!.newContext({ viewport: { width: o.width ?? 1440, height: 900 }, colorScheme: o.light ? 'light' : 'dark', ...(o.reduced ? { reducedMotion: 'reduce' as const } : {}) });
   contexts.push(ctx);
   const page = await ctx.newPage();
   page.setDefaultTimeout(8000);
-  await page.goto(`file://${join(cache, 'index.html')}?v=${v}`);
+  await page.goto(`file://${join(cache, v === 'bare' ? 'bare.html' : 'index.html')}?v=${v}`);
   if (o.light) await page.evaluate(() => document.documentElement.classList.add('light'));
   // Colour transitions run after the theme flips; measuring or capturing inside them reads a half-faded button (the cause of the 'invisible Retry' light capture).
   if (o.light) await page.waitForFunction(() => document.getAnimations().every((a) => !(a instanceof CSSTransition)));
@@ -104,7 +107,7 @@ t('the sweep runs on the compositor and animates; reduced motion holds it still 
 });
 
 t('no loader animates a layout property', async () => {
-  const css = await Bun.file(join(root, 'src/styles/index.css')).text();
+  const css = await Bun.file(join(root, 'src/styles/loaders.css')).text();
   const keyframes = [...css.matchAll(/@keyframes (loader-[\w-]+) \{([\s\S]*?)\n\}/g)];
   expect(keyframes.length).toBe(3);
   for (const [, name, body] of keyframes) expect(body, name).not.toMatch(/background-position|width|height|top|left|right|bottom/);
@@ -127,7 +130,7 @@ t('a 200-row loading table in Busy: one status node that stays mounted, aria-bus
 t('Figure: every state has its own accessible text; a measured zero prints as zero; the n/a glyph is the one hyphen', async () => {
   const page = await open('all');
   await page.locator('[data-state=na]').waitFor();
-  const rows = await page.evaluate(() => [...document.querySelectorAll('tbody tr')].map((r) => { const f = r.querySelector('[data-state]') as HTMLElement; return { state: f.dataset.state!, text: f.textContent!.trim(), sk: !!f.querySelector('.sk'), warn: !!f.querySelector('svg'), retry: f.querySelector('[aria-label^=Retry]')?.getAttribute('aria-label') ?? null, focusable: !!f.querySelector('[tabindex="0"]') }; }));
+  const rows = await page.evaluate(() => [...document.querySelectorAll('tbody tr')].map((r) => { const f = r.querySelector('[data-state]') as HTMLElement; return { state: f.dataset.state!, text: f.textContent!.trim() + [...f.querySelectorAll('[role=img]')].map((i) => i.getAttribute('aria-label')).join(''), sk: !!f.querySelector('.sk'), warn: !!f.querySelector('svg'), retry: f.querySelector('[aria-label^=Retry]')?.getAttribute('aria-label') ?? null, focusable: !!f.querySelector('[tabindex="0"]') }; }));
   const by = (i: number) => rows[i]!;
   expect(by(0).text).toBe('1234.50');
   expect(by(1).text).toBe('0.00');
@@ -147,6 +150,28 @@ t('Figure: every state has its own accessible text; a measured zero prints as ze
   expect(await page.locator('#solo').textContent()).toBe('Loading');
   // axe aria-hidden-focus: no focusable element is, or sits inside, an aria-hidden subtree
   expect(await page.evaluate(() => [...document.querySelectorAll('[tabindex],button,a[href],input')].filter((e) => e.closest('[aria-hidden=true]')).length)).toBe(0);
+});
+
+t('the reason glyph: accessible name (computed) is the reason, said once; no hidden duplicate text', async () => {
+  const page = await open('all');
+  const g = page.locator('[data-state=unavailable] [role=img]').first();
+  await g.focus();
+  expect(await page.locator(':focus').ariaSnapshot()).toContain('img "Unavailable: Could not load"');
+  const dup = await page.evaluate(() => [...document.querySelectorAll('[data-state=unavailable],[data-state=na]')].filter((f) => /^(Unavailable|Not applicable)/.test(f.textContent!.trim())).length);
+  expect(dup).toBe(0); // the words are not also text content (no double reading)
+  expect(await page.locator('[data-state=na] [role=img]').getAttribute('aria-label')).toBe('Not applicable: No fees booked in this window');
+  expect(await page.locator('[data-state=na] [tabindex="0"]').count()).toBe(1);
+});
+
+t('cascade as at 0.14.0: a Spinner className (hidden, text-*, bg-*) never beats the kit rule (loaders sit after the utilities)', async () => {
+  const page = await open('all');
+  const m = await page.evaluate(() => {
+    const a = getComputedStyle(document.querySelector('#cascade .spinner')!), b = getComputedStyle(document.querySelector('#plain .spinner')!);
+    return { display: a.display, color: a.color, plainColor: b.color, img: a.backgroundImage };
+  });
+  expect(m.display).toBe('inline-block');
+  expect(m.color).toBe(m.plainColor);
+  expect(m.img).toContain('conic-gradient');
 });
 
 t('the Retry button is visible in light and dark: a box, and 3:1 contrast against its background', async () => {
@@ -171,6 +196,24 @@ t('the Retry button is visible in light and dark: a box, and 3:1 contrast agains
     expect(m.onScreen).toBe(true);
     expect(m.op).toBe('1');
     expect(m.ratio, `light=${light}`).toBeGreaterThanOrEqual(3);
+  }
+});
+
+t('tokens.css + loaders.css alone: Spinner sm/md have a box and a running turn, the sweep layer runs, in light and dark', async () => {
+  for (const light of [false, true]) {
+    const page = await open('bare', { light });
+    const m = await page.evaluate(() => {
+      // Layout size, not getBoundingClientRect: the spinner is turning, and the bounding box of a rotated square is larger than the square.
+      const unit = (v: string) => { const e = document.createElement('i'); e.style.cssText = `position:absolute;width:${v}`; document.body.appendChild(e); const w = getComputedStyle(e).width; e.remove(); return w; };
+      const sp = [...document.querySelectorAll('.spinner')].map((e) => { const cs = getComputedStyle(e); return { w: cs.width, h: cs.height, name: cs.animationName, state: cs.animationPlayState, mask: cs.maskImage !== 'none' || cs.webkitMaskImage !== 'none' }; });
+      const sk = document.getElementById('sk')!; const r = sk.getBoundingClientRect(); const a = getComputedStyle(sk, '::after');
+      return { want: [unit('1rem'), unit('1.5rem')], sp, sk: { w: r.width, h: r.height, pos: getComputedStyle(sk).position, bg: getComputedStyle(sk).backgroundColor, name: a.animationName, state: a.animationPlayState }, anim: document.getAnimations().length };
+    });
+    expect(m.sp.map((s) => [s.w, s.h])).toEqual([[m.want[0], m.want[0]], [m.want[1], m.want[1]]]); // exactly 1rem and 1.5rem, whatever the root size is
+    for (const s of m.sp) expect(s).toMatchObject({ name: 'loader-spin', state: 'running', mask: true });
+    expect(m.sk).toMatchObject({ w: 80, h: 12, pos: 'relative', name: 'loader-sweep', state: 'running' });
+    expect(m.sk.bg).not.toBe('rgba(0, 0, 0, 0)');
+    expect(m.anim).toBeGreaterThanOrEqual(3);
   }
 });
 

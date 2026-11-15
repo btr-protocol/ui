@@ -38,8 +38,8 @@ export interface FigureProps<T> {
   deadlineMs?: number;
 }
 
-/** THE renderer of a figure: one state, one look, everywhere. Reasons are real text (visually hidden for assistive tech, shown through a
- *  focusable Tooltip). A loading figure announces itself unless it sits in a `Busy`, whose one status does that. */
+/** THE renderer of a figure: one state, one look, everywhere. Reasons are the accessible name of a focusable glyph (shown through a
+ *  Tooltip). A loading figure announces itself unless it sits in a `Busy`, whose one status does that. */
 export function Figure<T>({ cell: input, format, ch, className, placeholderClassName, label, deadlineMs = LOADING_DEADLINE_MS }: FigureProps<T>) {
   const cell = useCellDeadline(input, deadlineMs);
   const inBusy = useInBusy();
@@ -48,13 +48,14 @@ export function Figure<T>({ cell: input, format, ch, className, placeholderClass
       {children}
     </span>
   );
-  /** The glyph is focusable and tooltipped; the same words are in the DOM as hidden text. */
+  /** The glyph is focusable and tooltipped; its accessible name IS the reason (role=img + aria-label), said once. */
   const reasoned = (glyph: preact.ComponentChildren, said: string, extra?: preact.ComponentChildren) => (
     <>
       <Tooltip content={said} side="bottom">
-        <span tabIndex={0} className="inline-flex cursor-help items-center gap-1 rounded-xs"><span aria-hidden="true" className="inline-flex items-center gap-1">{glyph}</span></span>
+        <span tabIndex={0} role="img" aria-label={said} className="inline-flex cursor-help items-center gap-1 rounded-xs">
+          <span aria-hidden="true" className="inline-flex items-center gap-1">{glyph}</span>
+        </span>
       </Tooltip>
-      <span className="sr-only">{said}</span>
       {extra}
     </>
   );

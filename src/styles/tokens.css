@@ -28,7 +28,7 @@
   --dur-3: 280ms;
   --ease: cubic-bezier(0.2, 0, 0, 1);
   --ease-linear: linear;
-  --dur-spin: 900ms; /* loaders: the spinner turn and the data sweep (styles/index.css) */
+  --dur-spin: 900ms; /* loaders: the spinner turn and the data sweep (styles/loaders.css) */
   --dur-sweep: 1400ms;
 }
 

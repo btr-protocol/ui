@@ -45,7 +45,7 @@ test('SegmentedControl md is a ButtonGroup of Button sm (control height token, s
 });
 
 test('selected master row cells that pin a text colour follow it (css rule)', async () => {
-  const css = await Bun.file(new URL('../src/styles/index.css', import.meta.url)).text();
+  const css = await Bun.file(new URL('../src/styles/kit.css', import.meta.url)).text();
   expect(css).toContain("[data-row][aria-selected='true'] :is(.text-fg-0");
 });
 
