@@ -492,7 +492,7 @@ textarea {
 /* ── Loaders (ui/Loaders.tsx, Spinner.tsx, Figure.tsx): CSS only, transform / opacity only ─────────────────────────────────────
    ONE visual language for data: a soft highlight sweeping across a block (`.sk`). The sweep is the ::after layer moving with
    translateX, never a background-position or width animation, so it runs on the compositor. Logical properties + :dir(rtl). */
-.sk {
+:where(.sk) { /* zero specificity: a bg-* / rounded / size class on the element wins */
   position: relative;
   overflow: hidden;
   background-color: var(--bg-3);
@@ -505,7 +505,7 @@ textarea {
   inset-inline: 0;
   background: linear-gradient(90deg, transparent 0%, var(--sweep) 50%, transparent 100%);
   transform: translateX(-100%);
-  animation: loader-sweep var(--dur-sweep) var(--ease-linear) infinite;
+  animation: loader-sweep var(--dur-sweep) var(--ease-linear) var(--sk-phase, 0ms) infinite; /* --sk-phase: set once per element (useSweepPhase), one shared clock */
 }
 .sk { --sweep: color-mix(in srgb, var(--fg-0) 14%, transparent); }
 .sk:dir(rtl)::after,
@@ -531,23 +531,31 @@ textarea {
   --sweep: var(--fg-primary);
 }
 /* Spinner: a conic arc masked to a ring (the -webkit- mask for Safari), one turn per --dur-spin. User-initiated pending only. */
-.spinner {
-  display: inline-block;
-  flex: none;
+:where(.spinner) { /* size and shape at zero specificity: w-* / h-* from className win */
   width: 1rem;
   height: 1rem;
   border-radius: 9999px;
+}
+.spinner {
+  display: inline-block;
+  flex: none;
   color: var(--fg-primary);
   background: conic-gradient(from 0deg, transparent 0%, transparent 20%, currentColor 100%);
   -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 2px), black calc(100% - 2px));
   mask: radial-gradient(farthest-side, transparent calc(100% - 2px), black calc(100% - 2px));
   animation: loader-spin var(--dur-spin) var(--ease-linear) infinite;
 }
+.spinner.animate-spin { /* the class the front's lite-mode exemption names; the kit keyframes still win */
+  animation: loader-spin var(--dur-spin) var(--ease-linear) infinite;
+}
+.spinner:dir(rtl) {
+  animation-direction: reverse;
+}
 .bg-primary .spinner,
 .bg-red-solid .spinner {
   color: inherit; /* on a filled button the arc takes the label colour, not the fill's own */
 }
-.spinner-md {
+:where(.spinner-md) {
   width: 1.5rem;
   height: 1.5rem;
 }
@@ -567,7 +575,19 @@ textarea {
   inset: 0;
   background: linear-gradient(90deg, transparent 0%, var(--sweep) 50%, transparent 100%);
   transform: translateX(-100%);
-  animation: loader-sweep var(--dur-sweep) var(--ease-linear) infinite;
+  animation: loader-sweep var(--dur-sweep) var(--ease-linear) var(--sk-phase, 0ms) infinite;
+}
+.progress-pending:dir(rtl)::after {
+  background: linear-gradient(270deg, transparent 0%, var(--sweep) 50%, transparent 100%);
+  animation-name: loader-sweep-rtl;
+}
+/* Lite mode (a consumer's `[data-lite]` on :root): data sweeps hold still, like reduced motion. */
+:root[data-lite] .sk::after,
+:root[data-lite] .hairline::after,
+:root[data-lite] .progress-pending::after {
+  animation: none;
+  transform: none;
+  opacity: 0;
 }
 
 /* ── Reduced motion: one global switch; spinners slow down instead of stopping ──────────────── */

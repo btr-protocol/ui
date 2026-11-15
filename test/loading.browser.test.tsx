@@ -70,6 +70,8 @@ async function open(v: V, o: { width?: number; light?: boolean; reduced?: boolea
   page.setDefaultTimeout(8000);
   await page.goto(`file://${join(cache, 'index.html')}?v=${v}`);
   if (o.light) await page.evaluate(() => document.documentElement.classList.add('light'));
+  // Colour transitions run after the theme flips; measuring or capturing inside them reads a half-faded button (the cause of the 'invisible Retry' light capture).
+  if (o.light) await page.waitForFunction(() => document.getAnimations().every((a) => !(a instanceof CSSTransition)));
   return page;
 }
 const t = (name: string, fn: () => Promise<void>) =>
@@ -108,34 +110,95 @@ t('no loader animates a layout property', async () => {
   for (const [, name, body] of keyframes) expect(body, name).not.toMatch(/background-position|width|height|top|left|right|bottom/);
 });
 
-t('a 200-row loading table in Busy: one role=status, aria-busy toggles, placeholders are hidden', async () => {
+t('a 200-row loading table in Busy: one status node that stays mounted, aria-busy toggles, placeholders are hidden', async () => {
   const page = await open('busy');
   await page.locator('tr').nth(199).waitFor();
   expect(await page.locator('[role=status]').count()).toBe(1);
+  expect(await page.locator('[role=status]').textContent()).toBe('Loading pools');
   expect(await page.locator('[aria-busy=true]').count()).toBe(1);
+  expect(await page.locator('[aria-busy=true] [role=status]').count()).toBe(0); // the status lives OUTSIDE the busy region
   expect(await page.locator('[data-state=loading] .sk').count()).toBe(200);
-  expect(await page.locator('[role=status] ~ * [role=status], tr [role=status]').count()).toBe(0);
   await page.evaluate(() => (window as unknown as { __busy: (b: boolean) => void }).__busy(false));
   await page.locator('[aria-busy=false]').waitFor();
-  expect(await page.locator('[role=status]').count()).toBe(0);
+  expect(await page.locator('[role=status]').count()).toBe(1); // same node, text cleared
+  expect(await page.locator('[role=status]').textContent()).toBe('');
 });
 
-t('Figure: every state looks different; a measured zero prints as zero; the n/a glyph is the one hyphen', async () => {
+t('Figure: every state has its own accessible text; a measured zero prints as zero; the n/a glyph is the one hyphen', async () => {
   const page = await open('all');
   await page.locator('[data-state=na]').waitFor();
-  const rows = await page.evaluate(() => [...document.querySelectorAll('tbody tr')].map((r) => { const f = r.querySelector('[data-state]') as HTMLElement; return { state: f.dataset.state!, text: f.textContent!.trim(), title: f.title, sk: !!f.querySelector('.sk'), warn: !!f.querySelector('svg'), retry: !!f.querySelector('[aria-label=Retry]') }; }));
+  const rows = await page.evaluate(() => [...document.querySelectorAll('tbody tr')].map((r) => { const f = r.querySelector('[data-state]') as HTMLElement; return { state: f.dataset.state!, text: f.textContent!.trim(), sk: !!f.querySelector('.sk'), warn: !!f.querySelector('svg'), retry: f.querySelector('[aria-label^=Retry]')?.getAttribute('aria-label') ?? null, focusable: !!f.querySelector('[tabindex="0"]') }; }));
   const by = (i: number) => rows[i]!;
   expect(by(0).text).toBe('1234.50');
   expect(by(1).text).toBe('0.00');
   expect(by(2).text).toMatch(/^1234\.50stale 5m$/);
-  expect(by(3)).toMatchObject({ sk: true, text: '' });
+  expect(by(3)).toMatchObject({ sk: true, text: '' }); // inside Busy: silent, the one status speaks
   expect(by(4).text).toBe('Measuring depth');
-  expect(by(5)).toMatchObject({ text: '-', warn: true, retry: true, title: 'Could not load' });
-  expect(by(6).title).toBe('Timed out');
-  expect(by(7).title).toBe('Rate limited');
-  expect(by(8)).toMatchObject({ text: '-', warn: false, title: 'No fees booked in this window' });
-  expect(rows.some((r) => [...r.text].some((c) => c.codePointAt(0) === 8212))).toBe(false); // no em dash
-  expect(new Set(rows.slice(0, 5).map((r) => r.text + r.sk)).size).toBe(5);
+  expect(by(5).text).toContain('Unavailable: Could not load');
+  expect(by(5)).toMatchObject({ warn: true, retry: 'Retry', focusable: true });
+  expect(by(6).text).toContain('Unavailable: Unfillable, no depth');
+  expect(by(7).text).toContain('Unavailable: Timed out');
+  expect(by(8).text).toContain('Unavailable: Rate limited');
+  expect(by(9).text).toBe('-Not applicable: No fees booked in this window');
+  expect(by(9).focusable).toBe(true);
+  expect(rows.some((r) => r.text.includes(String.fromCharCode(8212)))).toBe(false);
+  expect(new Set(rows.map((r) => r.text + r.sk + r.warn)).size).toBe(rows.length - 0);
+  // a loading figure OUTSIDE a Busy announces itself
+  expect(await page.locator('#solo [role=status]').textContent()).toBe('Loading');
+});
+
+t('the Retry button is visible in light and dark: a box, and 3:1 contrast against its background', async () => {
+  for (const light of [false, true]) {
+    const page = await open('all', { width: 390, light });
+    await page.locator('[aria-label^=Retry]').waitFor();
+    const m = await page.evaluate(() => {
+      const cv = document.createElement('canvas'); cv.width = cv.height = 1;
+      const cx = cv.getContext('2d', { willReadFrequently: true })!;
+      const rgba = (c: string) => { cx.clearRect(0, 0, 1, 1); cx.fillStyle = '#000'; cx.fillStyle = c; cx.fillRect(0, 0, 1, 1); const d = cx.getImageData(0, 0, 1, 1).data; return [d[0]!, d[1]!, d[2]!, d[3]! / 255]; };
+      const lum = (r: number, g: number, b: number) => [r, g, b].map((v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; }).reduce((a, v, i) => a + v * [0.2126, 0.7152, 0.0722][i]!, 0);
+      const btn = document.querySelector('[aria-label^=Retry]') as HTMLElement;
+      const box = btn.getBoundingClientRect(), svg = btn.querySelector('svg')!.getBoundingClientRect();
+      let bgc = [0, 0, 0, 0];
+      for (let e: Element | null = btn; e && bgc[3]! < 1; e = e.parentElement) { const c = rgba(getComputedStyle(e).backgroundColor); if (c[3]! > 0) bgc = bgc[3] === 0 ? c : bgc; }
+      const [fr, fg, fb, fa] = rgba(getComputedStyle(btn).color), [br, bg, bb] = bgc as [number, number, number];
+      const mix = (f: number, b: number) => f * fa! + b * (1 - fa!);
+      const l1 = lum(mix(fr!, br), mix(fg!, bg), mix(fb!, bb)), l2 = lum(br, bg, bb);
+      return { w: box.width, h: box.height, sw: svg.width, onScreen: box.right <= innerWidth && box.left >= 0, ratio: (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05), op: getComputedStyle(btn).opacity };
+    });
+    expect(m.w).toBeGreaterThan(0); expect(m.h).toBeGreaterThan(0); expect(m.sw).toBeGreaterThan(0);
+    expect(m.onScreen).toBe(true);
+    expect(m.op).toBe('1');
+    expect(m.ratio, `light=${light}`).toBeGreaterThanOrEqual(3);
+  }
+});
+
+t('the sweep shares one clock: every sweeping element carries a phase set once, no per-cell delay values differ by position', async () => {
+  const page = await open('all');
+  const d = await page.evaluate(() => [...document.querySelectorAll('.sk')].map((e) => (e as HTMLElement).style.getPropertyValue('--sk-phase')));
+  expect(d.length).toBeGreaterThan(3);
+  for (const v of d) expect(v).toMatch(/^-\d+ms$/);
+  await page.waitForTimeout(200);
+  const d2 = await page.evaluate(() => [...document.querySelectorAll('.sk')].map((e) => (e as HTMLElement).style.getPropertyValue('--sk-phase')));
+  expect(d2).toEqual(d); // never recomputed
+});
+
+t('sizes and fills passed by className beat the loader defaults; lite mode and RTL are handled', async () => {
+  const page = await open('all');
+  const m = await page.evaluate(() => {
+    const sp = document.createElement('span'); sp.className = 'spinner h-8 w-8'; document.body.appendChild(sp);
+    const sk = document.createElement('span'); sk.className = 'sk block h-4 w-10 bg-transparent'; document.body.appendChild(sk);
+    const r = sp.getBoundingClientRect();
+    document.documentElement.setAttribute('data-lite', '');
+    const lite = getComputedStyle(document.querySelector('.sk')!, '::after').animationName;
+    document.documentElement.removeAttribute('data-lite');
+    document.documentElement.dir = 'rtl';
+    const rtl = [getComputedStyle(document.querySelector('.sk')!, '::after').animationName, getComputedStyle(document.querySelector('.spinner')!).animationDirection];
+    return { w: r.width, bg: getComputedStyle(sk).backgroundColor, bgDefault: getComputedStyle(document.querySelector('.sk:not(.bg-transparent)')!).backgroundColor, lite, rtl };
+  });
+  expect(m.w).toBe(32);
+  expect(m.bg).not.toBe(m.bgDefault);
+  expect(m.lite).toBe('none');
+  expect(m.rtl).toEqual(['loader-sweep-rtl', 'reverse']);
 });
 
 t('renders for review (SHOT_DIR)', async () => {

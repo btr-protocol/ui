@@ -550,6 +550,17 @@ describe('account panel with two wallets', () => {
     }
   });
 
+  test('the user declines the app step in the wallet (4001): the previous wallet is back and no error row shows', async () => {
+    let ran = 0;
+    const { ea } = await openPanel({ exposed: [RABBY_ACCT] }, { onSwitch: () => (ran++, Promise.reject(Object.assign(new Error('User rejected'), { code: 4001 }))) });
+    click(byText('Switch wallet to') as HTMLElement);
+    await until(() => ran === 1);
+    await act(async () => { await new Promise((r) => setTimeout(r, 100)); }); // the rollback and any row have landed
+    expect(text()).not.toContain('Could not switch');
+    expect(walletEntry.value).toBe(ea);
+    expect(walletAddress.value).toBe(AMBIRE_ACCT);
+  });
+
   test('the app step fails AFTER the modal was closed: the previous wallet is still put back', async () => {
     let fail!: () => void;
     let started = false;

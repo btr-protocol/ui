@@ -12,9 +12,10 @@ const STATES: [string, Cell<number>][] = [
   ['value', { s: 'value', v: 1234.5 }],
   ['value (measured zero)', { s: 'value', v: 0 }],
   ['stale', { s: 'stale', v: 1234.5, asOf: now - 5 * 60_000 }],
-  ['loading', { s: 'loading' }],
+  ['loading', { s: 'loading', since: Date.now() }],
   ['measuring', { s: 'measuring', note: 'depth' }],
   ['unavailable (error, retry)', { s: 'unavailable', reason: 'error', retry: () => {} }],
+  ['unavailable (unfillable)', { s: 'unavailable', reason: 'unfillable', detail: 'no depth' }],
   ['unavailable (timeout)', { s: 'unavailable', reason: 'timeout' }],
   ['unavailable (rate-limited)', { s: 'unavailable', reason: 'rate-limited' }],
   ['na', { s: 'na', why: 'No fees booked in this window' }],
@@ -26,11 +27,11 @@ function App() {
   (window as unknown as { __flip: () => void }).__flip = () => setLoaded((x) => !x);
   (window as unknown as { __busy: (b: boolean) => void }).__busy = setBusy;
   if (v === 'swap')
-    return <div className="p-4"><span id="fig" className="text-sm"><Figure ch={10} cell={loaded ? { s: 'value', v: 42 } : { s: 'loading' }} format={fmt} /></span></div>;
+    return <div className="p-4"><span id="fig" className="text-sm"><Figure ch={10} cell={loaded ? { s: 'value', v: 42 } : { s: 'loading', since: Date.now() }} format={fmt} /></span></div>;
   if (v === 'busy')
     return (
       <Busy busy={busy} label="Loading pools">
-        <table><tbody>{Array.from({ length: 200 }, (_, i) => <tr key={i}><td>Pool {i}</td><td><Figure ch={8} cell={busy ? { s: 'loading' } : { s: 'value', v: i }} format={fmt} /></td></tr>)}</tbody></table>
+        <table><tbody>{Array.from({ length: 200 }, (_, i) => <tr key={i}><td>Pool {i}</td><td><Figure ch={8} cell={busy ? { s: 'loading', since: Date.now() } : { s: 'value', v: i }} format={fmt} /></td></tr>)}</tbody></table>
       </Busy>
     );
   return (
@@ -45,7 +46,7 @@ function App() {
         <Hairline />
         <div className="mb-3 text-fg-2">Card: refreshing in the background</div>
         <Skeleton lines={3} />
-        <div className="mt-3 flex items-center gap-2"><span>TVL</span><ValuePlaceholder ch={8} /></div>
+        <div className="mt-3 flex items-center gap-2"><span>TVL</span><ValuePlaceholder ch={8} /><span id="solo"><Figure ch={6} cell={{ s: 'loading', since: Date.now() }} format={fmt} /></span></div>
       </div>
       <div className="flex items-center gap-4">
         <Button variant="primary" size="sm" leftIcon={<Spinner />}>Signing</Button>

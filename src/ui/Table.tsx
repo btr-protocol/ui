@@ -853,6 +853,8 @@ export interface MetricStateProps {
   className?: string;
   /** Skeleton width while loading. */
   skeletonClassName?: string;
+  /** Characters reserved for the figure, so the loading to value swap does not shift the layout. */
+  ch?: number;
 }
 
 export function MetricState({
@@ -862,17 +864,22 @@ export function MetricState({
   emptyHint,
   className,
   skeletonClassName = 'w-12',
+  ch = 6,
 }: MetricStateProps) {
+  // The loading clock starts when the phase is first seen loading and resets when it leaves, so the deadline is per load.
+  const since = useRef<number>();
+  if (phase === 'loading') since.current ??= Date.now();
+  else since.current = undefined;
   // One renderer: the phase picks the Cell, `Figure` draws it.
   const cell: Cell<string> =
     phase === 'loading'
-      ? { s: 'loading' }
+      ? { s: 'loading', since: since.current! }
       : phase === 'live' && value != null && value !== DASH
         ? { s: 'value', v: value }
         : phase === 'error'
           ? { s: 'unavailable', reason: 'error', detail: reason ?? 'Metrics service unreachable' }
           : phase === 'unfillable'
-            ? { s: 'na', why: reason ?? 'The book cannot fill this size, so no price is quoted.' }
+            ? { s: 'unavailable', reason: 'unfillable', detail: reason ?? 'the book cannot fill this size, so no price is quoted' }
             : { s: 'na', why: phase === 'stale' ? 'Updating: shown once the next report lands.' : (emptyHint ?? 'Not reported for this window yet.') };
-  return <Figure cell={cell} format={(v) => v} className={className} placeholderClassName={skeletonClassName} />;
+  return <Figure cell={cell} format={(v) => v} ch={ch} className={className} placeholderClassName={skeletonClassName} />;
 }

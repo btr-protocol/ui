@@ -118,13 +118,16 @@ export function AccountModal({
       }
       if (ac.signal.aborted) return void (await undo?.());
       let done = false;
+      let declined = false; // the user turned the app's own step down in the wallet (EIP-1193 4001): a cancel, never an error row
       try {
         done = (await onSwitchAccount(a)) !== false;
-      } catch {}
+      } catch (e) {
+        declined = (e as { code?: number })?.code === 4001;
+      }
       // A failed app step puts the previous wallet back even when the modal was closed or a newer click took over meanwhile.
       if (done) return ac.signal.aborted ? undefined : close();
       await undo?.();
-      if (!ac.signal.aborted) setHint({ address: a, kind: 'failed' });
+      if (!ac.signal.aborted && !declined) setHint({ address: a, kind: 'failed' });
     });
   const hintKey = { rejected: 'hintRejected', 'not-shared': 'hintNotShared', ambiguous: 'hintAmbiguous', failed: 'hintFailed' } as const;
   const hintText = hint && fillNodes(l[hintKey[hint.kind]], { addr: shortAddr(hint.address), wallet: hint.wallet ?? l.wallet, action: l.connectOther }, ['addr']);
