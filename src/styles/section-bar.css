@@ -1,0 +1,196 @@
+/* SectionBar (ui/SectionBar.tsx): the top edge of a section, card or table. ONE fixed-height bar of
+   full-height cells separated by 1px dividers (the chart toolbar's language, `.toolbar-btn` /
+   `.toolbar-item`). Height is the control token (--ctl-m: 32 desktop, 44 touch), identical with or
+   without title, search or controls. The search is a cell: it owns no border or radius except the
+   bar's outer corner on its side. Everything reads tokens; no colour literals. */
+.section-bar {
+  --sb-h: var(--ctl-m);
+  /* Inner radius of a 1px-bordered container (Panel, Table frame): the corner the first/last cell must follow. */
+  --sb-r: calc(var(--radius-lg, var(--r, 16px)) - 1px);
+  --sb-search-w: 16rem;
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  box-sizing: border-box;
+  height: var(--sb-h);
+  min-width: 0;
+  overflow: hidden; /* clips the cells to the corner radius; the scroller below does the sideways scroll */
+  background: var(--bg-1);
+  border-bottom: var(--border);
+  border-start-start-radius: var(--sb-r);
+  border-start-end-radius: var(--sb-r);
+  container: section-bar / inline-size;
+}
+/* Standalone: no container supplies the frame, so the bar draws its own top and side edges and the full radius. */
+.section-bar[data-standalone] {
+  --sb-r: var(--radius-lg, var(--r, 16px));
+  border: var(--border);
+  border-start-start-radius: var(--sb-r);
+  border-start-end-radius: var(--sb-r);
+}
+
+/* Every cell: full bar height, a divider on its start edge (the very first cell has none). */
+.sb-cell {
+  position: relative;
+  display: flex;
+  flex: none;
+  align-items: center;
+  box-sizing: border-box;
+  height: 100%;
+  min-width: 0;
+  border-inline-start: var(--border);
+  white-space: nowrap;
+}
+.section-bar > .sb-cell:first-child,
+.sb-scroll:first-child > .sb-cell:first-child {
+  border-inline-start-width: 0;
+}
+.sb-title {
+  flex: 0 1 auto;
+  margin: 0;
+  padding-inline: 0.75rem;
+  overflow: hidden;
+}
+.sb-title > :where(span, h2) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* Count / meta: a text cell, not a control. */
+.sb-text {
+  padding-inline: 0.75rem;
+  font-variant-numeric: tabular-nums;
+}
+.sb-pad {
+  padding-inline: 0.75rem;
+}
+
+/* Control cells: buttons, icon buttons, links and trigger buttons fill the cell edge to edge, flat, no own border or radius. */
+.sb-cell :is(button, a, [role='button']) {
+  align-self: stretch;
+  height: 100%;
+  min-height: 0;
+  border-width: 0;
+  border-radius: 0;
+  max-width: none;
+}
+.sb-cell :is(button, a, [role='button']):not([data-primary], [aria-selected='true'], [aria-pressed='true'], [disabled]) {
+  background: transparent;
+}
+@media (hover: hover) {
+  .sb-cell :is(button, a, [role='button']):not([data-primary], [aria-selected='true'], [aria-pressed='true'], [disabled]):hover {
+    background: var(--bg-2);
+  }
+}
+.sb-cell :is(button, a, [role='button'])[aria-pressed='true'] {
+  background: var(--bg-primary);
+  color: var(--fg-primary);
+}
+.sb-cell :focus-visible {
+  outline-offset: -2px; /* inside the cell: the bar clips an outset ring */
+}
+/* A tab strip or button group in a cell: the cell supplies the edge, the strip keeps only its inner dividers. */
+.sb-cell .btn-group {
+  align-self: stretch;
+  height: 100%;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  max-width: none;
+}
+.sb-cell .btn-group > :first-child,
+.sb-cell .btn-group > :first-child :is(button, a, [role='button']),
+.sb-cell .btn-group > :last-child,
+.sb-cell .btn-group > :last-child :is(button, a, [role='button']) {
+  border-radius: 0;
+}
+.sb-cell .btn-group > [role='tab'][aria-selected='true'] {
+  background: var(--bg-primary);
+  color: var(--fg-primary);
+}
+
+/* Cells scroll sideways on one line when they outrun the bar; `.seg-fade` (index.css) masks the edge that has more. */
+.sb-scroll {
+  display: flex;
+  flex: 1 1 0;
+  align-items: stretch;
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+}
+.sb-scroll::-webkit-scrollbar {
+  display: none;
+}
+.sb-fill {
+  flex: 1 0 0;
+}
+
+/* Search: a cell with the bar's own corner on its outer side. No border or radius of its own. */
+.sb-search {
+  flex: none;
+  width: var(--sb-search-w);
+  padding-inline: 0.75rem 0.25rem;
+  background: transparent;
+  transition: background-color var(--dur-2, 180ms);
+}
+.sb-search > * {
+  flex: 1;
+  min-width: 0;
+}
+.sb-search[data-side='right'] {
+  border-start-end-radius: var(--sb-r);
+}
+.sb-search[data-side='left'] {
+  border-start-start-radius: var(--sb-r);
+}
+.sb-search:focus-within {
+  background: var(--bg-2);
+  box-shadow: inset 0 0 0 2px var(--fg-primary); /* the kit focus ring, drawn inside the clipped bar */
+}
+.sb-search input:focus-visible {
+  outline: none;
+}
+.sb-cell.sb-search > .sb-search-btn {
+  display: none; /* beats Button's inline-flex */
+}
+
+/* Phone: the search collapses to a square icon cell and expands OVER the bar (the bar never grows a second row, so its
+   height is the same in every state). Triggered by the bar's own width, not the viewport: a narrow card does the same. */
+@container section-bar (max-width: 36rem) {
+  .sb-search:not([data-open]) {
+    width: var(--sb-h);
+    padding: 0;
+    justify-content: center;
+  }
+  .sb-search:not([data-open]) > :not(.sb-search-btn) {
+    display: none;
+  }
+  .sb-cell.sb-search:not([data-open]) > .sb-search-btn {
+    display: inline-flex;
+  }
+  .sb-cell.sb-search[data-open] > .sb-search-btn {
+    display: none;
+  }
+  .sb-search[data-open] {
+    position: absolute;
+    inset-block: 0;
+    inset-inline: 0;
+    z-index: var(--z-index-raised);
+    width: auto;
+    background: var(--bg-1);
+    border-inline-start-width: 0;
+    border-start-start-radius: var(--sb-r);
+    border-start-end-radius: var(--sb-r);
+  }
+}
+
+@media (pointer: coarse) {
+  .sb-cell :is(button, a, [role='button']) {
+    min-width: var(--ctl-m);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sb-search {
+    transition: none;
+  }
+}

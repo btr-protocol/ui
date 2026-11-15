@@ -17,6 +17,7 @@ import { Icon, type IconName } from './Icon';
 import { InfoBox } from './InfoBox';
 import { Panel, PanelHeader, PanelTitle } from './Panel';
 import { SearchInput } from './SearchInput';
+import { SectionBar, type SectionBarProps } from './SectionBar';
 
 export const DATA_TABLE_HEADER =
   'border-b border-border bg-bg-3 text-xs uppercase tracking-wide text-fg-1 font-semibold';
@@ -219,6 +220,9 @@ export interface TableProps<Row> {
   title?: string;
   /** Right-aligned header content (source note, selector). Requires `title`. */
   meta?: ComponentChildren;
+  /** The frame's header as a SectionBar (one fixed height; title, cells, built-in search). Replaces `title` / `meta`; the
+   *  table's own search joins it on `searchSide` (default right) when `searchable`. */
+  bar?: Omit<SectionBarProps, 'search' | 'standalone'>;
   searchPlaceholder?: string;
   searchable?: boolean;
   onRowClick?: (row: Row) => void;
@@ -419,6 +423,7 @@ export function Table<Row>({
   className,
   rowProps,
   title,
+  bar,
   meta,
   searchPlaceholder = 'Search...',
   searchable = true,
@@ -554,13 +559,19 @@ export function Table<Row>({
 
   return (
     <div className={cn(compact ? 'flex flex-col min-h-0 h-full' : 'space-y-3', className)}>
-      {!title && search}
+      {!title && !bar && search}
 
       <Panel
         // every table wears the frame (outer border, radius by nesting, divided rows)
         className={cn('overflow-hidden', !frame && 'rounded-none border-0 bg-transparent shadow-none', compact && 'flex flex-col flex-1 min-h-0')}
       >
-        {title && (
+        {bar && (
+          <SectionBar
+            {...bar}
+            search={searchable ? { value: query, onChange: setQuery, placeholder: searchPlaceholder } : undefined}
+          />
+        )}
+        {!bar && title && (
           <PanelHeader>
             <PanelTitle>{title}</PanelTitle>
             <div className="flex items-center gap-3 flex-wrap justify-end">
