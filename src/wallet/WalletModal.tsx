@@ -435,13 +435,14 @@ export function WalletModal({
               </div>
             )}
 
-            {pairing && mobile && !waiting && !qrOpen && (
+            {pairing && mobile && !waiting && !qrOpen && !importFailure && (
               <div className={`${MODAL_PADDING} py-3`}>
                 <Button onClick={() => setQrOpen(true)}>{l.anotherDeviceQr}</Button>
               </div>
             )}
 
-            {showQr && (
+            {/* a gone chunk is told once, in the notice above: no QR box with its own "could not generate" */}
+            {showQr && !importFailure && (
               <div id={qrId} ref={qrRef} tabIndex={-1} role="group" aria-label={l.qrAlt} className={`flex flex-col gap-4 items-center ${MODAL_PADDING} py-4 outline-none`}>
                 {qr ? (
                   <div className="bg-white p-2 rounded-lg w-[296px] max-w-full">
