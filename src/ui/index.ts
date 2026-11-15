@@ -37,6 +37,7 @@ export * from './ProgressSteps';
 export * from './ProtocolGlyph';
 export * from './ScrollPane';
 export * from './SearchInput';
+export * from './SectionBar';
 export * from './SegmentedControl';
 export * from './Select';
 export * from './SelectionList';

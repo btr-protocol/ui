@@ -19,6 +19,7 @@
     "./styles": "./src/styles/index.css",
     "./styles/tokens.css": "./src/styles/tokens.css",
     "./styles/button-group.css": "./src/styles/button-group.css",
+    "./styles/section-bar.css": "./src/styles/section-bar.css",
     "./styles/fonts.css": "./src/styles/fonts.css",
     "./tailwind.preset": "./src/styles/tailwind.preset.js",
     "./assets/*": "./src/assets/*",
