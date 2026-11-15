@@ -49,13 +49,14 @@ function Matrix() {
   );
 }
 
+const LOADING = location.hash === '#loading'; // the geometry test renders loading cells too
 function BarCells({ n }: { n: string }) {
   return (
     <SectionBar title="Pools" label={`Pool actions ${n}`}
       end={<>
         <SectionBarCell><Button variant="ghost" size="sm" icon={<Icon name="refresh-cw" />} aria-label="Refresh" /></SectionBarCell>
         <SectionBarCell><Button variant="ghost" size="sm" icon={<Icon name="download" />} collapse={1} aria-label="Export">Export</Button></SectionBarCell>
-        <SectionBarCell><Button variant="ghost" size="sm" icon={<Icon name="funnel" />} collapse={2} aria-label="Filters">Filters</Button></SectionBarCell>
+        <SectionBarCell><Button variant="ghost" size="sm" icon={<Icon name="funnel" />} loading={LOADING} collapse={2} aria-label="Filters">Filters</Button></SectionBarCell>
         <SectionBarCell><Button variant="ghost" size="sm" icon={<Icon name="gear" />} collapse={3} aria-label="Columns">Columns</Button></SectionBarCell>
         <SectionBarCell><Button variant="primary" size="sm" icon={<Icon name="plus" />}>New pool</Button></SectionBarCell>
       </>} />
@@ -79,14 +80,14 @@ function InGroup() {
   const [loading, setLoading] = useState(false);
   return (
     <div id="ingroup" className="space-y-3">
-      {[420, 150].map((w) => (
-        <div key={w} id={`group-${w}`} style={{ width: w }}>
-          <ButtonGroup aria-label="Actions">
+      {([[420, false], [150, false], [150, true]] as const).map(([w, ld], i) => (
+        <div key={i} id={i === 2 ? 'group-150-loading' : `group-${w}`} style={{ width: w }}>
+          <ButtonGroup wrap aria-label="Actions">
             <Button variant="ghost" size="sm" icon={<Icon name="copy" />} aria-label="Copy link" />
             <Button variant="ghost" size="sm" icon={<Icon name="plus" />} aria-label="Add" />
             <Button variant="ghost" size="sm">Cancel proposal</Button>
             <Button variant="ghost" size="sm" icon={<Icon name="refresh-cw" />}>Re-simulate</Button>
-            <Button variant="primary" size="sm" loading={loading} onClick={() => setLoading((x) => !x)}>Sign</Button>
+            <Button variant="primary" size="sm" loading={loading || LOADING || !!ld} onClick={() => setLoading((x) => !x)}>Sign</Button>
           </ButtonGroup>
         </div>
       ))}
@@ -99,7 +100,7 @@ render(
   <main style={{ padding: 16, width: '100%', maxWidth: 1700, margin: '0 auto' }} className="space-y-6">
     <section><h2 className="mb-2 text-sm font-semibold text-fg-0">Matrix</h2><Matrix /></section>
     <section><h2 className="mb-2 text-sm font-semibold text-fg-0">In a SectionBar (container 800 / 600 / 480 / 380)</h2><InBar /></section>
-    <section><h2 className="mb-2 text-sm font-semibold text-fg-0">In a ButtonGroup (420 / 150)</h2><InGroup /></section>
+    <section><h2 className="mb-2 text-sm font-semibold text-fg-0">In a ButtonGroup (420 / 150 / 150 loading)</h2><InGroup /></section>
   </main>,
   document.body,
 );

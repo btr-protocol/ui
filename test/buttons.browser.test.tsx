@@ -174,14 +174,16 @@ t('a collapsed button shows its name as the tooltip', async () => {
   await page.close();
 });
 
-t('loading keeps the width, never disables, and sets aria-busy', async () => {
+t('loading keeps the width (icon forms), keeps the label, never disables, and sets aria-busy', async () => {
   const page = await open();
   const r = await page.evaluate(() => ['text', 'prefix', 'postfix', 'icon'].flatMap((form) => ['xs', 'sm', 'md'].map((size) => {
     const a = document.querySelector(`[data-cell="${size}-${form}-secondary-rest"] button`)!, b = document.querySelector(`[data-cell="${size}-${form}-secondary-loading"] button`)!;
-    return { form, size, rest: a.getBoundingClientRect().width, loading: b.getBoundingClientRect().width, disabled: (b as HTMLButtonElement).disabled, busy: b.getAttribute('aria-busy'), spinner: !!b.querySelector('.spinner') };
+    return { form, size, label: b.querySelector('.btn-label')?.textContent ?? '', rest: a.getBoundingClientRect().width, loading: b.getBoundingClientRect().width, disabled: (b as HTMLButtonElement).disabled, busy: b.getAttribute('aria-busy'), spinner: !!b.querySelector('.spinner') };
   })));
   for (const x of r) {
-    expect(x.loading).toBe(x.rest);
+    // A text-only button has no icon slot: loading adds a leading spinner (label kept, dimmed), so it grows by that slot only.
+    if (x.form === 'text') { expect(x.loading).toBeGreaterThan(x.rest); expect(x.loading - x.rest).toBeLessThan(32); } else expect(x.loading).toBe(x.rest);
+    if (x.form !== 'icon') expect(x.label.length).toBeGreaterThan(0);
     expect(x.disabled).toBe(false);
     expect(x.busy).toBe('true');
     expect(x.spinner).toBe(true);
@@ -194,5 +196,50 @@ t('a labelled button keeps one line at every size', async () => {
   const r = await page.evaluate(() => [...document.querySelectorAll('[data-form=text] button, [data-form=prefix] button, [data-form=postfix] button')].map((b) => ({ h: b.getBoundingClientRect().height, ctl: b.getAttribute('data-size') })));
   const h = await ctl(page);
   for (const x of r) expect(x.h).toBe(h[x.ctl as 'xs' | 'sm' | 'md']);
+  await page.close();
+});
+
+// No Button ever renders with clipped content: cells of a bar and of a (wrapping) group, 120..800 px step 40, incl. a loading cell and a text-only cell.
+t('no cell clips its content at container widths 120..800', async () => {
+  const page = await open({ width: 1000 });
+  await page.evaluate(() => { location.hash = '#loading'; location.reload(); });
+  await page.waitForSelector('#matrix button');
+  expect(await page.locator('#bar-800 [data-loading], #group-420 [data-loading]').count()).toBeGreaterThanOrEqual(2); // a loading icon+label cell, the loading primary
+  const bad: string[] = [];
+  for (let w = 120; w <= 800; w += 40) {
+    const r = await page.evaluate((w) => {
+      const out: string[] = [];
+      document.querySelectorAll<HTMLElement>('#bar-800, #group-420').forEach((host) => { host.style.width = `${w}px`; });
+      document.querySelectorAll<HTMLElement>('#group-150, #group-150-loading').forEach((g) => { g.style.width = `${w}px`; });
+      for (const host of document.querySelectorAll('#bar-800, #group-420, #group-150, #group-150-loading')) {
+        for (const b of host.querySelectorAll<HTMLElement>('button')) {
+          const R = b.getBoundingClientRect();
+          const name = `${host.id}@${w} ${b.getAttribute('aria-label') ?? b.textContent}`;
+          if (b.scrollWidth > b.clientWidth) out.push(`${name}: scrollWidth ${b.scrollWidth} > clientWidth ${b.clientWidth}`);
+          for (const c of b.querySelectorAll<HTMLElement>('[data-label], [data-btn-icon], svg')) {
+            const x = c.getBoundingClientRect();
+            if (x.width && (x.left < R.left - 0.5 || x.right > R.right + 0.5)) out.push(`${name}: ${c.tagName} ${x.left}..${x.right} outside ${R.left}..${R.right}`);
+          }
+          const lab = b.querySelector<HTMLElement>('[data-label]');
+          if (lab && getComputedStyle(lab).display !== 'none' && lab.scrollWidth > lab.clientWidth) out.push(`${name}: label truncated`);
+        }
+      }
+      return out;
+    }, w);
+    bad.push(...r);
+  }
+  expect(bad).toEqual([]);
+  await page.close();
+});
+
+t('a primary never collapses or shrinks below its label, in a bar or a group', async () => {
+  const page = await open({ width: 1000 });
+  const r = await page.evaluate(() => {
+    document.querySelector<HTMLElement>('#bar-380')!.style.width = '200px';
+    document.querySelector<HTMLElement>('#group-150')!.style.width = '120px';
+    return [...document.querySelectorAll<HTMLElement>('[data-primary]')].filter((b) => b.closest('#bar-380, #group-150')).map((b) => ({ label: b.querySelector('[data-label]')?.textContent ?? b.textContent, shown: getComputedStyle(b.querySelector('[data-label]') ?? b).display !== 'none', w: b.getBoundingClientRect().width, sw: b.scrollWidth, cw: b.clientWidth }));
+  });
+  expect(r.length).toBe(2);
+  for (const x of r) { expect(x.shown).toBe(true); expect(x.sw).toBeLessThanOrEqual(x.cw); expect(x.w).toBeGreaterThan(40); }
   await page.close();
 });

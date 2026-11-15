@@ -57,18 +57,11 @@
   width: 100%;
   height: 100%;
 }
-/* loading with no glyph: the spinner overlays the label, so the width does not move. */
-.btn[data-loading][data-bare] > .btn-label,
-.btn[data-loading][data-bare] > [data-btn-icon] {
-  visibility: hidden;
+/* loading: the label stays readable, one step dimmed; the spinner sits in the icon box and never clips (the box is rigid). */
+.btn[data-loading] > .btn-label {
+  opacity: 0.7;
 }
-.btn-spin-over {
-  position: absolute;
-  inset: 0;
-  display: grid;
-  place-items: center;
-}
-.btn-spin-over > .spinner {
-  width: var(--btn-icon);
-  height: var(--btn-icon);
+/* No button in a cell clips its content: a label is as wide as its text. */
+.sb-cell .btn:not([data-icon-only], [data-collapse]) {
+  min-width: max-content; /* a bar scrolls; a cell never shrinks (the group rule is in button-group.css) */
 }

@@ -28,7 +28,8 @@ import { Spinner } from './Spinner';
  *
  * `aria-label` is REQUIRED (by type) when there are no children or `collapse` is set; it is the tooltip while the label is hidden.
  * `collapse` 1 | 2 | 3: inside a SectionBar the label drops to icon-only below that bar's width (1 first, 3 last; the primary has none).
- * `loading`: the kit Spinner replaces the icon (or overlays the label when there is none), width stays, `aria-busy`; it is
+ * `loading`: the kit Spinner replaces the icon (a text-only button gets it as a leading icon, label kept, dimmed: the Primer / Material
+ * pattern), an icon button's width stays, `aria-busy`; it is
  * VISUAL ONLY and never feeds `disabled` (the call site's own disabled logic is untouched).
  *
  * Rules: one primary height per context; a secondary matches its primary neighbour's size; never override padding, height,
@@ -68,11 +69,11 @@ interface ButtonBase extends Omit<HTMLAttributes<HTMLButtonElement>, 'className'
   className?: ClassValue;
   ref?: Ref<HTMLButtonElement>;
 }
-/** A nameless icon button fails `tsc`: no children, or a collapsible label, needs an `aria-label`. */
+/** A nameless icon button fails `tsc`: no children, or a collapsible label, needs an `aria-label`; `collapse` needs an `icon` (a text-only button has nothing to collapse to). */
 type Named =
   | { children?: undefined; 'aria-label': string; collapse?: undefined | false }
   | { children: ComponentChildren; 'aria-label'?: string; collapse?: undefined | false }
-  | { children: ComponentChildren; 'aria-label': string; collapse: 1 | 2 | 3 };
+  | { children: ComponentChildren; 'aria-label': string; collapse: 1 | 2 | 3; icon: ComponentChildren };
 export type ButtonProps = ButtonBase & Named;
 /** The props before the naming rule: for wrappers that always pass children (HoldButton). */
 export type ButtonBaseProps = ButtonBase & { 'aria-label'?: string };
@@ -141,7 +142,6 @@ const ButtonImpl = forwardRef<HTMLButtonElement, ButtonBase & { children?: Compo
     const glyph = icon ?? leftIcon ?? rightIcon;
     const at = icon != null ? iconPosition : leftIcon != null ? 'start' : 'end';
     const isIconOnly = !children && (glyph != null || loading);
-    const bare = glyph == null; // no glyph: a spinner overlays the label instead of taking the icon slot
 
     const classes = buttonVariants({
       variant,
@@ -164,32 +164,31 @@ const ButtonImpl = forwardRef<HTMLButtonElement, ButtonBase & { children?: Compo
 
     // Hooks for the group rules (button-group.css) and the geometry (button.css).
     const fit = (h?: (e: never) => void) => (e: Event) => { titleIfCut(e); (h as ((e: Event) => void) | undefined)?.(e); };
+    const slot = loading ? <Spinner /> : glyph; // loading: the spinner takes the icon slot; a text-only button gains a leading one, label kept (dimmed)
+    const place = loading && glyph == null ? 'start' : at;
     const attrs = {
       'data-size': size,
       'data-own-title': props.title ? 'true' : undefined,
       onMouseEnter: fit(props.onMouseEnter as never),
       onMouseLeave: fit(props.onMouseLeave as never),
       'data-icon-only': isIconOnly || undefined,
-      'data-icon-start': (!isIconOnly && glyph != null && at === 'start') || undefined,
-      'data-icon-end': (!isIconOnly && glyph != null && at === 'end') || undefined,
-      'data-collapse': (glyph != null && collapse) || undefined,
+      'data-icon-start': (!isIconOnly && slot != null && place === 'start') || undefined,
+      'data-icon-end': (!isIconOnly && slot != null && place === 'end') || undefined,
+      'data-collapse': (glyph != null && variant !== 'primary' && collapse) || undefined, // no icon, nothing to collapse to; a primary never collapses
       'data-loading': loading || undefined,
-      'data-bare': (loading && bare) || undefined,
       'data-primary': variant === 'primary' || undefined,
       'aria-busy': loading || undefined,
     };
 
-    const slot = loading && !bare ? <Spinner /> : glyph;
-    const iconEl = slot != null && <span data-btn-icon="" className={cn('shrink-0', at === 'end' && 'text-fg-3')}>{slot}</span>;
+    const iconEl = slot != null && <span data-btn-icon="" className={cn('shrink-0', place === 'end' && !loading && 'text-fg-3')}>{slot}</span>;
     const labelEl = children != null && children !== false && (hasText(children) || collapse
       ? <span data-label="" className="btn-label min-w-0 truncate">{children}</span>
       : children);
     const content = (
       <>
-        {at === 'start' && iconEl}
+        {place === 'start' && iconEl}
         {labelEl}
-        {at === 'end' && iconEl}
-        {loading && bare && <span className="btn-spin-over"><Spinner /></span>}
+        {place === 'end' && iconEl}
       </>
     );
 

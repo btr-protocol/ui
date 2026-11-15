@@ -110,6 +110,7 @@ SEG = `SegmentedControl` (2-3 options, always visible: a modal for two choices i
 - Codemod: `leftIcon={X}` -> `icon={X}`; `rightIcon={X}` -> `icon={X} iconPosition="end"`; `size="default"` -> `size="md"`. Icon-only Buttons need `aria-label` (compile error otherwise); drop every `h-*`/`w-*`/`px-*` className on a Button (ui-lint rejects them).
 - Delete front copies of `CloseButton`, `HoldButton`, `ExportButton` and the kit-duplicate icon buttons; import the kit's. `CloseButton` has no `size` prop.
 - SigningCard `wide` (JS width check) -> `collapse` on the secondary actions; the primary never collapses.
+- A `ButtonGroup` that may be narrower than its content takes `wrap` (cells never shrink below their label). `collapse` needs an `icon`.
 - Bars and groups: no per-cell padding or radius classes; cells get their geometry from `SectionBar` / `.btn-group`. Plain refresh cells next to "Export" become `<Button variant="ghost" size="sm" aria-label="Refresh" icon={<Icon name="refresh-cw"/>}/>`.
 - Both-sided triggers (chain glyph + caret, wallet glyph + caret): glyph into children, caret is the single `icon` with `iconPosition="end"`.
 - Front `.toolbar-btn` (`front/tailwind.config.js:137`): stays while `DrawingToolbar` (excluded, owner exception) uses it; delete only if that toolbar moves. The kit no longer ships `.toolbar-btn` / `.toolbar-item`.

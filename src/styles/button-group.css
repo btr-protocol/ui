@@ -14,7 +14,7 @@
 }
 .btn-group > :not([data-icon-only]) {
   position: relative;
-  min-width: 0; /* a text cell may shrink (it truncates); an icon-only cell never does (button.css) */
+  min-width: max-content; /* no cell shrinks below its content: a group that cannot fit wraps (`wrap`) or scrolls, never clips a label */
 }
 .btn-group > * {
   position: relative;
