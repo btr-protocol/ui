@@ -34,7 +34,7 @@ import {
 } from './wallet';
 import { OTHER_IDS, OTHER_MAX, type RecentRow, otherHref, sectionWallets } from './walletSections';
 import { readRecent, recentEntry, recordRecent, removeRecent } from './recentWallets';
-import { canReload, useFailureNotice, useOnline } from './ImportFailureModal';
+import { canReload, useFailureNotice, useOnline } from '../ui/ImportFailureNotice';
 import { walletConnectEnabled } from './walletConnectShell';
 import {
   browseHref,
