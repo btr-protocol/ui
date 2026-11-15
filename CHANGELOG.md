@@ -7,6 +7,8 @@
 - `guardedImport` never breaks a caller: a guard that throws, returns nothing or resolves to nothing becomes a rejected promise (`ImportFailure` for the last two).
 - `ImportFailure(message, actionLabel, kind)`: `kind` is 'stale' | 'failed' | 'offline'. Kit fallbacks offer Reload unless the kind is 'offline' and the browser is offline (re-evaluated on the `online` event). New `configureImportGuard(fn, { registerNotice })`: the kit's failure notices (fallback modal, pairing error) register their element while mounted, so the app can tell which failure message is visible (default no-op).
 - The connect and account fallbacks are one `ImportFailureModal` (a normal modal body: plain message + Reload, the modal's own close dismisses it); a failed `AccountModal` chunk used to leave a dead account chip. `guardedImport` also normalises a non-Error rejection to an `ImportFailure`.
+- A failed chart chunk (`MetricChart`, `getTDLC`) shows the same failure notice inside the chart panel (Reload by kind, registered) instead of a blank canvas and an unhandled rejection. The mobile pairing error no longer adds a QR failure line (or a dead "another device" button) next to a failed-chunk notice.
+- DEFAULT without `configureImportGuard`: a failed `AccountModal` now shows `ImportFailureModal` for every consumer. Its English literals (modal title "Wallet", fallback message, "Reload") are overridable through the same call: `configureImportGuard(fn, { texts: { title, message, action } })` (no new i18n system).
 - CONSUMERS SHOULD (Safe app, front): call `configureImportGuard` at boot with their stale-chunk recovery; reject with a subclass of `ImportFailure`.
 
 ## 0.14.1

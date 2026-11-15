@@ -20,6 +20,7 @@
 import { NUMERIC_FONT_FAMILY, SCALE_ON, scrollOn, tickMarkFormatter, timeLabel } from '../lib/chart';
 import { cn } from '../lib/cn';
 import { Spinner } from '../ui/Spinner';
+import { ImportFailureNotice } from '../wallet/ImportFailureModal';
 import { ChartShell } from './ChartShell';
 import { chartColors } from './colors';
 import {
@@ -173,6 +174,8 @@ export function MetricChart({
   // Create is async. Series/data/hover effects that ran while chartRef was null
   // must re-run after createChart, or the canvas stays blank forever.
   const [chartEpoch, setChartEpoch] = useState(0);
+  // The chart chunk failed to load: a plain notice in the panel (Reload by kind) instead of a blank canvas.
+  const [loadFailure, setLoadFailure] = useState<Error | null>(null);
   const seriesRef = useRef<Map<string, ISeriesApi<'Area' | 'Line' | 'Histogram'>>>(new Map());
   const legendRef = useRef<HTMLDivElement>(null);
   // Height of each series' autoscaled axis range, written by its autoscaleInfoProvider on every
@@ -374,8 +377,12 @@ export function MetricChart({
         () => cancelled,
       );
       if (!host || cancelled || chartRef.current) return;
-      const { createChart, ColorType } = await getTDLC();
-      if (cancelled || chartRef.current) return;
+      const lib = await getTDLC().catch((e: unknown) => {
+        if (!cancelled) setLoadFailure(e instanceof Error ? e : new Error(String(e)));
+        return null;
+      });
+      if (!lib || cancelled || chartRef.current) return;
+      const { createChart, ColorType } = lib;
       const colors = chartColors();
       const chart = adoptChart(
         cancelled,
@@ -617,6 +624,8 @@ export function MetricChart({
       fittedRef.current = false;
       pushData(chart);
       emphasisRef.current();
+    }, (e: unknown) => {
+      if (!cancelled) setLoadFailure(e instanceof Error ? e : new Error(String(e)));
     });
     return () => {
       cancelled = true;
@@ -872,9 +881,9 @@ export function MetricChart({
   return (
     <ChartShell
       title={watermark ? title : undefined}
-      loading={loading && !hasData}
+      loading={loading && !hasData && !loadFailure}
       loadingTitle="Loading chart"
-      empty={!hasData && !loading}
+      empty={!hasData && !loading && !loadFailure}
       emptyMessage={emptyMessage}
       watermarkBoxStyle={{ paddingRight: 52 }}
       height={height}
@@ -898,6 +907,11 @@ export function MetricChart({
         onTouchMove={() => gestureRef.current.pulse()}
         onTouchEnd={() => gestureRef.current.pulse()}
       />
+      {loadFailure && (
+        <div className="absolute inset-0 z-label flex items-center justify-center p-4">
+          <ImportFailureNotice failure={loadFailure} className="w-full max-w-sm" />
+        </div>
+      )}
       {/* Legend floats over the plot; the watermark, loading and empty states live in ChartShell. */}
       {/* Legend stays exactly ONE line at every width. It floats OVER the plot, so wrapping is
           not a graceful degradation - at 320px the second and third rows landed on the series

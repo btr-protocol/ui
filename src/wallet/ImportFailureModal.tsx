@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'preact/hooks';
-import { ImportFailure, registerFailureNotice } from '../lib/importGuard';
+import { ImportFailure, importTexts, registerFailureNotice } from '../lib/importGuard';
 import { BaseModal } from '../ui/BaseModal';
 import { Notice, NoticeAction } from '../ui/Feedback';
 
@@ -31,23 +31,30 @@ export function useFailureNotice() {
   }, []);
 }
 
-/** A modal chunk (connect / account) that failed to load: the plain message in a normal modal body (the modal layer, under no header) with a
- *  Reload (the browser caches a failed module fetch, so only a reload retries). The modal's own close button dismisses it. */
-export function ImportFailureModal({ failure, onClose, title = 'Wallet' }: { failure: Error; onClose: () => void; title?: string }) {
+/** The failure notice itself (registered with the app while mounted): the plain message and, unless offline, a Reload (the browser caches a failed
+ *  module fetch, so only a reload retries). Shared by the modal fallback and the chart panel. */
+export function ImportFailureNotice({ failure, className }: { failure: Error; className?: string }) {
   const online = useOnline();
   const noticeRef = useFailureNotice();
   const f = failure instanceof ImportFailure ? failure : null;
   return (
+    <div ref={noticeRef} className={className}>
+      <Notice
+        tone="error"
+        role="alert"
+        action={canReload(failure, online) ? <NoticeAction label={f?.actionLabel ?? importTexts().action} onClick={() => location.reload()} /> : undefined}
+      >
+        {f ? f.message : importTexts().message}
+      </Notice>
+    </div>
+  );
+}
+
+/** A modal chunk (connect / account) that failed to load: the notice in a normal modal body. The modal's own close button dismisses it. */
+export function ImportFailureModal({ failure, onClose, title = importTexts().title }: { failure: Error; onClose: () => void; title?: string }) {
+  return (
     <BaseModal isOpen onClose={onClose} title={title} headerType="title" size="sm">
-      <div ref={noticeRef} className="p-4">
-        <Notice
-          tone="error"
-          role="alert"
-          action={canReload(failure, online) ? <NoticeAction label={f?.actionLabel ?? 'Reload'} onClick={() => location.reload()} /> : undefined}
-        >
-          {f ? f.message : 'This part of the app could not be loaded. Reload the page.'}
-        </Notice>
-      </div>
+      <ImportFailureNotice failure={failure} className="p-4" />
     </BaseModal>
   );
 }
