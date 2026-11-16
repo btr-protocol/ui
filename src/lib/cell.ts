@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'preact/hooks';
+import { useEffect, useRef, useState } from 'preact/hooks';
 import { DASH } from './metricPhase';
 
 /** What ONE displayed figure is doing right now. Every loading state of the kit is one of these; `Figure` renders it.
@@ -31,9 +31,14 @@ export function expireLoading<T>(cell: Cell<T>, now: number, deadlineMs = LOADIN
 }
 
 /** `expireLoading` as a hook: ONE timer per loading cell re-renders it when its deadline passes, so a loader always ends. Returns the cell to render. */
-export function useCellDeadline<T>(cell: Cell<T>, deadlineMs = LOADING_DEADLINE_MS): Cell<T> {
+export function useCellDeadline<T>(input: Cell<T>, deadlineMs = LOADING_DEADLINE_MS): Cell<T> {
   const [, tick] = useState(0);
-  const since = cell.s === 'loading' ? cell.since : undefined;
+  // The deadline counts from the FIRST render that saw this load: a caller that builds a fresh `since` every render (toCell does) still ends.
+  const first = useRef<number>();
+  if (input.s === 'loading') first.current = Math.min(first.current ?? input.since, input.since);
+  else first.current = undefined;
+  const since = first.current;
+  const cell: Cell<T> = input.s === 'loading' && since !== undefined ? { s: 'loading', since } : input;
   useEffect(() => {
     if (since === undefined) return;
     const left = since + deadlineMs - Date.now();
@@ -49,7 +54,7 @@ export function toCell<T>(o: {
   value?: T | null;
   loading?: boolean;
   error?: unknown;
-  /** When loading began (epoch ms); keeps the 15 s deadline stable across re-renders. Default: now. */
+  /** When loading began (epoch ms). Default: now; `Figure` keeps the earliest it has seen, so the 15 s deadline holds across re-renders. */
   since?: number;
   retry?: () => void;
   /** Epoch ms of the held value, when it is older than a refresh in flight. */
