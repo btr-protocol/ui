@@ -17,7 +17,7 @@ export function useSweepPhase(): { '--sk-phase': string } {
 let period: number | undefined;
 function sweepPeriodMs(): number {
   if (period) return period;
-  const raw = typeof document === 'undefined' ? '' : getComputedStyle(document.documentElement).getPropertyValue('--dur-sweep').trim();
+  const raw = typeof document === 'undefined' || typeof getComputedStyle !== 'function' ? '' : getComputedStyle(document.documentElement).getPropertyValue('--dur-sweep').trim();
   const n = parseFloat(raw);
   return (period = n > 0 ? (raw.endsWith('ms') ? n : raw.endsWith('s') ? n * 1000 : 1400) : 1400);
 }
