@@ -846,8 +846,10 @@ export interface MetricStateProps {
   phase: MetricPhase;
   /** Formatted value. Rendered only when `phase` is 'live'; null falls through to 'empty'. */
   value: string | null | undefined;
-  /** Why the number is missing: the fetch failure for 'error', the refusal for 'unfillable'. */
+  /** The refusal for 'unfillable'. A failed read shows the fixed 'Not read'; its raw detail goes to the console, never here. */
   reason?: string;
+  /** Offered on 'error' as the Retry button. */
+  retry?: () => void;
   /** What the number is, for the empty tooltip ("No fees booked in this window yet"). */
   emptyHint?: string;
   className?: string;
@@ -861,6 +863,7 @@ export function MetricState({
   phase,
   value,
   reason,
+  retry,
   emptyHint,
   className,
   skeletonClassName = 'w-12',
@@ -877,7 +880,7 @@ export function MetricState({
       : phase === 'live' && value != null && value !== DASH
         ? { s: 'value', v: value }
         : phase === 'error'
-          ? { s: 'unavailable', reason: 'error', detail: reason ?? 'Metrics service unreachable' }
+          ? { s: 'error', retry }
           : phase === 'unfillable'
             ? { s: 'unavailable', reason: 'unfillable', detail: reason ?? 'the book cannot fill this size, so no price is quoted' }
             : { s: 'na', why: phase === 'stale' ? 'Updating: shown once the next report lands.' : (emptyHint ?? 'Not reported for this window yet.') };

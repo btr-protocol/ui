@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.15.0
+- ONE value state. `Cell` kinds: value (0 included), stale, loading (skeleton; "measuring" is loading, no `measuring` kind, no "Measuring" text), error (`Not read` + Retry), unavailable (the one `-` glyph, reason in the tooltip, no warning icon), na. BREAKING: `unavailable` lost `reason: 'error'` and `retry` (use `{ s: 'error', retry }`).
+- `toCell({ value, loading, error, since, retry, asOf })`: the one adapter from a hook's `value | null` to a Cell. Unread / NaN never becomes 0; a real 0 stays a value; a failed read is `error`.
+
 ## 0.14.2
 - `configureImportGuard(fn)` (exported, call once at boot): every dynamic import the kit makes (`WalletModal`, the WalletConnect glue and its `walletConnect` chunk, the QR chunk, the chain picker modal) goes through `fn`, so an app can classify a chunk a deploy deleted and reject with a plain message instead of "Failed to fetch dynamically imported module: <url>". Unset = the raw promise, no behaviour change.
 - ALL kit dynamic imports are guarded: WalletModal, AccountModal, the WalletConnect glue and QR chunks, the chain picker modal, lightweight-charts (`getTDLC`).

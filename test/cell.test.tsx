@@ -1,6 +1,6 @@
 import { expect, jest, setSystemTime, test } from 'bun:test';
 import { render } from 'preact-render-to-string';
-import { type Cell, DASH, Figure, MetricState, NA_GLYPH, assertNever, expireLoading, useCellDeadline } from '../src';
+import { type Cell, DASH, Figure, MetricState, NA_GLYPH, assertNever, expireLoading, toCell, useCellDeadline } from '../src';
 import { act, mount, useDom } from './dom';
 
 useDom();
@@ -36,7 +36,7 @@ test('useCellDeadline: ONE timer; a loading cell becomes unavailable(timeout) wh
 test('Figure: a measured zero prints as zero, never the n/a glyph; every state is distinct', () => {
   expect(f({ s: 'value', v: 0 })).toContain('0.00');
   expect(f({ s: 'value', v: 0 })).not.toContain('>-<');
-  const states: Cell<number>[] = [{ s: 'value', v: 0 }, { s: 'stale', v: 1, asOf: 0 }, { s: 'loading', since: 0 }, { s: 'measuring' }, { s: 'unavailable', reason: 'error' }, { s: 'na', why: 'x' }];
+  const states: Cell<number>[] = [{ s: 'value', v: 0 }, { s: 'stale', v: 1, asOf: 0 }, { s: 'loading', since: 0 }, { s: 'error' }, { s: 'unavailable', reason: 'unserved' }, { s: 'na', why: 'x' }];
   expect(new Set(states.map(f)).size).toBe(states.length);
   expect(f({ s: 'stale', v: 5, asOf: 0 })).toContain('5.00'); // stale keeps its value, never a dash
   expect(f({ s: 'stale', v: 5, asOf: 0 })).toContain('stale ');
@@ -55,10 +55,10 @@ test('Figure: a loading cell past its deadline renders as unavailable(timeout); 
 });
 
 test('Figure: unavailable and na carry real text, a focusable tooltip trigger, and a named Retry', () => {
-  const html = render(<Figure cell={{ s: 'unavailable', reason: 'rate-limited', retry: () => {} }} format={String} label="TVL" />);
+  const html = render(<Figure cell={{ s: 'unavailable', reason: 'rate-limited' }} format={String} label="TVL" />);
   expect(html).toContain('Unavailable: Rate limited');
+  expect(html).not.toContain('Retry');
   expect(html).toContain('tabindex="0"');
-  expect(html).toContain('aria-label="Retry TVL"');
   expect(f({ s: 'na', why: 'no fees' })).toContain('Not applicable: no fees');
 });
 
@@ -68,11 +68,10 @@ test('MetricState: each phase has its own role, text and icon', () => {
   expect(r('loading')).toContain('>Loading<'); // standalone: hidden plain text, no live region
   expect(r('loading')).not.toContain('1.5');
   const err = r('error');
-  expect(err).toContain('Unavailable: Could not load, why');
-  expect(err).toContain('lucide-triangle-alert');
+  expect(err).toContain('Not read');
+  expect(err).not.toContain('why'); // raw detail never reaches the UI
   const unf = r('unfillable');
   expect(unf).toContain('Unavailable: Unfillable, why');
-  expect(unf).toContain('lucide-circle-x');
   expect(r('empty')).toContain('Not applicable:');
   expect(r('stale')).toContain('Updating');
   expect(new Set(['live', 'loading', 'error', 'unfillable', 'empty'].map((p) => r(p as never))).size).toBe(5);
@@ -82,7 +81,7 @@ test('the Cell switch is exhaustive: a state missing from it fails to compile (t
   type Grown = Cell<number> | { s: 'brand-new' };
   const name = (c: Grown): string => {
     switch (c.s) {
-      case 'value': case 'stale': case 'loading': case 'measuring': case 'unavailable': case 'na': return c.s;
+      case 'value': case 'stale': case 'loading': case 'error': case 'unavailable': case 'na': return c.s;
       default:
         // @ts-expect-error 'brand-new' has no case above: assertNever(never) refuses it. If this stops erroring, exhaustiveness is lost.
         return assertNever(c);
@@ -90,4 +89,18 @@ test('the Cell switch is exhaustive: a state missing from it fails to compile (t
   };
   expect(name({ s: 'na', why: '' })).toBe('na');
   expect(() => name({ s: 'brand-new' })).toThrow();
+});
+
+test('toCell: a real 0 is a value; unread and failed reads are never 0', () => {
+  expect(toCell({ value: 0 })).toEqual({ s: 'value', v: 0, asOf: undefined });
+  expect(toCell({ value: null, loading: true, since: 5 })).toEqual({ s: 'loading', since: 5 });
+  expect(toCell({ value: undefined })).toEqual({ s: 'unavailable', reason: 'unserved' });
+  expect(toCell({ value: Number.NaN })).toEqual({ s: 'unavailable', reason: 'unserved' });
+  expect(toCell({ value: null, error: new Error('x'), loading: true }).s).toBe('error');
+  expect(toCell({ value: 3, error: true, asOf: 1 }).s).toBe('stale');
+});
+test('Figure: error is a short line plus a named Retry; no raw text', () => {
+  const html = render(<Figure cell={{ s: 'error', retry: () => {} }} format={String} label="TVL" />);
+  expect(html).toContain('Not read');
+  expect(html).toContain('Retry TVL');
 });

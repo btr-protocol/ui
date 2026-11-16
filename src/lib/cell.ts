@@ -2,13 +2,14 @@ import { useEffect, useState } from 'preact/hooks';
 import { DASH } from './metricPhase';
 
 /** What ONE displayed figure is doing right now. Every loading state of the kit is one of these; `Figure` renders it.
+ *  Kinds: value (a real number, 0 included), loading (skeleton; "measuring" is loading too), unavailable (the one glyph), error (short message + retry). Never a made-up 0.
  *  `asOf` / `since` are epoch ms. */
 export type Cell<T> =
   | { s: 'value'; v: T; asOf?: number }
   | { s: 'stale'; v: T; asOf: number }
   | { s: 'loading'; since: number }
-  | { s: 'measuring'; note?: string }
-  | { s: 'unavailable'; reason: 'error' | 'timeout' | 'unserved' | 'rate-limited' | 'unfillable'; detail?: string; retry?: () => void }
+  | { s: 'error'; retry?: () => void }
+  | { s: 'unavailable'; reason: 'timeout' | 'unserved' | 'rate-limited' | 'unfillable'; detail?: string }
   | { s: 'na'; why: string };
 
 export type CellState = Cell<unknown>['s'];
@@ -40,4 +41,26 @@ export function useCellDeadline<T>(cell: Cell<T>, deadlineMs = LOADING_DEADLINE_
     return () => clearTimeout(id);
   }, [since, deadlineMs]);
   return expireLoading(cell, Date.now(), deadlineMs);
+}
+
+/** The ONE adapter from a hook's `value | null | undefined` + flags to a Cell. A read that failed is `error`, never a 0; a value that is
+ *  not a finite number (NaN/Infinity) is unread; a real 0 stays `value`. A value we already hold wins over a refresh or a failed refresh (stale). */
+export function toCell<T>(o: {
+  value?: T | null;
+  loading?: boolean;
+  error?: unknown;
+  /** When loading began (epoch ms); keeps the 15 s deadline stable across re-renders. Default: now. */
+  since?: number;
+  retry?: () => void;
+  /** Epoch ms of the held value, when it is older than a refresh in flight. */
+  asOf?: number;
+  /** Reason when nothing is loading, failing or held (default 'unserved'). */
+  reason?: UnavailableReason;
+}): Cell<T> {
+  const v = o.value;
+  const held = v != null && !(typeof v === 'number' && !Number.isFinite(v));
+  if (held) return o.error && o.asOf !== undefined ? { s: 'stale', v: v as T, asOf: o.asOf } : { s: 'value', v: v as T, asOf: o.asOf };
+  if (o.error) return { s: 'error', retry: o.retry };
+  if (o.loading) return { s: 'loading', since: o.since ?? Date.now() };
+  return { s: 'unavailable', reason: o.reason ?? 'unserved' };
 }

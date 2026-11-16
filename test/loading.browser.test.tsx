@@ -136,14 +136,13 @@ t('Figure: every state has its own accessible text; a measured zero prints as ze
   expect(by(1).text).toBe('0.00');
   expect(by(2).text).toMatch(/^1234\.50stale 5m$/);
   expect(by(3)).toMatchObject({ sk: true, text: '' }); // inside Busy: silent, the one status speaks
-  expect(by(4).text).toBe('Measuring depth');
-  expect(by(5).text).toContain('Unavailable: Could not load');
-  expect(by(5)).toMatchObject({ warn: true, retry: 'Retry', focusable: true });
-  expect(by(6).text).toContain('Unavailable: Unfillable, no depth');
-  expect(by(7).text).toContain('Unavailable: Timed out');
-  expect(by(8).text).toContain('Unavailable: Rate limited');
-  expect(by(9).text).toBe('-Not applicable: No fees booked in this window');
-  expect(by(9).focusable).toBe(true);
+  expect(by(4).text).toBe('Not read');
+  expect(by(4)).toMatchObject({ retry: 'Retry' });
+  expect(by(5).text).toContain('Unavailable: Unfillable, no depth');
+  expect(by(6).text).toContain('Unavailable: Timed out');
+  expect(by(7).text).toContain('Unavailable: Rate limited');
+  expect(by(8).text).toBe('-Not applicable: No fees booked in this window');
+  expect(by(8).focusable).toBe(true);
   expect(rows.some((r) => r.text.includes(String.fromCharCode(8212)))).toBe(false);
   expect(new Set(rows.map((r) => r.text + r.sk + r.warn)).size).toBe(rows.length - 0);
   // a loading figure OUTSIDE a Busy announces itself as plain hidden text (no live region)

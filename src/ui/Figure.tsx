@@ -7,7 +7,6 @@ import { ValuePlaceholder, useInBusy } from './Loaders';
 
 type Reason = Extract<Cell<unknown>, { s: 'unavailable' }>['reason'];
 const REASON: Record<Reason, string> = {
-  error: 'Could not load',
   timeout: 'Timed out',
   unserved: 'Not served',
   'rate-limited': 'Rate limited',
@@ -76,21 +75,15 @@ export function Figure<T>({ cell: input, format, ch, className, placeholderClass
           {!inBusy && <span className="sr-only">Loading</span>}
         </>,
       );
-    case 'measuring':
-      return box(<span className="text-fg-3">Measuring{cell.note ? ` ${cell.note}` : ''}</span>);
-    case 'unavailable': {
-      const said = `Unavailable: ${cell.detail ? `${REASON[cell.reason]}, ${cell.detail}` : REASON[cell.reason]}`;
+    case 'error':
       return box(
-        reasoned(
-          <span className="inline-flex items-center gap-1 text-warning">
-            <span className="text-fg-3">{NA_GLYPH}</span>
-            <Icon name={cell.reason === 'unfillable' ? 'x-circle' : 'warning'} size={11} aria-hidden />
-          </span>,
-          said,
-          cell.retry && <Button size="xs" variant="ghost" aria-label={label ? `Retry ${label}` : 'Retry'} leftIcon={<Icon name="refresh-cw" size={12} />} onClick={cell.retry} />,
-        ),
+        <span className="inline-flex items-center gap-1 text-fg-3">
+          <span role="alert">Not read</span>
+          {cell.retry && <Button size="xs" variant="ghost" aria-label={label ? `Retry ${label}` : 'Retry'} leftIcon={<Icon name="refresh-cw" size={12} />} onClick={cell.retry} />}
+        </span>,
       );
-    }
+    case 'unavailable':
+      return box(reasoned(<span className="text-fg-3">{NA_GLYPH}</span>, `Unavailable: ${cell.detail ? `${REASON[cell.reason]}, ${cell.detail}` : REASON[cell.reason]}`));
     case 'na':
       return box(reasoned(<span className="text-fg-3">{NA_GLYPH}</span>, `Not applicable: ${cell.why}`));
     default:
