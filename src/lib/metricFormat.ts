@@ -4,6 +4,7 @@
 import {
   formatCompact,
   formatPercentSig,
+  formatRate,
   formatYield,
 } from '@btr-protocol/sdk/utils/format';
 import { formatUsd } from './format';
@@ -21,16 +22,9 @@ export function fmtUsd(v: number | null | undefined, stale = false): string {
   return formatUsd(v);
 }
 
-/** Signed percent through the shared magnitude-adaptive formatter (three significant figures);
- *  values that round onto ±0 print unsigned `0.00%`. */
+/** Signed rate through the shared unit law (`formatRate`: bps under 1%, % from 1%); unread is DASH. */
 export function fmtSignedPct(v: number | null | undefined): string {
-  if (v == null || !Number.isFinite(v)) return DASH;
-  return clampSignedZeroPct(formatPercentSig(v * 100, 3, true));
-}
-
-/** Collapse `+0%` / `-0.00%` / `0%` onto unsigned `0.00%`. */
-export function clampSignedZeroPct(text: string): string {
-  return /^[+-]?0(?:\.0+)?%$/.test(text) ? '0.00%' : text;
+  return v == null || !Number.isFinite(v) ? DASH : formatRate(v * 100, true);
 }
 
 export function fmtCount(v: number | null | undefined, stale = false): string {
