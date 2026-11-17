@@ -115,7 +115,7 @@ t('no loader animates a layout property', async () => {
 
 t('a 200-row loading table in Loader: one status node that stays mounted, aria-busy toggles, placeholders are hidden', async () => {
   const page = await open('busy');
-  await page.locator('tr').nth(199).waitFor();
+  await page.locator('tr').nth(199).waitFor({ state: 'attached' }); // the Loader hides its content under the sweep, so attached, not visible
   expect(await page.locator('[role=status]').count()).toBe(1);
   expect(await page.locator('[role=status]').textContent()).toBe('Loading pools');
   expect(await page.locator('[aria-busy=true]').count()).toBe(1);
@@ -136,8 +136,8 @@ t('Figure: every state has its own accessible text; a measured zero prints as ze
   expect(by(1).text).toBe('0.00');
   expect(by(2).text).toMatch(/^1234\.50stale 5m$/);
   expect(by(3)).toMatchObject({ sk: true, text: 'Loading' }); // outside a busy Loader: hidden text, no live region
-  expect(by(4).text).toBe('Not read');
-  expect(by(4)).toMatchObject({ retry: 'Retry' });
+  expect(by(4).text).toContain('Not read'); // the sr-only words plus the title (the cell is an icon, never a word on screen)
+  expect(by(4)).toMatchObject({ retry: 'Retry', warn: true });
   expect(by(5).text).toContain('Unavailable: Unfillable, no depth');
   expect(by(6).text).toContain('Unavailable: Timed out');
   expect(by(7).text).toContain('Unavailable: Rate limited');
