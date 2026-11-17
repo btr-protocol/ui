@@ -41,14 +41,18 @@ type ToCellBase<T> = {
   error?: unknown;
   now?: number;
   retry?: () => void;
-  /** Epoch ms of the held value. A held value + failed read is `stale` (the age mark), never blank; with a refresh in flight it is `value` + `refreshing`. */
+  /** Epoch ms of the held value. Held value + failed read: `stale` (the age mark) ONLY when `asOf` is a real time; without it there is no honest age, so the read is `error` (never a false "stale 0s"). With a refresh in flight it is `value` + `refreshing`. */
   asOf?: number;
   /** Reason when nothing is loading, failing or held (default 'unserved'). */
   reason?: UnavailableReason;
 };
 /** `since` is REQUIRED while `loading` is true (type-enforced): past `LOADING_DEADLINE_MS` a still-loading read is `unavailable('timeout')`, so a
  *  loader always ends (decided on the hook's next render/poll, no timer). Keep it with `loadingSince`. */
-export type ToCellOptions<T> = ToCellBase<T> & ({ loading?: false; since?: number } | { loading: true; since: number });
+export type ToCellOptions<T> = ToCellBase<T> &
+  ({ loading?: false; since?: number; measuring?: false } | { loading: true; since: number; measuring?: false } | { loading: true; measuring: true; since?: number });
+
+/** `measuring: true` is for a read that legitimately takes long (a hook APR accruing for days): the skeleton shows with NO deadline, still no label
+ *  text. Use it only for a named, bounded-by-nature wait; every other load keeps `since` and ends at the deadline. */
 
 /** The ONE adapter from a hook's `value | null | undefined` + flags to a Cell. A read that failed is `error`, never a 0; a value that is
  *  not a finite number (NaN/Infinity) is unread; a real 0 stays `value`. A value we already hold is never blanked: a refresh keeps it
@@ -58,10 +62,10 @@ export function toCell<T>(o: ToCellOptions<T>): Cell<T> {
   const now = o.now ?? Date.now();
   const held = v != null && !(typeof v === 'number' && !Number.isFinite(v));
   if (held) {
-    if (o.error) return { s: 'stale', v: v as T, asOf: o.asOf ?? now };
+    if (o.error) return o.asOf !== undefined ? { s: 'stale', v: v as T, asOf: o.asOf } : { s: 'error', retry: o.retry };
     return { s: 'value', v: v as T, asOf: o.asOf, ...(o.loading && { refreshing: true }) };
   }
   if (o.error) return { s: 'error', retry: o.retry };
-  if (o.loading) return now - o.since >= LOADING_DEADLINE_MS ? { s: 'unavailable', reason: 'timeout' } : { s: 'loading' };
+  if (o.loading) return !o.measuring && now - (o.since as number) >= LOADING_DEADLINE_MS ? { s: 'unavailable', reason: 'timeout' } : { s: 'loading' };
   return { s: 'unavailable', reason: o.reason ?? 'unserved' };
 }

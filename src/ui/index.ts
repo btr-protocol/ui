@@ -52,6 +52,7 @@ export * from './Figure';
 export * from './Dash';
 export * from './MetricState';
 export * from '../lib/cell';
+export * from '../lib/useLoading';
 export * from './StackedIcons';
 export * from './StateNotice';
 export * from './StatusChip';

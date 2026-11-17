@@ -1,6 +1,7 @@
 import { expect, jest, setSystemTime, test } from 'bun:test';
 import { render } from 'preact-render-to-string';
-import { type Cell, DASH, Figure, Loader, MetricState, NA_GLYPH, assertNever, loadingSince, toCell } from '../src';
+import { type Cell, DASH, Figure, Loader, MetricState, NA_GLYPH, assertNever, loadingSince, toCell, useLoadingDeadline, useSince } from '../src';
+import { useState } from 'preact/hooks';
 import { act, mount, useDom } from './dom';
 
 useDom();
@@ -106,7 +107,8 @@ test('Figure: error is a short line plus a named Retry; no raw text', () => {
 test('toCell: a held value is never blanked: refresh keeps it, a failed refresh marks it stale', () => {
   expect(toCell({ value: 5, loading: true, since: 1 })).toMatchObject({ s: 'value', v: 5, refreshing: true });
   expect(toCell({ value: 5, error: true, asOf: 9 })).toEqual({ s: 'stale', v: 5, asOf: 9 });
-  expect(toCell({ value: 5, error: true, now: 77 })).toEqual({ s: 'stale', v: 5, asOf: 77 });
+  // no real asOf: there is no honest age, so never a false "stale 0s": the read is an error
+  expect(toCell({ value: 5, error: true, now: 77 }).s).toBe('error');
 });
 test('loadingSince keeps the start of a load and clears it when the read ends', () => {
   const m = new Map<string, number>();
@@ -145,4 +147,54 @@ test('every Figure state is one light node: no tab stop, no role, no tooltip; Re
   expect(na).not.toContain('Not read');
   expect(render(<Figure cell={{ s: 'error' }} format={String} variant="tile" />)).toContain('Not read');
   expect(err).toContain('text-warning');
+});
+
+test('toCell measuring: a long accrual shows the skeleton with no deadline and no word', () => {
+  expect(toCell({ loading: true, measuring: true, now: 1e12 })).toEqual({ s: 'loading' });
+  expect(toCell({ loading: true, measuring: true, since: 1, now: 1 + 10 * 86400000 })).toEqual({ s: 'loading' });
+  expect(f({ s: 'loading' })).not.toContain('Measuring');
+});
+
+test('useLoadingDeadline: ONE timer for many cells re-renders at the earliest deadline; a new since re-arms; unmount clears', () => {
+  jest.useFakeTimers();
+  setSystemTime(new Date(1_000_000));
+  let renders = 0;
+  const C = ({ a, b }: { a?: number; b?: number }) => {
+    renders++;
+    useLoadingDeadline([a, b]);
+    return <i>{[a, b].map((s) => (s === undefined ? toCell<number>({}) : toCell<number>({ loading: true, since: s })).s).join(',')}</i>;
+  };
+  const m = mount(<C a={1_000_000} b={1_005_000} />);
+  expect(jest.getTimerCount()).toBe(1);
+  expect(renders).toBe(1);
+  act(() => { jest.advanceTimersByTime(15_100); });
+  expect(renders).toBe(2); // one forced render at the first deadline
+  expect(m.host.textContent).toBe('unavailable,loading');
+  act(() => { jest.advanceTimersByTime(5_000); });
+  expect(m.host.textContent).toBe('unavailable,unavailable');
+  m.unmount();
+  expect(jest.getTimerCount()).toBe(0);
+  jest.useRealTimers();
+  setSystemTime();
+});
+
+test('useSince: real start while active (never 0), reset when it ends so a new request starts a new wait', () => {
+  jest.useFakeTimers();
+  const seen: number[] = [];
+  let set: (b: boolean) => void = () => {};
+  const C = () => {
+    const [on, setOn] = useState(true);
+    set = setOn;
+    seen.push(useSince(on));
+    return <i />;
+  };
+  setSystemTime(new Date(5_000));
+  const m = mount(<C />);
+  expect(seen[0]).toBe(5_000);
+  act(() => { setSystemTime(new Date(9_000)); set(false); });
+  act(() => { setSystemTime(new Date(12_000)); set(true); });
+  expect(seen[seen.length - 1]).toBe(12_000);
+  m.unmount();
+  jest.useRealTimers();
+  setSystemTime();
 });
