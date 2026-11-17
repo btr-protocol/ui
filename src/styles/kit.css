@@ -148,6 +148,13 @@ select[aria-invalid="true"]:focus {
     background: var(--scrollbar-thumb-active);
   }
 
+  /* No step buttons: Chrome draws them as glyphs at both ends of the bar. */
+  ::-webkit-scrollbar-button {
+    display: none;
+    width: 0;
+    height: 0;
+  }
+
   ::-webkit-scrollbar-corner {
     background: var(--scrollbar-track);
   }
