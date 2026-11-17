@@ -1,8 +1,6 @@
 // Canonical Panel: the one card. Family contract shared with Table/ChartShell - `title` +
 // `meta` header at the PanelHeader scale, body at PanelBody scale, block states via PanelState
 // (PageState/Empty); MetricState is the inline-cell counterpart, not a second block path.
-import { Empty, PageState } from './Feedback';
-import type { MetricPhase } from '../lib/metricPhase';
 import { cn } from '../lib/cn';
 import type { ComponentChildren } from 'preact';
 import type { Ref } from 'preact';
@@ -82,35 +80,4 @@ export function PanelBody(
 ) {
   const { className, ...rest } = props;
   return <div className={cn(PANEL_BODY, className)} {...rest} />;
-}
-
-/** Block-level MetricPhase renderer. Delegates to PageState/Empty, so a panel and a page
- *  never invent a second loading/empty look; MetricState is the inline-cell counterpart. */
-export function PanelState({
-  phase,
-  message,
-  className,
-  action,
-}: {
-  phase: MetricPhase;
-  message: string;
-  className?: string;
-  /** Offered on the error card (a retry). */
-  action?: { label: string; onClick: () => void };
-}) {
-  if (phase === 'loading') {
-    return <PageState kind="loading" message={message} className={className} />;
-  }
-  if (phase === 'empty') {
-    return <Empty className={className}>{message}</Empty>;
-  }
-  if (phase === 'live') return null;
-  return (
-    <PageState
-      kind="error"
-      message={message}
-      action={action}
-      className={cn(phase !== 'error' && 'text-warning', className)}
-    />
-  );
 }

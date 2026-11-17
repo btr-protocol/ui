@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'preact/hooks';
 import { ImportFailure, importTexts, registerFailureNotice } from '../lib/importGuard';
-import { Notice, NoticeAction } from './Feedback';
+import { Notice, NoticeAction } from './Notice';
 
 /** True while the browser reports a connection (re-evaluated on the `online` / `offline` events). */
 export function useOnline(): boolean {

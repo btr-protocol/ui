@@ -29,3 +29,9 @@ test('Figure is light: no Tooltip, no focus stop, no role=img/alert per cell (th
   const src = (await read('src/ui/Figure.tsx')).split('\n').filter((l) => !/^\s*(\/\*\*| \*|\/\/)/.test(l) && !/^import/.test(l)).join('\n');
   expect(src.match(/Tooltip|tabIndex|role="img"|role="alert"|useState|useEffect|useRef/g) ?? []).toEqual([]);
 });
+
+test('the value-state files never import Table or Feedback (they would drag 50 KB into an app entry)', async () => {
+  for (const f of ['src/ui/Figure.tsx', 'src/ui/MetricState.tsx', 'src/ui/Dash.tsx', 'src/ui/Loaders.tsx', 'src/ui/Notice.tsx', 'src/ui/ImportFailureNotice.tsx', 'src/lib/cell.ts']) {
+    expect((await read(f)).match(/from '\.\/(Table|Feedback|StateNotice)'/g) ?? []).toEqual([]);
+  }
+});
