@@ -66,7 +66,7 @@ export function Figure<T>({ cell, format, ch, className, placeholderClassName, l
       );
     case 'error':
       return (
-        <span data-state="error" className={cls('inline-flex items-center gap-1 text-fg-3')} title="Not read">
+        <span data-state="error" className={cls('inline-flex items-center gap-1 text-warning')} title="Not read">
           {variant === 'tile' ? 'Not read' : <><Icon name="warning" size={11} aria-hidden /><span className="sr-only">Not read</span></>}
           {cell.retry && <Button size="xs" variant="ghost" aria-label={label ? `Retry ${label}` : 'Retry'} leftIcon={<Icon name="refresh-cw" size={12} />} onClick={cell.retry} />}
         </span>

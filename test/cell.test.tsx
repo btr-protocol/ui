@@ -120,3 +120,29 @@ test('Loader: an error is the section\'s ONE alert; a bare busy Loader says its 
   expect((html.match(/role="alert"/g) ?? []).length).toBe(1);
   expect(render(<Loader busy>x</Loader>)).toContain('>Loading<');
 });
+
+test('every Figure state is one light node: no tab stop, no role, no tooltip; Retry only when given; error differs from unavailable', () => {
+  const states: Cell<number>[] = [
+    { s: 'value', v: 0 },
+    { s: 'stale', v: 1, asOf: 0 },
+    { s: 'loading' },
+    { s: 'error' },
+    { s: 'unavailable', reason: 'unserved' },
+    { s: 'na', why: 'x' },
+  ];
+  for (const c of states) {
+    for (const variant of ['cell', 'tile'] as const) {
+      const html = render(<Figure cell={c} format={(n) => n.toFixed(2)} variant={variant} />);
+      expect(html).not.toMatch(/tabindex|role=|<button/);
+    }
+  }
+  expect(render(<Figure cell={{ s: 'error', retry: () => {} }} format={String} label="TVL" />).match(/<button/g)?.length).toBe(1);
+  const err = render(<Figure cell={{ s: 'error' }} format={String} />);
+  const na = render(<Figure cell={{ s: 'unavailable', reason: 'unserved' }} format={String} />);
+  expect(err).toContain('lucide'); // a mark, not the glyph
+  expect(err).not.toContain('>-<');
+  expect(na).toContain('>-<');
+  expect(na).not.toContain('Not read');
+  expect(render(<Figure cell={{ s: 'error' }} format={String} variant="tile" />)).toContain('Not read');
+  expect(err).toContain('text-warning');
+});
