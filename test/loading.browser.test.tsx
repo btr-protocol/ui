@@ -130,7 +130,7 @@ t('a 200-row loading table in Loader: one status node that stays mounted, aria-b
 t('Figure: every state has its own accessible text; a measured zero prints as zero; the n/a glyph is the one hyphen', async () => {
   const page = await open('all');
   await page.locator('[data-state=na]').waitFor();
-  const rows = await page.evaluate(() => [...document.querySelectorAll('tbody tr')].map((r) => { const f = r.querySelector('[data-state]') as HTMLElement; return { state: f.dataset.state!, text: f.textContent!.trim() + [...f.querySelectorAll('[role=img]')].map((i) => i.getAttribute('aria-label')).join(''), sk: !!f.querySelector('.sk'), warn: !!f.querySelector('svg'), retry: f.querySelector('[aria-label^=Retry]')?.getAttribute('aria-label') ?? null, focusable: !!f.querySelector('[tabindex="0"]') }; }));
+  const rows = await page.evaluate(() => [...document.querySelectorAll('tbody tr')].map((r) => { const f = r.querySelector('[data-state]') as HTMLElement; return { state: f.dataset.state!, text: f.textContent!.trim() + (f.getAttribute('title') ?? ''), sk: !!f.querySelector('.sk'), warn: !!f.querySelector('svg'), retry: f.querySelector('[aria-label^=Retry]')?.getAttribute('aria-label') ?? null, focusable: !!f.querySelector('[tabindex="0"]') }; }));
   const by = (i: number) => rows[i]!;
   expect(by(0).text).toBe('1234.50');
   expect(by(1).text).toBe('0.00');
@@ -142,7 +142,7 @@ t('Figure: every state has its own accessible text; a measured zero prints as ze
   expect(by(6).text).toContain('Unavailable: Timed out');
   expect(by(7).text).toContain('Unavailable: Rate limited');
   expect(by(8).text).toBe('-Not applicable: No fees booked in this window');
-  expect(by(8).focusable).toBe(true);
+  expect(rows.every((r) => !r.focusable)).toBe(true); // light cells: no tab stop per figure
   expect(rows.some((r) => r.text.includes(String.fromCharCode(8212)))).toBe(false);
   expect(new Set(rows.map((r) => r.text + r.sk + r.warn)).size).toBe(rows.length - 0);
   // a loading figure OUTSIDE a Loader announces itself as plain hidden text (no live region)
@@ -151,15 +151,11 @@ t('Figure: every state has its own accessible text; a measured zero prints as ze
   expect(await page.evaluate(() => [...document.querySelectorAll('[tabindex],button,a[href],input')].filter((e) => e.closest('[aria-hidden=true]')).length)).toBe(0);
 });
 
-t('the reason glyph: accessible name (computed) is the reason, said once; no hidden duplicate text', async () => {
+t('the reason is the title of one light node: no role=img, no tab stop, no double reading', async () => {
   const page = await open('all');
-  const g = page.locator('[data-state=unavailable] [role=img]').first();
-  await g.focus();
-  expect(await page.locator(':focus').ariaSnapshot()).toContain('img "Unavailable: Could not load"');
-  const dup = await page.evaluate(() => [...document.querySelectorAll('[data-state=unavailable],[data-state=na]')].filter((f) => /^(Unavailable|Not applicable)/.test(f.textContent!.trim())).length);
-  expect(dup).toBe(0); // the words are not also text content (no double reading)
-  expect(await page.locator('[data-state=na] [role=img]').getAttribute('aria-label')).toBe('Not applicable: No fees booked in this window');
-  expect(await page.locator('[data-state=na] [tabindex="0"]').count()).toBe(1);
+  expect(await page.locator('[data-state=unavailable] [role=img], [data-state=na] [role=img], [data-state=na] [tabindex]').count()).toBe(0);
+  expect(await page.locator('[data-state=na]').getAttribute('title')).toBe('Not applicable: No fees booked in this window');
+  expect(await page.locator('[data-state=error] [role=alert]').count()).toBe(0); // the section owns the one alert
 });
 
 t('cascade as at 0.14.0: a Spinner className (hidden, text-*, bg-*) never beats the kit rule (loaders sit after the utilities)', async () => {

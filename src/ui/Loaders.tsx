@@ -35,14 +35,21 @@ export function Hairline({ active = true }: { active?: boolean }) {
 
 /** THE section loader: while `busy`, the region keeps its layout but its content is hidden under one sweeping block (pure CSS, `.loader`),
  *  so tiles, panels and tables that load together show no number, dash or word. `aria-busy` on the region and ONE visually hidden
- *  `role="status"` that stays mounted OUTSIDE it (a live region must exist before its text changes). */
-export function Loader({ busy, label = 'Loading', className, children }: { busy: boolean; label?: string; className?: string; children?: ComponentChildren }) {
+ *  `role="status"` that stays mounted OUTSIDE it (a live region must exist before its text changes). `error` (a short line) is the section's
+ *  ONE `role="alert"`: its cells render the error mark but never their own alert. Content that has nothing to hold (a depth pane before its
+ *  first answer) renders a bare `<Skeleton lines={n} />` instead of a Loader, so no hidden children sit under the sweep. A held value that
+ *  refreshes gets `className={refreshing(busy)}` (a CSS hairline), never a Loader. */
+export function Loader({ busy, label = 'Loading', error, className, children }: { busy: boolean; label?: string; error?: string; className?: string; children?: ComponentChildren }) {
   return (
     <>
-      <span role="status" className="sr-only">{busy ? label : ''}</span>
+      <span role="status" className="sr-only">{busy && !error ? label : ''}</span>
+      {error && <span role="alert" className="sr-only">{error}</span>}
       <div aria-busy={busy} className={cn('loader', className)}>
         <BusyContext.Provider value={busy}>{children}</BusyContext.Provider>
       </div>
     </>
   );
 }
+
+/** Class for a background refresh over a value that stays visible: a 2px hairline sweeps its top edge (CSS only, no node). */
+export const refreshing = (busy: boolean): string | undefined => (busy ? 'refreshing' : undefined);

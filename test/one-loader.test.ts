@@ -24,3 +24,8 @@ test('Spinner is for a user-initiated action only: buttons, the wallet connect r
 test('no state words as loading text, no JS clock for the sweep', async () => {
   expect(await scan(/Measuring|useSweepPhase|useCellDeadline|--sk-phase|Loading\.\.\.|Loading…/, [])).toEqual([]);
 });
+
+test('Figure is light: no Tooltip, no focus stop, no role=img/alert per cell (the section owns the one alert)', async () => {
+  const src = (await read('src/ui/Figure.tsx')).split('\n').filter((l) => !/^\s*(\/\*\*| \*|\/\/)/.test(l) && !/^import/.test(l)).join('\n');
+  expect(src.match(/Tooltip|tabIndex|role="img"|role="alert"|useState|useEffect|useRef/g) ?? []).toEqual([]);
+});

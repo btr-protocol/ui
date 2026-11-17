@@ -33,7 +33,7 @@ export function PageState({ kind, title, message, action, className }: PageState
     >
       {isLoading && <Skeleton lines={3} className="max-w-xs" />}
       {title && <div className={cn('text-sm font-medium text-fg-0', isLoading && 'sr-only')}>{title}</div>}
-      {message && <div className={PAGE_DESC}>{message}</div>}
+      {message && <div className={cn(PAGE_DESC, isLoading && 'sr-only')}>{message}</div>}
       {action && (
         <Button size="sm" variant="secondary" onClick={action.onClick}>
           {action.label}
@@ -72,9 +72,9 @@ export function Empty({
 }
 
 export type NoticeTone = 'default' | Severity;
-/** `bar`: the page notice (a bordered card). `note`: a dense hint under a field. `row`: one row of a list (an `li`: the list's edges, padding and
+/** `float`: a field message with no box, absolute under its (relative) field, zero flow height. `bar`: the page notice (a bordered card). `note`: a dense hint under a field. `row`: one row of a list (an `li`: the list's edges, padding and
  *  divider, a tinted fill, no card), its action below the text. */
-export type NoticeSize = 'bar' | 'note' | 'row';
+export type NoticeSize = 'bar' | 'note' | 'row' | 'float';
 
 const NEUTRAL: ReadonlySet<NoticeTone> = new Set<NoticeTone>(['default', 'debug', 'info']);
 
@@ -139,7 +139,8 @@ export interface NoticeProps {
 export function Notice({ label, tone = 'default', size = 'bar', icon, role, children, action, className, rows }: NoticeProps) {
   const neutral = NEUTRAL.has(tone);
   const color = tone === 'default' ? undefined : SEVERITY_COLOR[tone];
-  const note = size === 'note';
+  const float = size === 'float';
+  const note = size === 'note' || float;
   const row = size === 'row';
   const Root = (row ? 'li' : 'div') as 'div';
   const body = children != null && children !== false && children !== '';
@@ -152,9 +153,11 @@ export function Notice({ label, tone = 'default', size = 'bar', icon, role, chil
     <Root
       className={cn(
         'flex flex-wrap items-start',
-        note
-          ? 'mt-1 gap-1.5 px-1 text-2xs leading-snug'
-          : row
+        float
+          ? 'pointer-events-none absolute left-1/2 top-full z-raised mt-2 w-max max-w-[min(32rem,calc(100vw-2rem))] -translate-x-1/2 justify-center break-words text-center text-sm leading-snug [text-shadow:0_0_6px_var(--bg-0),0_0_2px_var(--bg-0)]'
+          : note
+            ? 'mt-1 gap-1.5 px-1 text-2xs leading-snug'
+            : row
             ? 'gap-x-3 gap-y-2 border-b border-border bg-bg-2 px-3 py-3 text-sm leading-6 text-fg-1'
             : cn('surface min-h-[calc(var(--ctl-m)+1.5rem)] gap-x-3 gap-y-2 rounded-lg border px-4 py-3 text-sm leading-6', neutral && 'text-fg-2'),
         neutral && (note ? 'text-fg-2' : 'border-border bg-bg-2'),
@@ -472,7 +475,7 @@ export interface DataStateOpts {
 const NO_RESPONSE = 'No response. Retry.';
 
 /** Transport and machine-code failures ("backend-error 500 /v1/…") read as one plain line;
- *  anything a person can act on passes through. */
+ *  anything a person can act on passes through. Kept for callers that show an action's own text; `dataState` never shows raw text. */
 export function cleanError(raw: string | null | undefined): string {
   return !raw || /backend-error|\/v\d\/|\bHTTP\b|fetch|network|timed? ?out|abort/i.test(raw)
     ? NO_RESPONSE
@@ -480,6 +483,15 @@ export function cleanError(raw: string | null | undefined): string {
 }
 
 const lower = (s: string) => (/^[A-Z][a-z]/.test(s) ? s.charAt(0).toLowerCase() + s.slice(1) : s);
+const logged = new Set<string>();
+/** Raw failure detail goes to the console once per (subject, text); the card says one fixed line. */
+const logOnce = (subject: string, raw: string | null | undefined) => {
+  const k = `${subject}|${raw ?? ''}`;
+  if (raw && !logged.has(k)) {
+    logged.add(k);
+    console.warn(`${subject} failed`, raw);
+  }
+};
 
 export function dataState({
   phase,
@@ -490,15 +502,8 @@ export function dataState({
   action,
 }: DataStateOpts): JSX.Element | null {
   if (phase === 'error') {
-    return (
-      <PageState
-        kind="error"
-        title={`${subject} unavailable`}
-        message={cleanError(error)}
-        className={className}
-        action={action}
-      />
-    );
+    logOnce(subject, error);
+    return <PageState kind="error" title={`${subject.charAt(0).toUpperCase()}${subject.slice(1)} could not be read.`} className={className} action={action} />;
   }
   if (phase === 'loading' && !quietLoading) {
     return <PageState kind="loading" title={`Loading ${lower(subject)}`} className={className} />;

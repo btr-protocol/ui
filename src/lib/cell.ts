@@ -4,7 +4,7 @@ import { DASH } from './metricPhase';
  *  Kinds: value (a real number, 0 included), loading (skeleton; "measuring" is loading too), unavailable (the one glyph), error (short message + retry). Never a made-up 0.
  *  `asOf` is epoch ms. Decided ONCE, in the data hook (`toCell`); `Figure` only draws it (stateless: no timers, no state). */
 export type Cell<T> =
-  | { s: 'value'; v: T; asOf?: number }
+  | { s: 'value'; v: T; asOf?: number; /** A refresh is in flight while this value stays: draw the `refreshing` hairline, never a loader. */ refreshing?: boolean }
   | { s: 'stale'; v: T; asOf: number }
   | { s: 'loading' }
   | { s: 'error'; retry?: () => void }
@@ -24,25 +24,44 @@ export function assertNever(x: never): never {
 
 export const LOADING_DEADLINE_MS = 15000;
 
-/** The ONE adapter from a hook's `value | null | undefined` + flags to a Cell. A read that failed is `error`, never a 0; a value that is
- *  not a finite number (NaN/Infinity) is unread; a real 0 stays `value`. A value we already hold wins over a refresh or a failed refresh (stale). */
-export function toCell<T>(o: {
+/** Pure helper for the hook that keeps `since`: returns when `key` began loading (kept in the caller's `starts` map), clears it when the
+ *  read ends. So `toCell({ loading, since: loadingSince(starts, key, loading) })` always carries a start and a stuck load ends at the deadline. */
+export function loadingSince(starts: Map<string, number>, key: string, loading: boolean, now: number = Date.now()): number | undefined {
+  if (!loading) {
+    starts.delete(key);
+    return undefined;
+  }
+  const t = starts.get(key) ?? now;
+  starts.set(key, t);
+  return t;
+}
+
+type ToCellBase<T> = {
   value?: T | null;
-  loading?: boolean;
   error?: unknown;
-  /** When loading began (epoch ms), kept by the hook. Past `LOADING_DEADLINE_MS` a still-loading read is `unavailable('timeout')`, so a loader always ends (decided on the hook's next render/poll, no timer). */
-  since?: number;
   now?: number;
   retry?: () => void;
-  /** Epoch ms of the held value, when it is older than a refresh in flight. */
+  /** Epoch ms of the held value. A held value + failed read is `stale` (the age mark), never blank; with a refresh in flight it is `value` + `refreshing`. */
   asOf?: number;
   /** Reason when nothing is loading, failing or held (default 'unserved'). */
   reason?: UnavailableReason;
-}): Cell<T> {
+};
+/** `since` is REQUIRED while `loading` is true (type-enforced): past `LOADING_DEADLINE_MS` a still-loading read is `unavailable('timeout')`, so a
+ *  loader always ends (decided on the hook's next render/poll, no timer). Keep it with `loadingSince`. */
+export type ToCellOptions<T> = ToCellBase<T> & ({ loading?: false; since?: number } | { loading: true; since: number });
+
+/** The ONE adapter from a hook's `value | null | undefined` + flags to a Cell. A read that failed is `error`, never a 0; a value that is
+ *  not a finite number (NaN/Infinity) is unread; a real 0 stays `value`. A value we already hold is never blanked: a refresh keeps it
+ *  (`refreshing`), a failed refresh marks it `stale`. */
+export function toCell<T>(o: ToCellOptions<T>): Cell<T> {
   const v = o.value;
+  const now = o.now ?? Date.now();
   const held = v != null && !(typeof v === 'number' && !Number.isFinite(v));
-  if (held) return o.error && o.asOf !== undefined ? { s: 'stale', v: v as T, asOf: o.asOf } : { s: 'value', v: v as T, asOf: o.asOf };
+  if (held) {
+    if (o.error) return { s: 'stale', v: v as T, asOf: o.asOf ?? now };
+    return { s: 'value', v: v as T, asOf: o.asOf, ...(o.loading && { refreshing: true }) };
+  }
   if (o.error) return { s: 'error', retry: o.retry };
-  if (o.loading) return o.since !== undefined && (o.now ?? Date.now()) - o.since >= LOADING_DEADLINE_MS ? { s: 'unavailable', reason: 'timeout' } : { s: 'loading' };
+  if (o.loading) return now - o.since >= LOADING_DEADLINE_MS ? { s: 'unavailable', reason: 'timeout' } : { s: 'loading' };
   return { s: 'unavailable', reason: o.reason ?? 'unserved' };
 }

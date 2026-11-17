@@ -3,6 +3,7 @@
   "version": "0.15.0",
   "license": "MIT",
   "type": "module",
+  "sideEffects": ["**/*.css"],
   "description": "BTR shared UI kit: the btr.markets Preact components, layout shell, theme tokens and Tailwind preset. Source only, no build step.",
   "exports": {
     ".": "./src/index.ts",

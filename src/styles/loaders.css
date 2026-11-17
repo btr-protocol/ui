@@ -61,6 +61,20 @@
   pointer-events: none;
   --sweep: var(--fg-primary);
 }
+/* refreshing: the old value stays; a 2px hairline sweeps the top edge of the element (no extra node). */
+.refreshing { position: relative; }
+.refreshing::before {
+  content: "";
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline: 0;
+  height: 2px;
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent 0%, var(--fg-primary) 50%, transparent 100%);
+  transform: translateX(-100%);
+  animation: loader-sweep var(--dur-sweep) var(--ease-linear) infinite;
+}
+.refreshing:dir(rtl)::before { animation-name: loader-sweep-rtl; }
 /* Spinner: a conic arc masked to a ring (the -webkit- mask for Safari), one turn per --dur-spin. User-initiated pending only. */
 :where(.spinner) { /* size and shape at zero specificity: w-* / h-* from className win */
   width: 1rem;

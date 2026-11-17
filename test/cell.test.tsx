@@ -1,6 +1,6 @@
 import { expect, jest, setSystemTime, test } from 'bun:test';
 import { render } from 'preact-render-to-string';
-import { type Cell, DASH, Figure, MetricState, NA_GLYPH, assertNever, toCell } from '../src';
+import { type Cell, DASH, Figure, Loader, MetricState, NA_GLYPH, assertNever, loadingSince, toCell } from '../src';
 import { act, mount, useDom } from './dom';
 
 useDom();
@@ -10,6 +10,7 @@ const f = (cell: Cell<number>) => render(<Figure cell={cell} format={(n) => n.to
 test('toCell: a still-loading read past the deadline is unavailable(timeout), decided in the hook, no timer', () => {
   expect(toCell({ loading: true, since: 1000, now: 1000 + 14999 })).toEqual({ s: 'loading' });
   expect(toCell({ loading: true, since: 1000, now: 1000 + 15000 })).toEqual({ s: 'unavailable', reason: 'timeout' });
+  // @ts-expect-error `since` is required while loading: a stuck load must be able to end
   expect(toCell({ loading: true })).toEqual({ s: 'loading' });
 });
 
@@ -48,12 +49,15 @@ test('Figure: a loading cell is a skeleton with no value text; outside a busy Lo
   expect(h).not.toContain('>-<');
 });
 
-test('Figure: unavailable and na carry real text, a focusable tooltip trigger, and a named Retry', () => {
+test('Figure: unavailable and na are ONE light node: title carries the reason, no tab stop, no role, no alert', () => {
   const html = render(<Figure cell={{ s: 'unavailable', reason: 'rate-limited' }} format={String} label="TVL" />);
   expect(html).toContain('Unavailable: Rate limited');
   expect(html).not.toContain('Retry');
-  expect(html).toContain('tabindex="0"');
+  expect(html).not.toMatch(/tabindex|role=/);
+  expect(html.match(/<span/g)?.length).toBe(1); // the box IS the glyph; no wrapper stack
   expect(f({ s: 'na', why: 'no fees' })).toContain('Not applicable: no fees');
+  expect(f({ s: 'error' })).not.toContain('role="alert"'); // the section owns the one alert
+  expect(f({ s: 'error' })).not.toContain('>-<'); // error is not the unavailable glyph
 });
 
 test('MetricState: each phase has its own role, text and icon', () => {
@@ -90,11 +94,29 @@ test('toCell: a real 0 is a value; unread and failed reads are never 0', () => {
   expect(toCell({ value: null, loading: true, since: Date.now() })).toEqual({ s: 'loading' });
   expect(toCell({ value: undefined })).toEqual({ s: 'unavailable', reason: 'unserved' });
   expect(toCell({ value: Number.NaN })).toEqual({ s: 'unavailable', reason: 'unserved' });
-  expect(toCell({ value: null, error: new Error('x'), loading: true }).s).toBe('error');
+  expect(toCell({ value: null, error: new Error('x'), loading: true, since: 1 }).s).toBe('error');
   expect(toCell({ value: 3, error: true, asOf: 1 }).s).toBe('stale');
 });
 test('Figure: error is a short line plus a named Retry; no raw text', () => {
   const html = render(<Figure cell={{ s: 'error', retry: () => {} }} format={String} label="TVL" />);
   expect(html).toContain('Not read');
   expect(html).toContain('Retry TVL');
+});
+
+test('toCell: a held value is never blanked: refresh keeps it, a failed refresh marks it stale', () => {
+  expect(toCell({ value: 5, loading: true, since: 1 })).toMatchObject({ s: 'value', v: 5, refreshing: true });
+  expect(toCell({ value: 5, error: true, asOf: 9 })).toEqual({ s: 'stale', v: 5, asOf: 9 });
+  expect(toCell({ value: 5, error: true, now: 77 })).toEqual({ s: 'stale', v: 5, asOf: 77 });
+});
+test('loadingSince keeps the start of a load and clears it when the read ends', () => {
+  const m = new Map<string, number>();
+  expect(loadingSince(m, 'k', true, 10)).toBe(10);
+  expect(loadingSince(m, 'k', true, 99)).toBe(10);
+  expect(loadingSince(m, 'k', false)).toBeUndefined();
+  expect(loadingSince(m, 'k', true, 50)).toBe(50);
+});
+test('Loader: an error is the section\'s ONE alert; a bare busy Loader says its label once', () => {
+  const html = render(<Loader busy={false} error="Metrics could not be read.">x</Loader>);
+  expect((html.match(/role="alert"/g) ?? []).length).toBe(1);
+  expect(render(<Loader busy>x</Loader>)).toContain('>Loading<');
 });

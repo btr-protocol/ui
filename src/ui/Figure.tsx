@@ -1,7 +1,6 @@
 import { type Cell, NA_GLYPH, assertNever } from '../lib/cell';
 import { cn } from '../lib/cn';
 import { Button } from './Button';
-import { Tooltip } from './FloatingPanel';
 import { Icon } from './Icon';
 import { type Ch, ValuePlaceholder, useInBusy } from './Loaders';
 
@@ -33,56 +32,57 @@ export interface FigureProps<T> {
   placeholderClassName?: string;
   /** What the figure is ("TVL"): names the Retry button ("Retry TVL"). */
   label?: string;
+  /** `tile` writes an error as the words "Not read"; the default (a table cell) is a warning mark. Both are one light node: no tab stop, no role, no tooltip stack. */
+  variant?: 'cell' | 'tile';
 }
 
-/** THE renderer of a figure: one state, one look, everywhere. Stateless (the data hook decides the Cell with `toCell`). Reasons are the accessible name of a focusable glyph (shown through a
- *  Tooltip). A loading figure announces itself unless it sits in a busy `Loader`, whose one status does that. */
-export function Figure<T>({ cell, format, ch, className, placeholderClassName, label }: FigureProps<T>) {
+/** THE renderer of a figure: one state, one look, everywhere. Stateless (the data hook decides the Cell with `toCell`) and LIGHT: a value,
+ *  unavailable and na are one text node in one span (`title` carries the reason), never a focus stop. Unavailable is the one `-`; error is a
+ *  different mark (warning icon / "Not read") and carries NO `role="alert"`: the section (`Loader error`, the table, the banner) owns the one alert.
+ *  A loading figure announces itself unless it sits in a busy `Loader`. A refresh over a held value is `refreshing` (a CSS hairline on the span). */
+export function Figure<T>({ cell, format, ch, className, placeholderClassName, label, variant = 'cell' }: FigureProps<T>) {
   const inBusy = useInBusy();
-  const box = (children: preact.ComponentChildren) => (
-    <span data-state={cell.s} className={cn('inline-block tabular-nums', ch && `ch-${ch}`, className)}>
-      {children}
-    </span>
-  );
-  /** The glyph is focusable and tooltipped; its accessible name IS the reason (role=img + aria-label), said once. */
-  const reasoned = (glyph: preact.ComponentChildren, said: string, extra?: preact.ComponentChildren) => (
-    <>
-      <Tooltip content={said} side="bottom">
-        <span tabIndex={0} role="img" aria-label={said} className="inline-flex cursor-help items-center gap-1 rounded-xs">
-          <span aria-hidden="true" className="inline-flex items-center gap-1">{glyph}</span>
-        </span>
-      </Tooltip>
-      {extra}
-    </>
-  );
+  const cls = (more?: string) => cn('inline-block tabular-nums', ch && `ch-${ch}`, more, className);
   switch (cell.s) {
     case 'value':
-      return box(format(cell.v));
+      return (
+        <span data-state="value" className={cls(cell.refreshing ? 'refreshing' : undefined)}>
+          {format(cell.v)}
+        </span>
+      );
     case 'stale':
-      return box(
-        <>
+      return (
+        <span data-state="stale" className={cls()}>
           <span className="opacity-60">{format(cell.v)}</span>
           <span className="ml-1.5 rounded-xs bg-bg-3 px-1 text-2xs text-fg-2">stale {ageLabel(cell.asOf)}</span>
-        </>,
+        </span>
       );
     case 'loading':
-      return box(
-        <>
+      return (
+        <span data-state="loading" className={cls()}>
           <ValuePlaceholder ch={ch} className={placeholderClassName} />
           {!inBusy && <span className="sr-only">Loading</span>}
-        </>,
+        </span>
       );
     case 'error':
-      return box(
-        <span className="inline-flex items-center gap-1 text-fg-3">
-          <span role="alert">Not read</span>
+      return (
+        <span data-state="error" className={cls('inline-flex items-center gap-1 text-fg-3')} title="Not read">
+          {variant === 'tile' ? 'Not read' : <><Icon name="warning" size={11} aria-hidden /><span className="sr-only">Not read</span></>}
           {cell.retry && <Button size="xs" variant="ghost" aria-label={label ? `Retry ${label}` : 'Retry'} leftIcon={<Icon name="refresh-cw" size={12} />} onClick={cell.retry} />}
-        </span>,
+        </span>
       );
     case 'unavailable':
-      return box(reasoned(<span className="text-fg-3">{NA_GLYPH}</span>, `Unavailable: ${cell.detail ? `${REASON[cell.reason]}, ${cell.detail}` : REASON[cell.reason]}`));
+      return (
+        <span data-state="unavailable" className={cls('text-fg-3')} title={`Unavailable: ${cell.detail ? `${REASON[cell.reason]}, ${cell.detail}` : REASON[cell.reason]}`}>
+          {NA_GLYPH}
+        </span>
+      );
     case 'na':
-      return box(reasoned(<span className="text-fg-3">{NA_GLYPH}</span>, `Not applicable: ${cell.why}`));
+      return (
+        <span data-state="na" className={cls('text-fg-3')} title={`Not applicable: ${cell.why}`}>
+          {NA_GLYPH}
+        </span>
+      );
     default:
       return assertNever(cell);
   }
