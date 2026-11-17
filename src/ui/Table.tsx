@@ -10,6 +10,7 @@ import { Tooltip } from './FloatingPanel';
 import { type Cell } from '../lib/cell';
 import { DASH, type MetricPhase } from '../lib/metricPhase';
 import { Figure } from './Figure';
+import type { Ch } from './Loaders';
 import { cn } from '../lib/cn';
 import type { ComponentChildren, JSX } from 'preact';
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
@@ -438,7 +439,7 @@ export function Table<Row>({
   scrollX = false,
   virtual,
   loading = false,
-  loadingTitle = 'Loading…',
+  loadingTitle = 'Loading',
 }: TableProps<Row>) {
   const compact = variant === 'compact';
   const desktop = compact ? 'min-h-0 flex flex-col flex-1' : STACK[stackBelow].desktop;
@@ -856,7 +857,7 @@ export interface MetricStateProps {
   /** Skeleton width while loading. */
   skeletonClassName?: string;
   /** Characters reserved for the figure, so the loading to value swap does not shift the layout. */
-  ch?: number;
+  ch?: Ch;
 }
 
 export function MetricState({
@@ -869,14 +870,10 @@ export function MetricState({
   skeletonClassName = 'w-12',
   ch = 6,
 }: MetricStateProps) {
-  // The loading clock starts when the phase is first seen loading and resets when it leaves, so the deadline is per load.
-  const since = useRef<number>();
-  if (phase === 'loading') since.current ??= Date.now();
-  else since.current = undefined;
   // One renderer: the phase picks the Cell, `Figure` draws it.
   const cell: Cell<string> =
     phase === 'loading'
-      ? { s: 'loading', since: since.current! }
+      ? { s: 'loading' }
       : phase === 'live' && value != null && value !== DASH
         ? { s: 'value', v: value }
         : phase === 'error'

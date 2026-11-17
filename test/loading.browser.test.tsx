@@ -1,5 +1,5 @@
 // Real-browser checks of the loaders (Chromium via playwright-core): width-stable value swap, compositor-only sweep, reduced motion,
-// one always-mounted role=status per Busy, plain hidden text for a lone loading Figure, every Figure state distinct, the loaders stylesheet alone. SHOT_DIR=<dir> also saves renders. Needs Chromium (`bunx playwright install chromium`).
+// one always-mounted role=status per Loader, plain hidden text for a lone loading Figure, every Figure state distinct, the loaders stylesheet alone. SHOT_DIR=<dir> also saves renders. Needs Chromium (`bunx playwright install chromium`).
 import { afterAll, afterEach, beforeAll, expect, test } from 'bun:test';
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
@@ -113,7 +113,7 @@ t('no loader animates a layout property', async () => {
   for (const [, name, body] of keyframes) expect(body, name).not.toMatch(/background-position|width|height|top|left|right|bottom/);
 });
 
-t('a 200-row loading table in Busy: one status node that stays mounted, aria-busy toggles, placeholders are hidden', async () => {
+t('a 200-row loading table in Loader: one status node that stays mounted, aria-busy toggles, placeholders are hidden', async () => {
   const page = await open('busy');
   await page.locator('tr').nth(199).waitFor();
   expect(await page.locator('[role=status]').count()).toBe(1);
@@ -135,7 +135,7 @@ t('Figure: every state has its own accessible text; a measured zero prints as ze
   expect(by(0).text).toBe('1234.50');
   expect(by(1).text).toBe('0.00');
   expect(by(2).text).toMatch(/^1234\.50stale 5m$/);
-  expect(by(3)).toMatchObject({ sk: true, text: '' }); // inside Busy: silent, the one status speaks
+  expect(by(3)).toMatchObject({ sk: true, text: 'Loading' }); // outside a busy Loader: hidden text, no live region
   expect(by(4).text).toBe('Not read');
   expect(by(4)).toMatchObject({ retry: 'Retry' });
   expect(by(5).text).toContain('Unavailable: Unfillable, no depth');
@@ -145,7 +145,7 @@ t('Figure: every state has its own accessible text; a measured zero prints as ze
   expect(by(8).focusable).toBe(true);
   expect(rows.some((r) => r.text.includes(String.fromCharCode(8212)))).toBe(false);
   expect(new Set(rows.map((r) => r.text + r.sk + r.warn)).size).toBe(rows.length - 0);
-  // a loading figure OUTSIDE a Busy announces itself as plain hidden text (no live region)
+  // a loading figure OUTSIDE a Loader announces itself as plain hidden text (no live region)
   expect(await page.locator('#solo').textContent()).toBe('Loading');
   // axe aria-hidden-focus: no focusable element is, or sits inside, an aria-hidden subtree
   expect(await page.evaluate(() => [...document.querySelectorAll('[tabindex],button,a[href],input')].filter((e) => e.closest('[aria-hidden=true]')).length)).toBe(0);
@@ -214,16 +214,6 @@ t('tokens.css + loaders.css alone: Spinner sm/md have a box and a running turn, 
     expect(m.sk.bg).not.toBe('rgba(0, 0, 0, 0)');
     expect(m.anim).toBeGreaterThanOrEqual(3);
   }
-});
-
-t('the sweep shares one clock: every sweeping element carries a phase set once, no per-cell delay values differ by position', async () => {
-  const page = await open('all');
-  const d = await page.evaluate(() => [...document.querySelectorAll('.sk')].map((e) => (e as HTMLElement).style.getPropertyValue('--sk-phase')));
-  expect(d.length).toBeGreaterThan(3);
-  for (const v of d) expect(v).toMatch(/^-\d+ms$/);
-  await page.waitForTimeout(200);
-  const d2 = await page.evaluate(() => [...document.querySelectorAll('.sk')].map((e) => (e as HTMLElement).style.getPropertyValue('--sk-phase')));
-  expect(d2).toEqual(d); // never recomputed
 });
 
 t('sizes and fills passed by className beat the loader defaults; lite mode and RTL are handled', async () => {

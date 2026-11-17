@@ -4,7 +4,7 @@ import { cn } from '../lib/cn';
 import { Button } from './Button';
 import { Icon } from './Icon';
 import { PANEL_BODY } from './Panel';
-import { Spinner } from './Spinner';
+import { Skeleton } from './Loaders';
 
 export type StateNoticeVariant = 'error' | 'warning' | 'info' | 'loading' | 'empty';
 
@@ -21,7 +21,7 @@ export interface StateNoticeProps {
 }
 
 /**
- * The ONE in-panel state: error / warning / info / loading / empty ("cbBTC price feed is stale: swaps are
+ * The ONE in-panel state (loading draws the shared sweep, its text is for screen readers only): error / warning / info / loading / empty ("cbBTC price feed is stale: swaps are
  * blocked until it updates."). Side padding is the panel body's (`PANEL_BODY`), so the text never touches the
  * panel edge. Page-level states stay `PageState`; a metric phase stays `PanelState`.
  * Errors announce as `alert`, everything else as `status`.
@@ -42,13 +42,16 @@ export function StateNotice({ variant = 'info', title, children, action, layout 
         className,
       )}
     >
-      {variant === 'loading' && <Spinner className="shrink-0" />}
-      {variant === 'loading' && !title && (children == null || children === false) && <span className="sr-only">Loading</span>}
+      {variant === 'loading' && <Skeleton lines={3} className="max-w-xs" />}
       {glyph && <Icon name={glyph} className={cn('mt-0.5 h-4 w-4 shrink-0', variant === 'error' && 'text-error', variant === 'warning' && 'text-warning')} />}
-      <div className="min-w-0 break-words">
-        {title && <div className="font-medium text-fg-0">{title}</div>}
-        {children != null && children !== false && <div>{children}</div>}
-      </div>
+      {variant === 'loading' ? (
+        <span className="sr-only">{title ?? (typeof children === 'string' ? children : 'Loading')}</span>
+      ) : (
+        <div className="min-w-0 break-words">
+          {title && <div className="font-medium text-fg-0">{title}</div>}
+          {children != null && children !== false && <div>{children}</div>}
+        </div>
+      )}
       {action && (variant === 'error' || variant === 'warning') && (
         <Button size="sm" variant="secondary" className="shrink-0" onClick={action.onClick}>
           {action.label}

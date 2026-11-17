@@ -1,42 +1,35 @@
 import { expect, jest, setSystemTime, test } from 'bun:test';
 import { render } from 'preact-render-to-string';
-import { type Cell, DASH, Figure, MetricState, NA_GLYPH, assertNever, expireLoading, toCell, useCellDeadline } from '../src';
+import { type Cell, DASH, Figure, MetricState, NA_GLYPH, assertNever, toCell } from '../src';
 import { act, mount, useDom } from './dom';
 
 useDom();
 
 const f = (cell: Cell<number>) => render(<Figure cell={cell} format={(n) => n.toFixed(2)} />);
 
-test('expireLoading: an overdue loading cell becomes unavailable(timeout); others are untouched', () => {
-  const loading: Cell<number> = { s: 'loading', since: 1000 };
-  expect(expireLoading(loading, 1000 + 14999)).toBe(loading);
-  expect(expireLoading(loading, 1000 + 15000)).toEqual({ s: 'unavailable', reason: 'timeout' });
-  expect(expireLoading(loading, 1000 + 5000, 3000)).toEqual({ s: 'unavailable', reason: 'timeout' });
-  const v: Cell<number> = { s: 'value', v: 1 };
-  expect(expireLoading(v, 1e12)).toBe(v);
+test('toCell: a still-loading read past the deadline is unavailable(timeout), decided in the hook, no timer', () => {
+  expect(toCell({ loading: true, since: 1000, now: 1000 + 14999 })).toEqual({ s: 'loading' });
+  expect(toCell({ loading: true, since: 1000, now: 1000 + 15000 })).toEqual({ s: 'unavailable', reason: 'timeout' });
+  expect(toCell({ loading: true })).toEqual({ s: 'loading' });
 });
 
-test('useCellDeadline: ONE timer; a loading cell becomes unavailable(timeout) when its deadline passes (fake timers)', async () => {
+test('Figure is stateless: a loading to value swap renders no timer and no sibling re-render', () => {
   jest.useFakeTimers();
-  setSystemTime(new Date(1_000_000));
-  const seen: string[] = [];
-  const Probe = ({ cell }: { cell: Cell<number> }) => (seen.push(useCellDeadline(cell, 5000).s), null);
-  const m = mount(<Probe cell={{ s: 'loading', since: 1_000_000 }} />);
-  expect(seen.at(-1)).toBe('loading');
-  expect(jest.getTimerCount()).toBe(1);
-  setSystemTime(new Date(1_005_000));
-  await act(async () => { jest.advanceTimersByTime(5000); });
-  expect(seen.at(-1)).toBe('unavailable');
-  m.unmount();
+  let renders = 0;
+  const Sibling = () => (renders++, <span>sib</span>);
+  const sib = <Sibling />;
+  const Row = ({ c }: { c: Cell<number> }) => (<div>{sib}<Figure cell={c} format={String} /></div>);
+  const m = mount(<Row c={{ s: 'loading' }} />);
   expect(jest.getTimerCount()).toBe(0);
+  expect(renders).toBe(1);
+  m.unmount();
   jest.useRealTimers();
-  setSystemTime();
 });
 
 test('Figure: a measured zero prints as zero, never the n/a glyph; every state is distinct', () => {
   expect(f({ s: 'value', v: 0 })).toContain('0.00');
   expect(f({ s: 'value', v: 0 })).not.toContain('>-<');
-  const states: Cell<number>[] = [{ s: 'value', v: 0 }, { s: 'stale', v: 1, asOf: 0 }, { s: 'loading', since: 0 }, { s: 'error' }, { s: 'unavailable', reason: 'unserved' }, { s: 'na', why: 'x' }];
+  const states: Cell<number>[] = [{ s: 'value', v: 0 }, { s: 'stale', v: 1, asOf: 0 }, { s: 'loading' }, { s: 'error' }, { s: 'unavailable', reason: 'unserved' }, { s: 'na', why: 'x' }];
   expect(new Set(states.map(f)).size).toBe(states.length);
   expect(f({ s: 'stale', v: 5, asOf: 0 })).toContain('5.00'); // stale keeps its value, never a dash
   expect(f({ s: 'stale', v: 5, asOf: 0 })).toContain('stale ');
@@ -47,11 +40,12 @@ test('one n/a glyph, a hyphen: no em dash in the kit constants', () => {
   expect(NA_GLYPH).toBe('-');
 });
 
-test('Figure: a loading cell past its deadline renders as unavailable(timeout); outside a Busy it announces Loading', () => {
-  expect(f({ s: 'loading', since: Date.now() })).toContain('Loading');
-  const html = render(<Figure cell={{ s: 'loading', since: Date.now() - 20000 }} format={String} />);
-  expect(html).toContain('Unavailable: Timed out');
-  expect(html).not.toContain('Loading');
+test('Figure: a loading cell is a skeleton with no value text; outside a busy Loader it announces Loading once', () => {
+  const h = f({ s: 'loading' });
+  expect(h).toContain('Loading');
+  expect(h).toContain('class="sk ');
+  expect(h).not.toContain('style=');
+  expect(h).not.toContain('>-<');
 });
 
 test('Figure: unavailable and na carry real text, a focusable tooltip trigger, and a named Retry', () => {
@@ -93,7 +87,7 @@ test('the Cell switch is exhaustive: a state missing from it fails to compile (t
 
 test('toCell: a real 0 is a value; unread and failed reads are never 0', () => {
   expect(toCell({ value: 0 })).toEqual({ s: 'value', v: 0, asOf: undefined });
-  expect(toCell({ value: null, loading: true, since: 5 })).toEqual({ s: 'loading', since: 5 });
+  expect(toCell({ value: null, loading: true, since: Date.now() })).toEqual({ s: 'loading' });
   expect(toCell({ value: undefined })).toEqual({ s: 'unavailable', reason: 'unserved' });
   expect(toCell({ value: Number.NaN })).toEqual({ s: 'unavailable', reason: 'unserved' });
   expect(toCell({ value: null, error: new Error('x'), loading: true }).s).toBe('error');

@@ -19,7 +19,7 @@
 
 import { NUMERIC_FONT_FAMILY, SCALE_ON, scrollOn, tickMarkFormatter, timeLabel } from '../lib/chart';
 import { cn } from '../lib/cn';
-import { Spinner } from '../ui/Spinner';
+import { Skeleton } from '../ui/Loaders';
 import { ImportFailureNotice } from '../ui/ImportFailureNotice';
 import { ChartShell } from './ChartShell';
 import { chartColors } from './colors';
@@ -973,8 +973,8 @@ export function MetricChart({
         </div>
         <div className="pointer-events-auto flex items-center gap-2 shrink-0 rounded-md bg-glass backdrop-blur px-1 py-0.5">
           {/* A first load gets the full skeleton below; only an actual refresh of
-              live data earns a spinner, so polls never flash. */}
-          {loading && hasData && <Spinner />}
+              live data earns the sweep, so polls never flash. */}
+          {loading && hasData && <Skeleton className="h-3.5 w-6" />}
           {actions}
         </div>
       </div>

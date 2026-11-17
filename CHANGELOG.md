@@ -1,8 +1,13 @@
 # Changelog
 
 ## 0.15.0
-- ONE value state. `Cell` kinds: value (0 included), stale, loading (skeleton; "measuring" is loading, no `measuring` kind, no "Measuring" text), error (`Not read` + Retry), unavailable (the one `-` glyph, reason in the tooltip, no warning icon), na. BREAKING: `unavailable` lost `reason: 'error'` and `retry` (use `{ s: 'error', retry }`).
-- `toCell({ value, loading, error, since, retry, asOf })`: the one adapter from a hook's `value | null` to a Cell. Unread / NaN never becomes 0; a real 0 stays a value; a failed read is `error`.
+- ONE loader, CSS only, no JS clock. `Loader` ({ busy, label, className }) replaces `Busy`: a section that loads together keeps its layout, its content hidden under one sweeping block (`.loader`, one shared `loader-sweep` keyframe), `aria-busy` + one `role="status"`. Cell level inside tables: `Skeleton` / `ValuePlaceholder` (`.sk`). Removed: `useSweepPhase`, `--sk-phase`, per-instance style objects, `useCellDeadline`, `expireLoading`.
+- ONE value state. `Cell` = value (0 included) | stale | loading (no payload) | error (`Not read` + Retry) | unavailable (the one `-`, reason in the tooltip) | na. No `measuring` kind, no "Measuring". `Figure` is stateless (no hooks); `ch` is `4|5|6|7|8|10|12` (classes `.ch-N`, no inline style).
+- `toCell({ value, loading, error, since, now, retry, asOf, reason })`: the one adapter, called by the DATA hook. A held value wins; failed = error; a still-loading read older than `LOADING_DEADLINE_MS` (15 s) is `unavailable('timeout')` (decided on the hook's next render/poll, no timer). NaN/null never become 0.
+- `StateNotice` loading, `PageState` loading, `ChartShell`/`Table` loading and the chart refresh indicator draw the shared sweep (their title/children are screen-reader text only). `Spinner` is for a user-initiated action only (buttons, wallet connect row, action toast).
+- BREAKING: `unavailable` lost `reason: 'error'`/`retry`; `{ s: 'loading', since }` is `{ s: 'loading' }`; `Busy` is `Loader`; `MetricState` takes `retry`, ignores a raw `reason` on error.
+- CONSUMERS MUST: replace `Busy` with `Loader`; pass `since`/`now` to `toCell` in the hook (not to Figure); drop `deadlineMs`; delete local skeleton/pulse/spinner-as-value, "Measuring", and per-component loading text; run `test/one-loader.test.ts`-style grep in the app.
+- Independent of the sdk units work (no `formatBps`/`formatRate` import).
 
 ## 0.14.2
 - `configureImportGuard(fn)` (exported, call once at boot): every dynamic import the kit makes (`WalletModal`, the WalletConnect glue and its `walletConnect` chunk, the QR chunk, the chain picker modal) goes through `fn`, so an app can classify a chunk a deploy deleted and reject with a plain message instead of "Failed to fetch dynamically imported module: <url>". Unset = the raw promise, no behaviour change.

@@ -1,9 +1,9 @@
-import { type Cell, LOADING_DEADLINE_MS, NA_GLYPH, assertNever, useCellDeadline } from '../lib/cell';
+import { type Cell, NA_GLYPH, assertNever } from '../lib/cell';
 import { cn } from '../lib/cn';
 import { Button } from './Button';
 import { Tooltip } from './FloatingPanel';
 import { Icon } from './Icon';
-import { ValuePlaceholder, useInBusy } from './Loaders';
+import { type Ch, ValuePlaceholder, useInBusy } from './Loaders';
 
 type Reason = Extract<Cell<unknown>, { s: 'unavailable' }>['reason'];
 const REASON: Record<Reason, string> = {
@@ -27,23 +27,20 @@ export interface FigureProps<T> {
   /** Formats a value. A measured zero is a value: it prints as zero, never the n/a glyph. */
   format: (v: T) => string;
   /** Characters reserved for the figure (tabular figures): the loading placeholder and the value take the same width. */
-  ch?: number;
+  ch?: Ch;
   className?: string;
   /** Classes of the loading placeholder (a width). */
   placeholderClassName?: string;
   /** What the figure is ("TVL"): names the Retry button ("Retry TVL"). */
   label?: string;
-  /** A loading cell older than this becomes unavailable('timeout') (default 15 s). */
-  deadlineMs?: number;
 }
 
-/** THE renderer of a figure: one state, one look, everywhere. Reasons are the accessible name of a focusable glyph (shown through a
- *  Tooltip). A loading figure announces itself unless it sits in a `Busy`, whose one status does that. */
-export function Figure<T>({ cell: input, format, ch, className, placeholderClassName, label, deadlineMs = LOADING_DEADLINE_MS }: FigureProps<T>) {
-  const cell = useCellDeadline(input, deadlineMs);
+/** THE renderer of a figure: one state, one look, everywhere. Stateless (the data hook decides the Cell with `toCell`). Reasons are the accessible name of a focusable glyph (shown through a
+ *  Tooltip). A loading figure announces itself unless it sits in a busy `Loader`, whose one status does that. */
+export function Figure<T>({ cell, format, ch, className, placeholderClassName, label }: FigureProps<T>) {
   const inBusy = useInBusy();
   const box = (children: preact.ComponentChildren) => (
-    <span data-state={cell.s} style={ch ? { minWidth: `${ch}ch` } : undefined} className={cn('inline-block tabular-nums', className)}>
+    <span data-state={cell.s} className={cn('inline-block tabular-nums', ch && `ch-${ch}`, className)}>
       {children}
     </span>
   );

@@ -1,4 +1,4 @@
-/* Kit loaders: Spinner, Skeleton, ValuePlaceholder, Hairline, Busy, ProgressSteps pending. SELF-CONTAINED: needs only styles/tokens.css
+/* Kit loaders: Loader (section), Skeleton / ValuePlaceholder (cell), Hairline, ProgressSteps pending, Spinner (button actions only). SELF-CONTAINED: needs only styles/tokens.css
    (--bg-3, --fg-0, --fg-1, --fg-primary, --line-ui, --dur-spin, --dur-sweep, --ease-linear); no Tailwind layer. Imported by index.css; an app
    that takes only tokens.css + button-group.css imports `@btr-protocol/ui/styles/loaders.css` as well. The one Tailwind class named here,
    `animate-spin`, is matched only so the kit keyframes win over Tailwind's own `spin`. */
@@ -18,7 +18,7 @@
   inset-inline: 0;
   background: linear-gradient(90deg, transparent 0%, var(--sweep) 50%, transparent 100%);
   transform: translateX(-100%);
-  animation: loader-sweep var(--dur-sweep) var(--ease-linear) var(--sk-phase, 0ms) infinite; /* --sk-phase: set once per element (useSweepPhase), one shared clock */
+  animation: loader-sweep var(--dur-sweep) var(--ease-linear) infinite; /* */
 }
 .sk { --sweep: color-mix(in srgb, var(--fg-0) 14%, transparent); }
 .sk:dir(rtl)::after,
@@ -33,6 +33,24 @@
   from { transform: translateX(100%); }
   to { transform: translateX(-100%); }
 }
+/* Loader (ui/Loaders.tsx): a whole section that loads together. Layout is kept (no shift); its content is hidden under ONE sweeping block. */
+.loader { position: relative; }
+.loader[aria-busy="true"] { pointer-events: none; user-select: none; }
+.loader[aria-busy="true"] > * { visibility: hidden; }
+.loader[aria-busy="true"]::before,
+.loader[aria-busy="true"]::after { content: ""; position: absolute; inset: 0; border-radius: inherit; }
+.loader[aria-busy="true"]::before { background-color: var(--bg-3); }
+.loader[aria-busy="true"]::after {
+  --sweep: color-mix(in srgb, var(--fg-0) 14%, transparent);
+  background: linear-gradient(90deg, transparent 0%, var(--sweep) 50%, transparent 100%);
+  transform: translateX(-100%);
+  animation: loader-sweep var(--dur-sweep) var(--ease-linear) infinite;
+}
+.loader[aria-busy="true"]:dir(rtl)::after { animation-name: loader-sweep-rtl; background: linear-gradient(270deg, transparent 0%, var(--sweep) 50%, transparent 100%); }
+.loader[aria-busy="true"] { overflow: hidden; }
+/* Reserved figure widths (tabular figures): a skeleton and its value take the same room. */
+.ch-4 { min-width: 4ch } .ch-5 { min-width: 5ch } .ch-6 { min-width: 6ch } .ch-7 { min-width: 7ch }
+.ch-8 { min-width: 8ch } .ch-10 { min-width: 10ch } .ch-12 { min-width: 12ch }
 /* Hairline: a 2px sweep on the top edge of a `relative` parent, for a refresh while the old value stays. */
 .hairline {
   position: absolute;
@@ -88,13 +106,14 @@
   inset: 0;
   background: linear-gradient(90deg, transparent 0%, var(--sweep) 50%, transparent 100%);
   transform: translateX(-100%);
-  animation: loader-sweep var(--dur-sweep) var(--ease-linear) var(--sk-phase, 0ms) infinite;
+  animation: loader-sweep var(--dur-sweep) var(--ease-linear) infinite;
 }
 .progress-pending:dir(rtl)::after {
   background: linear-gradient(270deg, transparent 0%, var(--sweep) 50%, transparent 100%);
   animation-name: loader-sweep-rtl;
 }
 /* Lite mode (a consumer's `[data-lite]` on :root): data sweeps hold still, like reduced motion. */
+:root[data-lite] .loader::after,
 :root[data-lite] .sk::after,
 :root[data-lite] .hairline::after,
 :root[data-lite] .progress-pending::after {
@@ -107,6 +126,7 @@
 @media (prefers-reduced-motion: reduce) {
   /* Loaders: data shimmer holds still (a static block still reads as "not here yet"); the spinner keeps turning, slowly
      (>= 2 s), because a frozen ring looks hung. The class beats the `*` rule above on specificity at equal !important. */
+  .loader::after,
   .sk::after,
   .hairline::after,
   .progress-pending::after {

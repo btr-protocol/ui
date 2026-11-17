@@ -1,13 +1,12 @@
-import { useEffect, useRef, useState } from 'preact/hooks';
 import { DASH } from './metricPhase';
 
 /** What ONE displayed figure is doing right now. Every loading state of the kit is one of these; `Figure` renders it.
  *  Kinds: value (a real number, 0 included), loading (skeleton; "measuring" is loading too), unavailable (the one glyph), error (short message + retry). Never a made-up 0.
- *  `asOf` / `since` are epoch ms. */
+ *  `asOf` is epoch ms. Decided ONCE, in the data hook (`toCell`); `Figure` only draws it (stateless: no timers, no state). */
 export type Cell<T> =
   | { s: 'value'; v: T; asOf?: number }
   | { s: 'stale'; v: T; asOf: number }
-  | { s: 'loading'; since: number }
+  | { s: 'loading' }
   | { s: 'error'; retry?: () => void }
   | { s: 'unavailable'; reason: 'timeout' | 'unserved' | 'rate-limited' | 'unfillable'; detail?: string }
   | { s: 'na'; why: string };
@@ -25,37 +24,15 @@ export function assertNever(x: never): never {
 
 export const LOADING_DEADLINE_MS = 15000;
 
-/** Loaders never spin forever: a loading cell older than the deadline becomes unavailable('timeout'). */
-export function expireLoading<T>(cell: Cell<T>, now: number, deadlineMs = LOADING_DEADLINE_MS): Cell<T> {
-  return cell.s === 'loading' && now - cell.since >= deadlineMs ? { s: 'unavailable', reason: 'timeout' } : cell;
-}
-
-/** `expireLoading` as a hook: ONE timer per loading cell re-renders it when its deadline passes, so a loader always ends. Returns the cell to render. */
-export function useCellDeadline<T>(input: Cell<T>, deadlineMs = LOADING_DEADLINE_MS): Cell<T> {
-  const [, tick] = useState(0);
-  // The deadline counts from the FIRST render that saw this load: a caller that builds a fresh `since` every render (toCell does) still ends.
-  const first = useRef<number>();
-  if (input.s === 'loading') first.current = Math.min(first.current ?? input.since, input.since);
-  else first.current = undefined;
-  const since = first.current;
-  const cell: Cell<T> = input.s === 'loading' && since !== undefined ? { s: 'loading', since } : input;
-  useEffect(() => {
-    if (since === undefined) return;
-    const left = since + deadlineMs - Date.now();
-    const id = setTimeout(() => tick((n) => n + 1), Math.max(0, left));
-    return () => clearTimeout(id);
-  }, [since, deadlineMs]);
-  return expireLoading(cell, Date.now(), deadlineMs);
-}
-
 /** The ONE adapter from a hook's `value | null | undefined` + flags to a Cell. A read that failed is `error`, never a 0; a value that is
  *  not a finite number (NaN/Infinity) is unread; a real 0 stays `value`. A value we already hold wins over a refresh or a failed refresh (stale). */
 export function toCell<T>(o: {
   value?: T | null;
   loading?: boolean;
   error?: unknown;
-  /** When loading began (epoch ms). Default: now; `Figure` keeps the earliest it has seen, so the 15 s deadline holds across re-renders. */
+  /** When loading began (epoch ms), kept by the hook. Past `LOADING_DEADLINE_MS` a still-loading read is `unavailable('timeout')`, so a loader always ends (decided on the hook's next render/poll, no timer). */
   since?: number;
+  now?: number;
   retry?: () => void;
   /** Epoch ms of the held value, when it is older than a refresh in flight. */
   asOf?: number;
@@ -66,6 +43,6 @@ export function toCell<T>(o: {
   const held = v != null && !(typeof v === 'number' && !Number.isFinite(v));
   if (held) return o.error && o.asOf !== undefined ? { s: 'stale', v: v as T, asOf: o.asOf } : { s: 'value', v: v as T, asOf: o.asOf };
   if (o.error) return { s: 'error', retry: o.retry };
-  if (o.loading) return { s: 'loading', since: o.since ?? Date.now() };
+  if (o.loading) return o.since !== undefined && (o.now ?? Date.now()) - o.since >= LOADING_DEADLINE_MS ? { s: 'unavailable', reason: 'timeout' } : { s: 'loading' };
   return { s: 'unavailable', reason: o.reason ?? 'unserved' };
 }

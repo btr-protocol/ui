@@ -3,6 +3,7 @@ import { Button } from './Button';
 import { Tooltip } from './FloatingPanel';
 import { Icon, type IconName } from './Icon';
 import { LINK } from './InfoBox';
+import { Skeleton } from './Loaders';
 import { Spinner } from './Spinner';
 import { PAGE_DESC } from './classes';
 import type { MetricPhase } from '../lib/metricPhase';
@@ -30,8 +31,8 @@ export function PageState({ kind, title, message, action, className }: PageState
         className,
       )}
     >
-      {isLoading && <Spinner />}
-      {title && <div className="text-sm font-medium text-fg-0">{title}</div>}
+      {isLoading && <Skeleton lines={3} className="max-w-xs" />}
+      {title && <div className={cn('text-sm font-medium text-fg-0', isLoading && 'sr-only')}>{title}</div>}
       {message && <div className={PAGE_DESC}>{message}</div>}
       {action && (
         <Button size="sm" variant="secondary" onClick={action.onClick}>
