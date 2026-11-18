@@ -29,17 +29,23 @@
   },
   "files": [
     "src",
-    "LICENSE"
+    "!src/**/*.test.ts",
+    "!src/**/*.test.tsx",
+    "README.md",
+    "LICENSE",
+    "NOTICE",
+    "CHANGELOG.md"
   ],
   "scripts": {
     "typecheck": "tsc --noEmit",
     "test": "bun test",
     "check:copy": "bash scripts/check-copy.sh",
-    "check": "bun run check:copy && bun run typecheck && bun test"
+    "check": "bun run check:copy && bun run typecheck && bun test",
+    "prepublishOnly": "bun run check"
   },
   "peerDependencies": {
     "tailwindcss": "^3.4.0",
-    "@btr-protocol/sdk": "github:btr-protocol/sdk"
+    "@btr-protocol/sdk": "^0.6.0"
   },
   "devDependencies": {
     "@btr-protocol/sdk": "github:btr-protocol/sdk#dc1d1f11d9d3aab7b38b5653e092c06bbd9efb3f",
@@ -62,5 +68,20 @@
     "lucide-preact": "^0.468.0",
     "preact": "^10.22.0",
     "tailwind-merge": "^2.6.1"
+  },
+  "homepage": "https://github.com/btr-protocol/ui#readme",
+  "bugs": {
+    "url": "https://github.com/btr-protocol/ui/issues"
+  },
+  "keywords": [
+    "btr",
+    "preact",
+    "ui",
+    "tailwind",
+    "components",
+    "defi"
+  ],
+  "publishConfig": {
+    "access": "public"
   }
 }

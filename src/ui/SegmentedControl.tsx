@@ -19,6 +19,7 @@ import { haptic } from '../lib/haptic';
 import { Button } from './Button';
 import { PANEL_BODY } from './Panel';
 import { tabKeyTarget } from './TabStrip';
+import { safeHref } from '../lib/safeHref';
 
 export interface SegmentedOption<T extends string> {
   value: T;
@@ -177,7 +178,7 @@ export function SegmentedControl<T extends string>({
           <Button
             key={opt.value}
             {...tab}
-            href={opt.href}
+            href={safeHref(opt.href)}
             size={btnSize}
             active={selected}
             onClick={(e: MouseEvent) => {

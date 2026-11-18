@@ -1,6 +1,7 @@
 import type { ComponentChildren } from 'preact';
 import { cn } from '../lib/cn';
 import { Icon, type IconName } from './Icon';
+import { safeHref } from '../lib/safeHref';
 
 export interface TimelineItem {
   id: string;
@@ -44,7 +45,7 @@ export function Timeline({ items, empty, className }: TimelineProps) {
             </div>
             {it.href && (
               <a
-                href={it.href}
+                href={safeHref(it.href)}
                 target="_blank"
                 rel="noreferrer noopener"
                 aria-label={it.linkLabel ?? 'Open'}

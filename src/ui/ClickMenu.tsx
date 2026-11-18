@@ -4,6 +4,7 @@ import { cn } from '../lib/cn';
 import { FloatingPanel } from './FloatingPanel';
 import { SelectedCheck } from './SelectedCheck';
 import type { Position } from '../lib/positioning';
+import { safeHref } from '../lib/safeHref';
 
 export interface ClickMenuItem {
   id: string;
@@ -53,7 +54,7 @@ export function ClickMenu({ trigger, items, side = 'top' }: { trigger: Component
         <div role="menu" ref={mount} onKeyDown={onKeyDown} className="flex min-w-44 flex-col">
           {items.map((it) =>
             it.href ? (
-              <a key={it.id} role={role(it)} aria-checked={it.selected} href={it.href} className={row(it)}>{body(it)}</a>
+              <a key={it.id} role={role(it)} aria-checked={it.selected} href={safeHref(it.href)} className={row(it)}>{body(it)}</a>
             ) : (
               <button key={it.id} type="button" role={role(it)} aria-checked={it.selected} disabled={it.disabled} className={row(it)} onClick={it.onSelect}>{body(it)}</button>
             ),

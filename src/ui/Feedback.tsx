@@ -11,6 +11,7 @@ import { navigateTo, openExternal } from '../lib/nav';
 import { cn } from '../lib/cn';
 import type { ComponentChildren, JSX } from 'preact';
 import { useEffect, useRef } from 'preact/hooks';
+import { isInternalHref, isSafeExternalHref, isSamePageHref } from '../lib/safeHref';
 
 export type PageStateKind = 'loading' | 'error' | 'empty' | 'notfound';
 
@@ -79,24 +80,6 @@ export interface ToastLink {
   href: string;
   label: string;
 }
-
-/** Same-app path: a single leading `/`, so `//evil.com` and `\/` tricks never read as internal. */
-const isInternalHref = (href: string): boolean =>
-  href.startsWith('/') && !href.startsWith('//') && !/[\\\s]/.test(href);
-
-/** Absolute http(s) only: `javascript:`, `data:` and unparseable hrefs render as plain text. */
-const isSafeExternalHref = (href: string): boolean => {
-  if (/[\\\s]/.test(href)) return false;
-  try {
-    const u = new URL(href, window.location.origin);
-    return u.protocol === 'http:' || u.protocol === 'https:';
-  } catch {
-    return false;
-  }
-};
-
-/** Same-page reference (`#anchor`, `?q=`): a plain anchor, never SPA-navigated nor external. */
-const isSamePageHref = (href: string): boolean => href.startsWith('#') || href.startsWith('?');
 
 export type FeedbackHrefKind = 'internal' | 'same-page' | 'external' | 'invalid';
 

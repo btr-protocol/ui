@@ -8,6 +8,7 @@ import { Icon } from '../ui/Icon';
 import { MaskIcon } from '../ui/MaskIcon';
 import { NavBadge } from './NavBadge';
 import { type NavItem, isNavActive } from './nav';
+import { safeHref } from '../lib/safeHref';
 
 /** Nav icons are either an Icon name or an svg path (starts with `/`, `.` or `http`). */
 function NavIcon({ icon }: { icon?: string }) {
@@ -89,7 +90,7 @@ export function TabBar({
           {tabs.map((item) => (
             <a
               key={item.path}
-              href={item.path}
+              href={safeHref(item.path)}
               onClick={(e) => {
                 if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button) return; // new tab / window: native
                 e.preventDefault();
