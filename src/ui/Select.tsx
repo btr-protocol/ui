@@ -20,6 +20,7 @@ import { Icon } from './Icon';
 import { fieldSizing, inputVariants } from './Input';
 import { FormRow } from './Primitives';
 import { useDismiss } from './useDismiss';
+import { safeHref } from '../lib/safeHref';
 
 export type { DropdownItem, SelectionItem } from '../lib/uiTypes';
 export type { SelectionGroup, SelectionLabels, SelectionSortColumn } from './selectionView';
@@ -390,7 +391,7 @@ export function Dropdown<T = string>({
             >
               <Tag
                 {...(item.href
-                  ? { href: item.href, target: '_blank', rel: 'noopener noreferrer' }
+                  ? { href: safeHref(item.href), target: '_blank', rel: 'noopener noreferrer' }
                   : { type: 'button', disabled })}
                 aria-label={typeof item.label === 'string' ? item.label : undefined}
                 onClick={(e: MouseEvent) => {

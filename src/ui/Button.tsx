@@ -40,6 +40,7 @@ import { cva } from '../lib/cva';
 import { type ComponentChildren, Fragment } from 'preact';
 import type { HTMLAttributes, Ref } from 'preact/compat';
 import { forwardRef } from 'preact/compat';
+import { safeHref } from '../lib/safeHref';
 
 /** THREE shapes; `danger` and `active` are axes (`tone`, `active`), not shapes. */
 export type ButtonVariant = 'primary' | 'secondary' | 'ghost';
@@ -178,7 +179,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       const { onClick, ...rest } = props as HTMLAttributes<HTMLAnchorElement>;
       return (
         <a
-          href={href}
+          href={safeHref(href)}
           className={classes}
           {...rest}
           {...groupAttrs}

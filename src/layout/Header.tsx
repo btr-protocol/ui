@@ -10,6 +10,7 @@ import { MaskIcon } from '../ui/MaskIcon';
 import { Dropdown } from '../ui/Select';
 import { NavBadge } from './NavBadge';
 import { type NavItem, isNavActive } from './nav';
+import { safeHref } from '../lib/safeHref';
 
 function NavButton({
   item,
@@ -120,7 +121,7 @@ export function Header({
     <header className="no-print fixed inset-x-0 top-0 z-header flex h-[var(--chrome-t)] items-center pl-[var(--sal)] pr-[var(--sar)] pt-[var(--sat)] safe-t">
       <nav className="relative max-w-[var(--shell-w,72rem)] h-full mx-auto w-full flex items-center justify-between gap-2 lg:gap-6 px-3 border border-t-0 rounded-b-lg backdrop-blur-md bg-glass border-border">
         <a
-          href={homePath}
+          href={safeHref(homePath)}
           aria-label={brandLabel}
           onClick={(e) => {
             if (e.metaKey || e.ctrlKey || e.shiftKey || e.button) return;

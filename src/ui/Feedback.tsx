@@ -12,6 +12,7 @@ import { cn } from '../lib/cn';
 import type { ComponentChildren, JSX } from 'preact';
 import { useEffect, useRef } from 'preact/hooks';
 import { isInternalHref, isSafeExternalHref, isSamePageHref } from '../lib/safeHref';
+import { safeHref } from '../lib/safeHref';
 
 export type PageStateKind = 'loading' | 'error' | 'empty' | 'notfound';
 
@@ -222,7 +223,7 @@ export function Toast({
           {message}
           {link && (
             <FeedbackLink
-              href={link.href}
+              href={safeHref(link.href) ?? '#'}
               label={link.label}
               linkClass={cn('ml-1.5 inline align-baseline', LINK)}
             />

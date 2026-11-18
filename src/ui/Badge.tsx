@@ -1,6 +1,7 @@
 import { BORDER_RADIUS, SIZE_GAPS, SIZE_PADDINGS, SIZE_TEXT } from '../lib/design';
 import { cva } from '../lib/cva';
 import type { ComponentChildren, JSX } from 'preact';
+import { safeHref } from '../lib/safeHref';
 
 export interface BadgeProps {
   children: ComponentChildren;
@@ -68,7 +69,7 @@ export function Badge({ children, variant = 'default', href, className, style }:
   // A border on every variant, transparent where the design has none: without it
   // a bordered and a borderless tag differ by 2px of height in the same row.
   return href ? (
-    <a href={href} className={`${cls} hover:border-primary transition-colors`} style={style}>
+    <a href={safeHref(href)} className={`${cls} hover:border-primary transition-colors`} style={style}>
       {children}
     </a>
   ) : (
