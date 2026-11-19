@@ -32,9 +32,9 @@ test('TokenAmount: icon + formatted qty + symbol', () => {
 
 test('swatchColor wraps over the 12 series tokens', () => {
   expect(swatchColor(0)).toBe('var(--series-2)'); // blue first
-  expect(swatchColor(SWATCH_COUNT - 1)).toBe('var(--series-11)');
+  expect(swatchColor(SWATCH_COUNT - 1)).toBe('var(--series-12)');
   expect(swatchColor(SWATCH_COUNT)).toBe('var(--series-2)');
-  expect(swatchColor(-1)).toBe('var(--series-11)');
+  expect(swatchColor(-1)).toBe('var(--series-12)');
   for (let i = 0; i < SWATCH_COUNT; i++) expect(swatchColor(i)).not.toBe('var(--series-1)'); // never the primary orange
 });
 

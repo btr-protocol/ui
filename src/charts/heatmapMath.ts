@@ -1,8 +1,8 @@
 /** Pure helpers of Heatmap / Doughnut: no DOM, no lightweight-charts. */
 
-/** Series colour as a CSS value (theme-reactive, no canvas parse). The first six are the `--series-n` tokens; each further lap mixes the
+/** Series colour as a CSS value (theme-reactive, no canvas parse). The first sixteen are the `--series-n` tokens; each further lap mixes the
  *  same token toward the text colour / canvas, alternately, so a view with many slices never repeats a colour among neighbours. */
-export function seriesCss(i: number, count = 6): string {
+export function seriesCss(i: number, count = 16): string {
   const k = ((i % count) + count) % count;
   const lap = Math.floor(Math.max(0, i) / count);
   const base = `var(--series-${k + 1})`;

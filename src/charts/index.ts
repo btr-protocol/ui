@@ -1,7 +1,7 @@
 export * from './MetricChart';
 export { ChartShell, ChartHeader } from './ChartShell';
 export { SeriesHover, SERIES_HIGHLIGHT, useSeriesHover } from './SeriesHover';
-export { chartColors, themeColor, seriesColors, seriesVar, seriesShade, distinctShade, DISTINCT_MAX, SERIES_COUNT, type ThemeColors } from './colors';
+export { chartColors, themeColor, seriesColors, seriesSlot, keyColors, seriesVar, seriesShade, distinctShade, DISTINCT_MAX, SERIES_COUNT, type ThemeColors } from './colors';
 export { ChartPanel, type ChartPanelProps } from './ChartPanel';
 export { Heatmap, type HeatmapProps } from './Heatmap';
 export { Doughnut, type DoughnutProps } from './Doughnut';

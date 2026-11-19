@@ -28,8 +28,8 @@ describe('doughnut', () => {
   });
   test('series colours: tokens first, mixed laps after', () => {
     expect(seriesCss(0)).toBe('var(--series-1)');
-    expect(seriesCss(6)).toContain('color-mix');
-    expect(seriesCss(6)).not.toBe(seriesCss(12));
+    expect(seriesCss(16)).toContain('color-mix');
+    expect(seriesCss(16)).not.toBe(seriesCss(32));
   });
 });
 

@@ -54,7 +54,7 @@ export function chartColors(): ThemeColors {
 /** One theme token (e.g. `--orange`) as #rrggbb. */
 export const themeColor = (name: string): string => parseColor(getComputedStyle(document.documentElement).getPropertyValue(name));
 
-export const SERIES_COUNT = 6;
+export const SERIES_COUNT = 16;
 /** CSS variable of the n-th series colour (cycles after 6). Pair with `themeColor` for the canvas. */
 export const seriesVar = (i: number): string => `--series-${(((i % SERIES_COUNT) + SERIES_COUNT) % SERIES_COUNT) + 1}`;
 /** The first `n` series colours as #rrggbb for the live theme (re-read after a theme switch). */
@@ -99,4 +99,26 @@ export function seriesShade(i: number): string {
   const [h, s, l] = toHsl(rgb(base));
   const dl = (lap % 2 === 1 ? 0.12 : -0.1) * Math.ceil(lap / 2);
   return fromHsl((h + 28 * lap) % 360, Math.min(1, s), Math.min(0.85, Math.max(0.25, l + dl)));
+}
+
+/** FNV-1a slot of a key in the 16-slot series palette: stable across runs, engines and themes. */
+export function seriesSlot(key: string): number {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < key.length; i++) h = Math.imul(h ^ key.charCodeAt(i), 0x01000193);
+  return (h >>> 0) % SERIES_COUNT;
+}
+
+/** Colours (#rrggbb, live theme) for the keys of ONE chart, aligned to `keys`: a key keeps its hashed slot on every chart and reload; it moves to the
+ *  next free slot only when two keys of THIS chart collide. Placement is in sorted order, so it never depends on the order passed in. */
+export function keyColors(keys: readonly string[]): string[] {
+  const used = new Set<number>();
+  const slot = new Map<string, number>();
+  for (const key of [...new Set(keys)].sort()) {
+    let s = seriesSlot(key);
+    if (used.size < SERIES_COUNT) while (used.has(s)) s = (s + 1) % SERIES_COUNT;
+    used.add(s);
+    slot.set(key, s);
+  }
+  const col = new Map([...slot].map(([k, s]) => [k, themeColor(seriesVar(s))]));
+  return keys.map((k) => col.get(k)!);
 }

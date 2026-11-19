@@ -84,21 +84,25 @@
   --cyan: #2ee7e7;
   --pink: #e94cef;
   --violet: #a273f5;
-  /* Chart series (value tables, multi-area): orange, blue, green, pink, violet, teal. No yellow/cyan (vanish on light). */
+  /* Chart series: ONE categorical palette, 16 slots, OKLCH L~.74 C~.10 (dark) with hues spread from the brand orange/blue/green/pink/violet, muted so it harmonises with --blue/--green/--orange. Light block below re-tunes L for 3:1. Keys map to a slot via seriesSlot()/keyColors() (charts/colors.ts); never hardcode a colour in a chart. */
   --brand-safe: #12ff80;
   --shadow-float: 0 8px 24px rgb(0 0 0 / 40%);
-  --series-1: #f0a04b;
-  --series-2: #5b93ff;
-  --series-3: #34d399;
-  --series-4: #f06af5;
-  --series-5: #a090ff;
-  --series-6: #2dd4bf;
-  /* 7-11: extra swatches (per-Safe colours etc.), same rule: legible on dark and light. */
-  --series-7: #ef6b6b;
-  --series-8: #4fb3f6;
-  --series-9: #9bd64b;
-  --series-10: #c98f5a;
-  --series-11: #94a3b8;
+  --series-1: #d9a167;
+  --series-2: #6faae0;
+  --series-3: #76c195;
+  --series-4: #cd8cbb;
+  --series-5: #afb568;
+  --series-6: #a699de;
+  --series-7: #53c1c9;
+  --series-8: #dc8b88;
+  --series-9: #caae63;
+  --series-10: #859cdd;
+  --series-11: #60c6b3;
+  --series-12: #d1849c;
+  --series-13: #96bf7e;
+  --series-14: #b68bca;
+  --series-15: #63bfe1;
+  --series-16: #d38a6a;
   --black: #1b1b1b; /* Carbon Black - dark font on light theme, bg on dark theme */
   --white: #fafafa; /* Parchment - light font on dark theme, bg on light theme */
 
@@ -274,17 +278,22 @@
   --fg-secondary: #2b55b8;
   --brand-safe: #0a7a43; /* Safe mark; the dark theme keeps #12ff80 */
   /* Series: >=3:1 on canvas and raised (graphical objects); no yellow/cyan on light. */
-  --series-1: #c26a00;
-  --series-2: #2f63e0;
-  --series-3: #0a8f64;
-  --series-4: #c02ac7;
-  --series-5: #6d55e6;
-  --series-6: #0e8a96;
-  --series-7: #c93d3d;
-  --series-8: #1a7fc7;
-  --series-9: #4f8a10;
-  --series-10: #8c5a2b;
-  --series-11: #5b6b82;
+  --series-1: #9c631c;
+  --series-2: #3d7fb8;
+  --series-3: #2c8457;
+  --series-4: #a35f92;
+  --series-5: #73771c;
+  --series-6: #7c6db6;
+  --series-7: #00848d;
+  --series-8: #b25e5c;
+  --series-9: #886b01;
+  --series-10: #667cc2;
+  --series-11: #008370;
+  --series-12: #b5627e;
+  --series-13: #527c37;
+  --series-14: #986bae;
+  --series-15: #007b9e;
+  --series-16: #b66946;
 
   /* Tinted banner/chip backgrounds over raised; tone text above clears 4.5:1 on each. */
   --bg-green: color-mix(in srgb, var(--green) 10%, var(--bg-1));
