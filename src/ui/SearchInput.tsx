@@ -10,9 +10,10 @@ export interface SearchInputProps {
   placeholder?: string;
   /**
    * `bare` is the modal-header form: no box, the modal's own header supplies
-   * the chrome. `boxed` is the standalone page form.
+   * the chrome. `header` is the table/panel header form: borderless, full header height, a left
+   * rule against the title/controls (pair with `PanelHeader`). `boxed` is the standalone page form.
    */
-  variant?: 'boxed' | 'bare';
+  variant?: 'boxed' | 'bare' | 'header';
   onKeyDown?: (e: JSX.TargetedKeyboardEvent<HTMLInputElement>) => void;
   inputRef?: Ref<HTMLInputElement>;
   /** Modal headers stop propagation so a nested modal does not also see it. */
@@ -26,6 +27,9 @@ export interface SearchInputProps {
  * THE search input: one magnifier, one clear affordance, one set of metrics. Modal headers
  * (`BaseModal` `headerType="input"`) and `Table` render this.
  */
+/** Bleeds through PanelHeader's py-2 so the field spans the header's full height. */
+const HEADER_SEARCH = '-my-2 self-stretch min-h-10 sm:border-l sm:border-border sm:pl-3';
+
 export function SearchInput({
   value,
   onChange,
@@ -47,7 +51,10 @@ export function SearchInput({
   };
 
   return (
-    <div className={`relative flex items-center gap-2 min-w-0 ${className ?? ''}`}>
+    <div
+      role={variant === 'header' ? 'search' : undefined}
+      className={`relative flex items-center gap-2 min-w-0 ${variant === 'header' ? HEADER_SEARCH : ''} ${className ?? ''}`}
+    >
       <Icon
         name="magnifying-glass"
         className={`w-4 h-4 text-fg-2 shrink-0 ${
@@ -58,7 +65,7 @@ export function SearchInput({
         <Input
           ref={ref}
           type="text"
-          variant={variant === 'bare' ? 'bare' : 'default'}
+          variant={variant === 'boxed' ? 'default' : 'bare'}
           size="sm"
           placeholder={placeholder}
           value={value}

@@ -544,24 +544,26 @@ export function Table<Row>({
     />
   );
 
+  // Search lives in the table's own header row (borderless, full height), never a box above it.
   const search = searchable && (
     <SearchInput
+      variant="header"
       value={query}
       onChange={setQuery}
       placeholder={searchPlaceholder}
-      className={title ? 'w-full sm:w-64' : undefined}
+      className={title ? 'w-full sm:w-64' : 'flex-1 sm:border-l-0 sm:pl-0'}
     />
   );
 
   return (
     <div className={cn(compact ? 'flex flex-col min-h-0 h-full' : 'space-y-3', className)}>
-      {!title && search}
 
       <Panel
         // every table wears ONE frame (outer border, radius by nesting, divided rows): its own, or
         // the framed Panel's it sits in
         className={cn('overflow-hidden', !framed && 'rounded-none border-0 bg-transparent shadow-none', compact && 'flex flex-col flex-1 min-h-0')}
       >
+        {!title && search && <PanelHeader>{search}</PanelHeader>}
         {title && (
           <PanelHeader>
             <PanelTitle>{title}</PanelTitle>
