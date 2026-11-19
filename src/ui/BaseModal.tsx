@@ -179,7 +179,9 @@ export function BaseModal({
       els[i < 0 ? els.length - 1 : i >= els.length ? 0 : i].focus();
     };
     // Escape closes whatever is topmost in the back stack (a dropdown, a drill level, else a dialog).
+    // A field marked `data-esc-clear` (a table search holding a query) takes this Escape to clear itself.
     const onEscape = (e: KeyboardEvent) => {
+      if ((e.target as HTMLElement | null)?.closest?.('[data-esc-clear]')) return;
       if (e.key === 'Escape' && popBack()) {
         e.preventDefault();
         e.stopImmediatePropagation();

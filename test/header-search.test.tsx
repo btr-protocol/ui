@@ -79,3 +79,23 @@ test('Table search: per-table label, Escape clears a non-empty query, resetKey c
   expect(host.querySelector('tbody')!.textContent).toContain('Alpha');
   unmount();
 });
+
+test('Table search inside a BaseModal: Escape with a query clears it and keeps the modal; the next Escape closes', async () => {
+  const { BaseModal } = await import('../src');
+  let closed = 0;
+  const { unmount } = mount(
+    <BaseModal isOpen onClose={() => { closed++; }} title="T" headerType="title">
+      <Table title="Legs" columns={cols} data={rows} rowKey={(r) => r.name} />
+    </BaseModal>,
+  );
+  await new Promise((r) => setTimeout(r, 20));
+  const input = () => document.querySelector<HTMLInputElement>('input[aria-label="Search Legs"]')!;
+  type(input(), 'bet');
+  input().focus();
+  act(() => { input().dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })); });
+  expect(input().value).toBe('');
+  expect(closed).toBe(0);
+  act(() => { input().dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })); });
+  expect(closed).toBe(1);
+  unmount();
+});

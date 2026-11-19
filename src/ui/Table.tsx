@@ -15,6 +15,7 @@ import { Icon, type IconName } from './Icon';
 import { InfoBox } from './InfoBox';
 import { InFrame, Panel, PanelHeader, PanelTitle } from './Panel';
 import { SearchInput } from './SearchInput';
+import type { InputProps } from './Input';
 
 export const DATA_TABLE_HEADER =
   'border-b border-border bg-bg-3 text-xs uppercase tracking-wide text-fg-1 font-semibold';
@@ -562,6 +563,7 @@ export function Table<Row>({
       }}
       placeholder={searchPlaceholder}
       ariaLabel={title ? `Search ${title}` : undefined}
+      inputProps={query ? ({ 'data-esc-clear': '' } as Partial<InputProps>) : undefined}
       className={title ? 'sm:w-64' : 'flex-1 max-sm:border-t-0 sm:border-l-0'}
     />
   );
