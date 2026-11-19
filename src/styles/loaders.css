@@ -33,20 +33,11 @@
   from { transform: translateX(100%); }
   to { transform: translateX(-100%); }
 }
-/* Loader (ui/Loaders.tsx): a whole section that loads together. Layout is kept (no shift); its content is hidden under ONE sweeping block. */
+/* Loader (ui/Loaders.tsx): a whole section that loads together. Layout is kept (no shift); its content is hidden under ONE centred Spinner. */
 .loader { position: relative; }
 .loader[aria-busy="true"] { pointer-events: none; user-select: none; }
-.loader[aria-busy="true"] > * { visibility: hidden; }
-.loader[aria-busy="true"]::before,
-.loader[aria-busy="true"]::after { content: ""; position: absolute; inset: 0; border-radius: inherit; }
-.loader[aria-busy="true"]::before { background-color: var(--bg-3); }
-.loader[aria-busy="true"]::after {
-  --sweep: color-mix(in srgb, var(--fg-0) 14%, transparent);
-  background: linear-gradient(90deg, transparent 0%, var(--sweep) 50%, transparent 100%);
-  transform: translateX(-100%);
-  animation: loader-sweep var(--dur-sweep) var(--ease-linear) infinite;
-}
-.loader[aria-busy="true"]:dir(rtl)::after { animation-name: loader-sweep-rtl; background: linear-gradient(270deg, transparent 0%, var(--sweep) 50%, transparent 100%); }
+.loader[aria-busy="true"] > :not(.loader-spin) { visibility: hidden; }
+.loader-spin { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
 .loader[aria-busy="true"] { overflow: hidden; }
 /* ValuePlaceholder: one line box of the slot's font (font size x line height), top-aligned so it never grows the line. Zero specificity: an h-* class wins. */
 :where(.vp) { display: inline-block; vertical-align: top; height: 1.25em; height: 1lh; }
@@ -129,7 +120,6 @@
   animation-name: loader-sweep-rtl;
 }
 /* Lite mode (a consumer's `[data-lite]` on :root): data sweeps hold still, like reduced motion. */
-:root[data-lite] .loader::after,
 :root[data-lite] .sk::after,
 :root[data-lite] .hairline::after,
 :root[data-lite] .progress-pending::after {
@@ -142,7 +132,6 @@
 @media (prefers-reduced-motion: reduce) {
   /* Loaders: data shimmer holds still (a static block still reads as "not here yet"); the spinner keeps turning, slowly
      (>= 2 s), because a frozen ring looks hung. The class beats the `*` rule above on specificity at equal !important. */
-  .loader::after,
   .sk::after,
   .hairline::after,
   .progress-pending::after {

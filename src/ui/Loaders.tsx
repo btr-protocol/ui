@@ -1,6 +1,7 @@
 import { type ComponentChildren, createContext } from 'preact';
 import { useContext } from 'preact/hooks';
 import { cn } from '../lib/cn';
+import { Spinner } from './Spinner';
 
 /* CSS-only loaders: ONE shared keyframe (styles/loaders.css), compositor properties only (transform / opacity), no JS timers, no state,
    no per-instance style. Two shapes of ONE sweep: `Loader` (a whole section whose values load together) and `Skeleton` /
@@ -34,11 +35,11 @@ export function Hairline({ active = true }: { active?: boolean }) {
   return active ? <span aria-hidden="true" className="hairline" /> : null;
 }
 
-/** THE section loader: while `busy`, the region keeps its layout but its content is hidden under one sweeping block (pure CSS, `.loader`),
+/** THE section loader: while `busy`, the region keeps its layout but its content is hidden under one centred Spinner (`.loader`),
  *  so tiles, panels and tables that load together show no number, dash or word. `aria-busy` on the region and ONE visually hidden
  *  `role="status"` that stays mounted OUTSIDE it (a live region must exist before its text changes). `error` (a short line) is the section's
  *  ONE `role="alert"`: its cells render the error mark but never their own alert. Content that has nothing to hold (a depth pane before its
- *  first answer) renders a bare `<Skeleton lines={n} />` instead of a Loader, so no hidden children sit under the sweep. A held value that
+ *  first answer) renders a `DataSpinner` instead of a Loader, so no hidden children sit under the sweep. A held value that
  *  refreshes gets `className={refreshing(busy)}` (a CSS hairline), never a Loader. */
 export function Loader({ busy, label = 'Loading', error, className, children }: { busy: boolean; label?: string; error?: string; className?: string; children?: ComponentChildren }) {
   return (
@@ -47,6 +48,7 @@ export function Loader({ busy, label = 'Loading', error, className, children }: 
       {error && <span role="alert" className="sr-only">{error}</span>}
       <div aria-busy={busy} className={cn('loader', className)}>
         <BusyContext.Provider value={busy}>{children}</BusyContext.Provider>
+        {busy && !error && <span aria-hidden="true" className="loader-spin"><Spinner size="md" /></span>}
       </div>
     </>
   );

@@ -33,7 +33,7 @@ export function PageState({ kind, title, message, action, className }: PageState
         className,
       )}
     >
-      {isLoading && <Skeleton lines={3} className="max-w-xs" />}
+      {isLoading && <Spinner size="md" />}
       {title && <div className={cn('text-sm font-medium text-fg-0', isLoading && 'sr-only')}>{title}</div>}
       {message && <div className={cn(PAGE_DESC, isLoading && 'sr-only')}>{message}</div>}
       {action && (

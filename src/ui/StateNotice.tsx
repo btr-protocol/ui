@@ -3,6 +3,7 @@ import { SEVERITY_ICON } from '../lib/severity';
 import { cn } from '../lib/cn';
 import { Button } from './Button';
 import { Icon } from './Icon';
+import { Spinner } from './Spinner';
 import { PANEL_BODY } from './Panel';
 import { Skeleton } from './Loaders';
 
@@ -42,7 +43,7 @@ export function StateNotice({ variant = 'info', title, children, action, layout 
         className,
       )}
     >
-      {variant === 'loading' && <Skeleton lines={3} className="max-w-xs" />}
+      {variant === 'loading' && <Spinner size="md" />}
       {glyph && <Icon name={glyph} className={cn('mt-0.5 h-4 w-4 shrink-0', variant === 'error' && 'text-error', variant === 'warning' && 'text-warning')} />}
       {variant === 'loading' ? (
         <span className="sr-only">{title ?? (typeof children === 'string' ? children : 'Loading')}</span>
