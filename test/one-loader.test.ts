@@ -35,3 +35,13 @@ test('the value-state files never import Table or Feedback (they would drag 50 K
     expect((await read(f)).match(/from '\.\/(Table|Feedback|StateNotice)'/g) ?? []).toEqual([]);
   }
 });
+
+test('DataSpinner names itself: role=status with aria-label and the hidden label', async () => {
+  const { render } = await import('preact-render-to-string');
+  const { h } = await import('preact');
+  const { DataSpinner } = await import('../src/ui/Spinner');
+  const html = render(h(DataSpinner, { label: 'Loading chart' }));
+  expect(html).toContain('role="status"');
+  expect(html).toContain('aria-label="Loading chart"');
+  expect(html).toContain('aria-live="polite"');
+});
