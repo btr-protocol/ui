@@ -1,5 +1,5 @@
 import { Icon } from './Icon';
-import { Panel } from './Panel';
+import { InFrame, Panel } from './Panel';
 import { VisuallyHidden } from './VisuallyHidden';
 import { popBack, useBack } from '../lib/backStack';
 import { cn } from '../lib/cn';
@@ -256,7 +256,8 @@ export function BaseModal({
   if (!mounted) return null;
 
   return createPortal(
-    <>
+    // A portal leaves the DOM frame it was declared in: tables inside keep their own frame.
+    <InFrame.Provider value={false}>
       <div
         data-closing={closing || undefined}
         className="modal-scrim fixed inset-0 z-modal bg-scrim backdrop-blur-sm"
@@ -391,7 +392,7 @@ export function BaseModal({
             </div>
           ))}
       </div>
-    </>,
+    </InFrame.Provider>,
     document.body,
   );
 }

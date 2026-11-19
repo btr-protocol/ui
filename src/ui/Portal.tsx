@@ -1,3 +1,4 @@
+import { InFrame } from './Panel';
 import type { ComponentChildren } from 'preact';
 import { createPortal } from 'preact/compat';
 import { useEffect, useState } from 'preact/hooks';
@@ -33,8 +34,9 @@ export function Portal({ children, className, style, containerId, innerRef }: Po
   if (!host) return null;
 
   return createPortal(
+    // Out of the DOM frame it was declared in: tables inside keep their own frame.
     <div ref={innerRef} className={className} style={style}>
-      {children}
+      <InFrame.Provider value={false}>{children}</InFrame.Provider>
     </div>,
     host,
   );
