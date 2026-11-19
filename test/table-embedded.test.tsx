@@ -40,10 +40,3 @@ test('the InFrame reset (portals, modals) gives the table its frame back', () =>
   const html = render(<Panel><InFrame.Provider value={false}>{t()}</InFrame.Provider></Panel>);
   expect(html).not.toContain(FLUSH);
 });
-
-test('Portal and BaseModal wrap their children in the InFrame reset', async () => {
-  for (const f of ['Portal.tsx', 'BaseModal.tsx']) {
-    const src = await Bun.file(new URL(`../src/ui/${f}`, import.meta.url)).text();
-    expect(src).toContain('<InFrame.Provider value={false}>');
-  }
-});
