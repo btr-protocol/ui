@@ -223,7 +223,7 @@ export function MetricChart({
 
   // The legend floats over the plot and wraps from `sm` up, so a pane with several series puts a
   // second and third row on the bars. Keep the top pane's plot below the legend: its price-scale
-  // top margin follows the legend's measured height (never less than the 12% default).
+  // top margin follows the legend's measured BOTTOM edge, offset included (never less than the 12% default).
   useEffect(() => {
     const el = legendRef.current;
     const chart = chartRef.current;
@@ -231,7 +231,7 @@ export function MetricChart({
     const fit = () => {
       const h = chart.panes()[0]?.getHeight() ?? 0;
       if (h <= 0) return;
-      const top = Math.min(0.6, Math.max(0.12, (el.offsetHeight + 14) / h));
+      const top = Math.min(0.6, Math.max(0.12, (el.offsetTop + el.offsetHeight + 10) / h));
       topRef.current = top;
       for (const id of ['right', 'left'] as const)
         chart.priceScale(id, 0).applyOptions({
