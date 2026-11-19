@@ -93,6 +93,20 @@ t('value swap from ValuePlaceholder changes no width', async () => {
   expect(Math.abs((await w()) - before)).toBeLessThanOrEqual(0.5);
 });
 
+t('value swap from ValuePlaceholder changes no height: the placeholder takes the slot font size and line height', async () => {
+  const page = await open('swap');
+  await page.locator('#hero [data-state=loading]').waitFor();
+  const h = (id: string) => page.locator(`#${id}`).evaluate((e) => e.getBoundingClientRect().height);
+  const sk = (id: string) => page.locator(`#${id} .sk`).evaluate((e) => e.getBoundingClientRect().height);
+  const before = { hero: await h('hero'), row: await h('row') };
+  expect(await sk('hero')).toBeCloseTo(30, 0); // text-3xl leading-none: one 30px line
+  expect(await sk('row')).toBeCloseTo(20, 0); // leading-5
+  await page.evaluate(() => (window as unknown as { __flip: () => void }).__flip());
+  await page.locator('#hero [data-state=value]').waitFor();
+  expect(Math.abs((await h('hero')) - before.hero)).toBeLessThanOrEqual(0.5);
+  expect(Math.abs((await h('row')) - before.row)).toBeLessThanOrEqual(0.5);
+});
+
 t('the sweep runs on the compositor and animates; reduced motion holds it still and slows the spinner to >= 2 s', async () => {
   const probe = () => ({ sk: [...document.querySelectorAll('.sk')].map((e) => { const a = getComputedStyle(e, '::after'); return { name: a.animationName, op: a.opacity, dur: a.animationDuration }; }), sp: (() => { const s = getComputedStyle(document.querySelector('.spinner')!); return { name: s.animationName, dur: parseFloat(s.animationDuration) * (s.animationDuration.endsWith('ms') ? 0.001 : 1) }; })() });
   const live = await (await open('all')).evaluate(probe);

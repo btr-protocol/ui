@@ -6,6 +6,7 @@
 import { SEVERITY_ICON } from '../lib/severity';
 import { virtualWindow } from '../lib/virtualWindow';
 import { Empty, PageState } from './Feedback';
+import { DataSpinner } from './Spinner';
 import { Tooltip } from './FloatingPanel';
 import { cn } from '../lib/cn';
 import type { ComponentChildren, JSX } from 'preact';
@@ -567,9 +568,7 @@ export function Table<Row>({
           </PanelHeader>
         )}
         {loading ? (
-          <div className="py-8">
-            <PageState kind="loading" title={loadingTitle} />
-          </div>
+          <DataSpinner label={loadingTitle} className="py-8" />
         ) : isVirtual ? (
           (() => {
             const win = virtualWindow(

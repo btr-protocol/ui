@@ -17,8 +17,8 @@ test('no animate-pulse / animate-spin / hand-made shimmer outside the loader fam
   expect(await scan(/animate-pulse|animate-spin|\bsk\b(?!-)|loader-sweep|@keyframes (?!row-|modal-|sheet-)/, ['src/ui/Loaders.tsx', 'src/ui/Spinner.tsx', 'src/ui/Figure.tsx', 'src/styles/loaders.css', 'src/styles/index.css', 'src/styles/kit.css', 'src/styles/tokens.css'])).toEqual([]);
 });
 
-test('Spinner is for a user-initiated action only: buttons, the wallet connect row, the action toast', async () => {
-  expect(await scan(/<Spinner\b/, ['src/wallet/WalletModal.tsx', 'src/ui/WalletItemButton.tsx', 'src/ui/Feedback.tsx'])).toEqual([]);
+test('Spinner is for a user-initiated action (buttons, the wallet connect row, the action toast) or DataSpinner (a chart or data table)', async () => {
+  expect(await scan(/<Spinner\b/, ['src/wallet/WalletModal.tsx', 'src/ui/WalletItemButton.tsx', 'src/ui/Feedback.tsx', 'src/ui/Spinner.tsx'])).toEqual([]);
 });
 
 test('no state words as loading text, no JS clock for the sweep', async () => {

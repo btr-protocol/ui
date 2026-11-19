@@ -48,6 +48,8 @@
 }
 .loader[aria-busy="true"]:dir(rtl)::after { animation-name: loader-sweep-rtl; background: linear-gradient(270deg, transparent 0%, var(--sweep) 50%, transparent 100%); }
 .loader[aria-busy="true"] { overflow: hidden; }
+/* ValuePlaceholder: one line box of the slot's font (font size x line height), top-aligned so it never grows the line. Zero specificity: an h-* class wins. */
+:where(.vp) { display: inline-block; vertical-align: top; height: 1.25em; height: 1lh; }
 /* Reserved figure widths (tabular figures): a skeleton and its value take the same room. */
 .ch-4 { min-width: 4ch } .ch-5 { min-width: 5ch } .ch-6 { min-width: 6ch } .ch-7 { min-width: 7ch }
 .ch-8 { min-width: 8ch } .ch-10 { min-width: 10ch } .ch-12 { min-width: 12ch }

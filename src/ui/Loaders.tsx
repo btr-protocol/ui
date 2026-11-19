@@ -22,9 +22,10 @@ export function Skeleton({ className, lines = 1 }: { className?: string; lines?:
   );
 }
 
-/** Stands where a figure will be, inside a table cell: `ch` (4-12, tabular figures) reserves its width, so the swap to the value does not shift the layout. */
+/** Stands where a figure will be: `ch` (4-12, tabular figures) reserves its width and `.vp` takes one line box of the slot's own font
+ *  size and line height (`1lh`), so the swap to the value shifts neither width nor height, from a table cell to a hero price. */
 export function ValuePlaceholder({ ch = 6, className }: { ch?: Ch; className?: string }) {
-  return <span aria-hidden="true" className={cn('sk inline-block h-3.5 rounded-md align-middle tabular-nums', `ch-${ch}`, className)} />;
+  return <span aria-hidden="true" className={cn('sk vp rounded-md tabular-nums', `ch-${ch}`, className)} />;
 }
 export type Ch = 4 | 5 | 6 | 7 | 8 | 10 | 12;
 

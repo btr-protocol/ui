@@ -26,7 +26,13 @@ function App() {
   (window as unknown as { __flip: () => void }).__flip = () => setLoaded((x) => !x);
   (window as unknown as { __busy: (b: boolean) => void }).__busy = setBusy;
   if (v === 'swap')
-    return <div className="p-4"><span id="fig" className="text-sm"><Figure ch={10} cell={loaded ? { s: 'value', v: 42 } : { s: 'loading' }} format={fmt} /></span></div>;
+    return (
+      <div className="p-4">
+        <span id="fig" className="text-sm"><Figure ch={10} cell={loaded ? { s: 'value', v: 42 } : { s: 'loading' }} format={fmt} /></span>
+        <div id="hero" className="text-3xl leading-none"><Figure ch={10} cell={loaded ? { s: 'value', v: 42 } : { s: 'loading' }} format={fmt} /></div>
+        <div id="row" className="text-sm leading-5"><Figure ch={10} cell={loaded ? { s: 'value', v: 42 } : { s: 'loading' }} format={fmt} /></div>
+      </div>
+    );
   if (v === 'bare')
     return (
       <div id="bare">

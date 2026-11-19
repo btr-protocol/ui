@@ -2,6 +2,7 @@
 // `loadingTitle`, empty as `empty` + `emptyMessage`/`emptyTitle`. `title` is the watermark;
 // the header bar is ChartHeader (same scale as PanelTitle).
 import { PageState } from '../ui/Feedback';
+import { DataSpinner } from '../ui/Spinner';
 import { cn } from '../lib/cn';
 import type { ComponentChildren, JSX } from 'preact';
 import { useRef } from 'preact/hooks';
@@ -86,7 +87,7 @@ export function ChartShell({
       )}
       {loading && (
         <div className="absolute inset-0 z-overlay flex items-center justify-center bg-bg-0/80">
-          <PageState kind="loading" title={loadingTitle} />
+          <DataSpinner label={loadingTitle} />
         </div>
       )}
       {empty && !loading && (
