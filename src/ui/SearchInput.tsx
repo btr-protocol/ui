@@ -1,5 +1,6 @@
 import type { JSX, Ref } from 'preact';
 import { useRef } from 'preact/hooks';
+import { cn } from '../lib/cn';
 import { Tooltip } from './FloatingPanel';
 import { Icon } from './Icon';
 import { Input, type InputProps } from './Input';
@@ -23,13 +24,15 @@ export interface SearchInputProps {
   inputProps?: Partial<InputProps>;
 }
 
+/** Stretches to its row's full height (parent `items-stretch`, no padding): the left rule spans the
+ *  header; below `sm` it wraps to its own full-width row with a top rule instead. */
+const HEADER_SEARCH =
+  'self-stretch min-h-10 px-3 border-border max-sm:basis-full max-sm:border-t sm:border-l';
+
 /**
  * THE search input: one magnifier, one clear affordance, one set of metrics. Modal headers
  * (`BaseModal` `headerType="input"`) and `Table` render this.
  */
-/** Bleeds through PanelHeader's py-2 so the field spans the header's full height. */
-const HEADER_SEARCH = '-my-2 self-stretch min-h-10 sm:border-l sm:border-border sm:pl-3';
-
 export function SearchInput({
   value,
   onChange,
@@ -53,7 +56,7 @@ export function SearchInput({
   return (
     <div
       role={variant === 'header' ? 'search' : undefined}
-      className={`relative flex items-center gap-2 min-w-0 ${variant === 'header' ? HEADER_SEARCH : ''} ${className ?? ''}`}
+      className={cn('relative flex items-center gap-2 min-w-0', variant === 'header' && HEADER_SEARCH, className)}
     >
       <Icon
         name="magnifying-glass"

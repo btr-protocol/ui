@@ -217,6 +217,8 @@ export interface TableProps<Row> {
   title?: string;
   /** Right-aligned header content (source note, selector). Requires `title`. */
   meta?: ComponentChildren;
+  /** The search resets when this changes (the data source or segment the rows come from). */
+  resetKey?: unknown;
   searchPlaceholder?: string;
   searchable?: boolean;
   onRowClick?: (row: Row) => void;
@@ -419,6 +421,7 @@ export function Table<Row>({
   rowProps,
   title,
   meta,
+  resetKey,
   searchPlaceholder = 'Search...',
   searchable = true,
   onRowClick,
@@ -444,6 +447,7 @@ export function Table<Row>({
   const framed = frame ?? !useContext(InFrame);
   const desktop = compact ? 'min-h-0 flex flex-col flex-1' : STACK[stackBelow].desktop;
   const [query, setQuery] = useState('');
+  useEffect(() => setQuery(''), [resetKey]);
   const { sortKey, sortDir, toggleSort } = useTableSort(initialSort);
   // Virtual window - only when virtual prop set
   const isVirtual = !!virtual;
@@ -550,27 +554,34 @@ export function Table<Row>({
       variant="header"
       value={query}
       onChange={setQuery}
+      onKeyDown={(e) => {
+        if (e.key !== 'Escape' || !query) return;
+        e.preventDefault();
+        e.stopPropagation(); // a modal around the table keeps its own Escape for the next press
+        setQuery('');
+      }}
       placeholder={searchPlaceholder}
-      className={title ? 'w-full sm:w-64' : 'flex-1 sm:border-l-0 sm:pl-0'}
+      ariaLabel={title ? `Search ${title}` : undefined}
+      className={title ? 'sm:w-64' : 'flex-1 max-sm:border-t-0 sm:border-l-0'}
     />
   );
 
   return (
     <div className={cn(compact ? 'flex flex-col min-h-0 h-full' : 'space-y-3', className)}>
-
       <Panel
         // every table wears ONE frame (outer border, radius by nesting, divided rows): its own, or
         // the framed Panel's it sits in
         className={cn('overflow-hidden', !framed && 'rounded-none border-0 bg-transparent shadow-none', compact && 'flex flex-col flex-1 min-h-0')}
       >
-        {!title && search && <PanelHeader>{search}</PanelHeader>}
+        {!title && search && <PanelHeader className="p-0 gap-0 items-stretch">{search}</PanelHeader>}
         {title && (
-          <PanelHeader>
-            <PanelTitle>{title}</PanelTitle>
-            <div className="flex items-center gap-3 flex-wrap justify-end">
-              {meta}
-              {search}
+          // One row: title + meta (freshness, segments) padded, the search flush and full height.
+          <PanelHeader className={cn(search && 'p-0 gap-0 items-stretch')}>
+            <div className={cn('flex flex-1 min-w-0 flex-wrap items-center justify-between gap-3', search && 'px-3 py-2')}>
+              <PanelTitle>{title}</PanelTitle>
+              {meta && <div className="flex items-center gap-3 flex-wrap justify-end">{meta}</div>}
             </div>
+            {search}
           </PanelHeader>
         )}
         {loading ? (
