@@ -48,7 +48,7 @@
     "@btr-protocol/sdk": "^0.6.0"
   },
   "devDependencies": {
-    "@btr-protocol/sdk": "github:btr-protocol/sdk#dc1d1f11d9d3aab7b38b5653e092c06bbd9efb3f",
+    "@btr-protocol/sdk": "github:btr-protocol/sdk#c8081bfe2937cdd5a5bc89afe2c1ed4441158fef",
     "@happy-dom/global-registrator": "^21.0.4",
     "@types/bun": "latest",
     "jsqr": "1.4.0",
