@@ -2,7 +2,7 @@
 // `meta` header at the PanelHeader scale, body at PanelBody scale, block states via PanelState
 // (PageState/Empty); MetricState is the inline-cell counterpart, not a second block path.
 import { cn } from '../lib/cn';
-import type { ComponentChildren } from 'preact';
+import { type ComponentChildren, createContext } from 'preact';
 import type { Ref } from 'preact';
 import type { HTMLAttributes } from 'preact/compat';
 
@@ -15,6 +15,13 @@ export interface PanelProps extends Omit<HTMLAttributes<HTMLDivElement>, 'classN
   className?: string;
   ref?: Ref<HTMLDivElement>;
 }
+
+/**
+ * True inside a framed Panel: the container already draws the border and the rounded edge, so a
+ * Table placed in it goes flush (`frame` defaults off) instead of drawing a second border and its
+ * own rounded corner inside the first. A `plain` Panel draws no frame and resets it.
+ */
+export const InFrame = createContext(false);
 
 export function Panel({
   title,
@@ -40,7 +47,7 @@ export function Panel({
           {meta}
         </PanelHeader>
       )}
-      {children}
+      <InFrame.Provider value={variant === 'default'}>{children}</InFrame.Provider>
     </div>
   );
 }

@@ -10,10 +10,10 @@ import { DataSpinner } from './Spinner';
 import { Tooltip } from './FloatingPanel';
 import { cn } from '../lib/cn';
 import type { ComponentChildren, JSX } from 'preact';
-import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
+import { useContext, useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { Icon, type IconName } from './Icon';
 import { InfoBox } from './InfoBox';
-import { Panel, PanelHeader, PanelTitle } from './Panel';
+import { InFrame, Panel, PanelHeader, PanelTitle } from './Panel';
 import { SearchInput } from './SearchInput';
 
 export const DATA_TABLE_HEADER =
@@ -227,7 +227,8 @@ export interface TableProps<Row> {
   selectedKey?: string | null;
   /** Visually hides the column header (kept for screen readers). The frame (outer border, nested radius, row dividers) stays. */
   noHeader?: boolean;
-  /** false = no own border/radius/fill (the table sits inside a frame that already has one, e.g. the master of a MasterDetail). Default true. */
+  /** false = no own border/radius/fill (the table sits inside a frame that already has one, e.g. the master of a MasterDetail).
+   *  Default: off inside a framed Panel (`InFrame`: the container draws the one border), on elsewhere. */
   frame?: boolean;
   rowKey: (row: Row, idx: number) => string;
   /** Rows held above the body: never searched, sorted or counted as empty (aggregates that frame
@@ -424,7 +425,7 @@ export function Table<Row>({
   onSelect,
   selectedKey = null,
   noHeader = false,
-  frame = true,
+  frame,
   rowKey,
   pinned,
   emptyMessage = 'No results',
@@ -439,6 +440,8 @@ export function Table<Row>({
   loadingTitle = 'Loading',
 }: TableProps<Row>) {
   const compact = variant === 'compact';
+  // Inside a framed Panel the container draws the one border: flush unless the caller says.
+  const framed = frame ?? !useContext(InFrame);
   const desktop = compact ? 'min-h-0 flex flex-col flex-1' : STACK[stackBelow].desktop;
   const [query, setQuery] = useState('');
   const { sortKey, sortDir, toggleSort } = useTableSort(initialSort);
@@ -555,8 +558,9 @@ export function Table<Row>({
       {!title && search}
 
       <Panel
-        // every table wears the frame (outer border, radius by nesting, divided rows)
-        className={cn('overflow-hidden', !frame && 'rounded-none border-0 bg-transparent shadow-none', compact && 'flex flex-col flex-1 min-h-0')}
+        // every table wears ONE frame (outer border, radius by nesting, divided rows): its own, or
+        // the framed Panel's it sits in
+        className={cn('overflow-hidden', !framed && 'rounded-none border-0 bg-transparent shadow-none', compact && 'flex flex-col flex-1 min-h-0')}
       >
         {title && (
           <PanelHeader>
