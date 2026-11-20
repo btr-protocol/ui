@@ -1,5 +1,6 @@
 import type { ComponentChildren } from 'preact';
-import { useMemo } from 'preact/hooks';
+import { useContext, useMemo } from 'preact/hooks';
+import { InHeader, TOOLBAR_CELL } from './toolbar';
 import { useOpen } from '../lib/modalRoute';
 import type { IconType } from '../lib/uiTypes';
 import { Button } from './Button';
@@ -68,6 +69,24 @@ interface Common<T extends string> {
 
 const toItem = <T extends string>(i: SelectModalItem<T>): SelectionItem => ({ id: i.value, label: i.label, caption: i.caption, note: i.note, badge: i.detail, icon: i.icon, disabled: i.disabled, data: i.data, group: i.group });
 
+/** The picker trigger: a Button, or a flush toolbar cell inside a HeaderBar. */
+function Trigger({ disabled, onClick, open, children }: { disabled?: boolean; onClick: () => void; open: boolean; children: ComponentChildren }) {
+  const caret = <Icon name="caret-down" className="h-3.5 w-3.5 shrink-0 text-fg-3" />;
+  if (useContext(InHeader)) {
+    return (
+      <button type="button" disabled={disabled} onClick={onClick} aria-haspopup="dialog" aria-expanded={open} className={cn(TOOLBAR_CELL, 'disabled:cursor-not-allowed disabled:opacity-50')}>
+        {children}
+        {caret}
+      </button>
+    );
+  }
+  return (
+    <Button type="button" size="sm" disabled={disabled} onClick={onClick} aria-haspopup="dialog" aria-expanded={open} rightIcon={caret}>
+      {children}
+    </Button>
+  );
+}
+
 /** Single choice: a trigger Button (label + current value) that opens the modal picker. THE selector of the design system: no dropdown popups. */
 export function SelectModal<T extends string>({ value, onChange, items, label, title, searchPlaceholder = 'Search…', routeKey, applyLabel, triggerIcon = false, triggerPrefix, searchable, sortColumns, primaryColumnLabel, listHeader, groups, disabled }: Common<T> & { value: T | ''; onChange: (v: T) => void; disabled?: boolean }) {
   const [open, setOpen] = useOpen(routeKey);
@@ -75,11 +94,11 @@ export function SelectModal<T extends string>({ value, onChange, items, label, t
   const cur = items.find((i) => i.value === value);
   return (
     <>
-      <Button type="button" size="sm" disabled={disabled} onClick={() => setOpen(true)} aria-haspopup="dialog" aria-expanded={open} rightIcon={<Icon name="caret-down" className="h-3.5 w-3.5 shrink-0 text-fg-3" />}>
+      <Trigger disabled={disabled} onClick={() => setOpen(true)} open={open}>
         {triggerPrefix}
         {triggerIcon && cur?.icon && typeof cur.icon !== 'string' ? <span className="flex h-5 w-5 shrink-0 items-center justify-center [&>*]:h-5 [&>*]:w-5 [&>*]:text-2xs">{cur.icon}</span> : null}
         <span className="min-w-0 max-w-[10rem] truncate">{cur?.label ?? label}</span>
-      </Button>
+      </Trigger>
       <SelectionModal
         isOpen={open}
         onClose={() => setOpen(false)}
@@ -117,9 +136,9 @@ export function MultiSelectModal<T extends string>({ value, onChange, items, lab
   const all = items.length > 0 && value.length >= items.length;
   return (
     <>
-      <Button type="button" size="sm" disabled={disabled} onClick={() => setOpen(true)} aria-haspopup="dialog" aria-expanded={open} rightIcon={<Icon name="caret-down" className="h-3.5 w-3.5 shrink-0 text-fg-3" />}>
+      <Trigger disabled={disabled} onClick={() => setOpen(true)} open={open}>
         {(triggerContent ?? triggerLabel) ? (triggerContent ?? <span>{triggerLabel}</span>) : <><span>{label}</span><span className="text-fg-2">{all ? allLabel : value.length}</span></>}
-      </Button>
+      </Trigger>
       <SelectionModal
         isOpen={open}
         onClose={() => setOpen(false)}

@@ -71,3 +71,4 @@ export { TabStrip, reorderTabs, type TabStripProps, type StripTab } from './TabS
 export { numCol, textCol } from './tableCols';
 export { CommandPalette, rank, score, type PaletteItem } from './CommandPalette';
 export { MatrixTable, HintLabel, type MatrixRow } from './MatrixTable';
+export * from './toolbar';

@@ -27,7 +27,7 @@ export interface SearchInputProps {
 /** Stretches to its row's full height (parent `items-stretch`, no padding): the left rule spans the
  *  header; below `sm` it wraps to its own full-width row with a top rule instead. */
 const HEADER_SEARCH =
-  'self-stretch min-h-10 px-3 border-border max-sm:basis-full max-sm:border-t sm:border-l';
+  'self-stretch min-h-8 px-3 border-border max-sm:basis-full max-sm:border-t sm:border-l';
 
 /**
  * THE search input: one magnifier, one clear affordance, one set of metrics. Modal headers

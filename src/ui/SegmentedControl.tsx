@@ -13,7 +13,8 @@
 // A tab strip that wraps would stack the active tab's merge with the card on several rows.
 
 import type { ComponentChildren } from 'preact';
-import { useEffect, useRef } from 'preact/hooks';
+import { useContext, useEffect, useRef } from 'preact/hooks';
+import { InHeader, TOOLBAR_CELL } from './toolbar';
 import { cn } from '../lib/cn';
 import { haptic } from '../lib/haptic';
 import { Button } from './Button';
@@ -80,6 +81,8 @@ export function SegmentedControl<T extends string>({
   const controls = panelId ?? (hasPanel ? `${id}-panel` : undefined); // ONE id: the built-in panel carries exactly it
   const panel = useRef<HTMLDivElement>(null);
   const btnSize = size === 'xs' ? 'xs' : 'sm';
+  // Inside a HeaderBar the segments are toolbar cells (the chart toolbar's timeframe row), not a boxed group.
+  const inHeader = useContext(InHeader) && !attached;
   const on = options.filter((o) => !o.disabled);
   // Roving tabindex: the selected tab is the one tab stop (else the first enabled one).
   const stop = on.some((o) => o.value === value) ? value : on[0]?.value;
@@ -150,7 +153,7 @@ export function SegmentedControl<T extends string>({
       aria-label={label}
       aria-labelledby={labelledby}
       onKeyDown={onKeyDown}
-      className={cn(
+      className={inHeader ? 'flex items-stretch' : cn(
         'btn-group',
         equal && 'btn-group-equal',
         attached ? ['btn-group-attached', accent && 'btn-group-accent'] : ['btn-group-scroll seg-fade', className],
@@ -174,6 +177,13 @@ export function SegmentedControl<T extends string>({
           title: opt.title,
         } as const;
         const dim = opt.disabled && 'cursor-not-allowed opacity-50 hover:border-transparent hover:bg-glass';
+        if (inHeader) {
+          return (
+            <button key={opt.value} {...tab} type="button" onClick={pick} className={cn(TOOLBAR_CELL, 'border-border [&+&]:border-l', selected && 'toolbar-btn-active', opt.disabled && 'cursor-not-allowed opacity-50')}>
+              {opt.label}
+            </button>
+          );
+        }
         return opt.href && !opt.disabled ? (
           <Button
             key={opt.value}

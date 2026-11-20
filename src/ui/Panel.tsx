@@ -5,6 +5,7 @@ import { cn } from '../lib/cn';
 import { type ComponentChildren, createContext } from 'preact';
 import type { Ref } from 'preact';
 import type { HTMLAttributes } from 'preact/compat';
+import { InHeader } from './toolbar';
 
 export type PanelVariant = 'default' | 'plain';
 
@@ -41,12 +42,7 @@ export function Panel({
       )}
       {...props}
     >
-      {(title || meta) && (
-        <PanelHeader>
-          {title ? <PanelTitle>{title}</PanelTitle> : <span />}
-          {meta}
-        </PanelHeader>
-      )}
+      {(title || meta) && <HeaderBar title={title} meta={meta} />}
       <InFrame.Provider value={variant === 'default'}>{children}</InFrame.Provider>
     </div>
   );
@@ -87,4 +83,31 @@ export function PanelBody(
 ) {
   const { className, ...rest } = props;
   return <div className={cn(PANEL_BODY, className)} {...rest} />;
+}
+
+/**
+ * THE card header (Panel, Table): the title cell, then each `meta` child as a flush toolbar cell
+ * (border-l dividers, h-8, text-xs: the chart toolbar grid), then `search` flush at the end. Controls
+ * inside read `InHeader` and drop their own box. Below `sm` the cells wrap to their own row.
+ */
+export function HeaderBar({ title, meta, search }: { title?: ComponentChildren; meta?: ComponentChildren; search?: ComponentChildren }) {
+  return (
+    <PanelHeader className="p-0 gap-0 items-stretch min-h-8">
+      <div className="flex flex-1 min-w-0 items-center px-3 py-1.5">{title ? <PanelTitle>{title}</PanelTitle> : null}</div>
+      {meta ? (
+        <InHeader.Provider value={true}>
+          <div
+            className={cn(
+              'flex items-stretch shrink-0 scroll-x text-xs text-fg-2 max-sm:basis-full max-sm:border-t max-sm:border-border',
+              '[&>*]:flex [&>*]:shrink-0 [&>*]:items-center [&>*]:border-border sm:[&>*]:border-l max-sm:[&>*+*]:border-l',
+              '[&>:not(button):not([role=tablist])]:px-2',
+            )}
+          >
+            {meta}
+          </div>
+        </InHeader.Provider>
+      ) : null}
+      {search}
+    </PanelHeader>
+  );
 }

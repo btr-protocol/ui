@@ -13,7 +13,7 @@ import type { ComponentChildren, JSX } from 'preact';
 import { useContext, useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { Icon, type IconName } from './Icon';
 import { InfoBox } from './InfoBox';
-import { InFrame, Panel, PanelHeader, PanelTitle } from './Panel';
+import { HeaderBar, InFrame, Panel } from './Panel';
 import { SearchInput } from './SearchInput';
 import type { InputProps } from './Input';
 
@@ -564,7 +564,7 @@ export function Table<Row>({
       placeholder={searchPlaceholder}
       ariaLabel={title ? `Search ${title}` : undefined}
       inputProps={query ? ({ 'data-esc-clear': '' } as Partial<InputProps>) : undefined}
-      className={title ? 'sm:w-64' : 'flex-1 max-sm:border-t-0 sm:border-l-0'}
+      className={title || meta ? 'sm:w-64' : 'flex-1 max-sm:border-t-0 sm:border-l-0'}
     />
   );
 
@@ -575,17 +575,7 @@ export function Table<Row>({
         // the framed Panel's it sits in
         className={cn('overflow-hidden', !framed && 'rounded-none border-0 bg-transparent shadow-none', compact && 'flex flex-col flex-1 min-h-0')}
       >
-        {!title && search && <PanelHeader className="p-0 gap-0 items-stretch">{search}</PanelHeader>}
-        {title && (
-          // One row: title + meta (freshness, segments) padded, the search flush and full height.
-          <PanelHeader className={cn(search && 'p-0 gap-0 items-stretch')}>
-            <div className={cn('flex flex-1 min-w-0 flex-wrap items-center justify-between gap-3', search && 'px-3 py-2')}>
-              <PanelTitle>{title}</PanelTitle>
-              {meta && <div className="flex items-center gap-3 flex-wrap justify-end">{meta}</div>}
-            </div>
-            {search}
-          </PanelHeader>
-        )}
+        {(title || meta || search) && <HeaderBar title={title} meta={meta} search={search || undefined} />}
         {loading ? (
           <DataSpinner label={loadingTitle} className="py-8" />
         ) : isVirtual ? (

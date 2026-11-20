@@ -1,6 +1,8 @@
 import { cn } from '../lib/cn';
 import type { ComponentChildren } from 'preact';
+import { useContext } from 'preact/hooks';
 import { FloatingPanel } from './FloatingPanel';
+import { InHeader } from './toolbar';
 import { Icon, type IconName } from './Icon';
 
 /** Dotted underline is the affordance: this is a link. Always on; hover shifts color only. */
@@ -62,6 +64,7 @@ export function InfoBox({
   /** Classes on the TRIGGER wrapper - responsive visibility, not styling. */
   className?: string;
 }) {
+  const inHeader = useContext(InHeader);
   return (
     <FloatingPanel
       mode="both"
@@ -71,7 +74,7 @@ export function InfoBox({
       delay={100}
       side={side}
       maxWidth={maxWidth}
-      wrapClass={cn('inline-flex p-2 -m-2 align-middle', className)}
+      wrapClass={cn(inHeader ? 'inline-flex' : 'inline-flex p-2 -m-2 align-middle', className)}
       content={<div className={TIP_BODY}>{content}</div>}
     >
       {(open) => (
