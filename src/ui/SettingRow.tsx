@@ -1,5 +1,5 @@
-import type { ComponentChildren } from 'preact';
-import { FormRow } from './Primitives';
+import type { ComponentChildren } from "preact";
+import { FormRow } from "./Primitives";
 
 export interface SettingRowProps {
   label: string;
@@ -8,10 +8,9 @@ export interface SettingRowProps {
   children: ComponentChildren;
 }
 
-/** Label left, control right. `flex-wrap` is the whole mobile story: a plain switch or select
- *  stays on the label's line at any width, while a control that declares `flex-1` (the slippage
- *  slider + unit + mode cluster) wraps onto its own full-width line instead of overflowing; the value cell may
- *  shrink to that line so the cluster wraps inside it rather than past the modal edge. */
+/** Label left, control right, one line. The label grows from a 10rem basis, so the control only
+ *  wraps when label + control cannot share the width; it then sits right-aligned below the text
+ *  (`ml-auto`). Same rule for every control kind. */
 export function SettingRow({ label, description, children }: SettingRowProps) {
   return (
     <FormRow
@@ -27,8 +26,8 @@ export function SettingRow({ label, description, children }: SettingRowProps) {
       }
       value={children}
       className="flex-wrap gap-x-4 gap-y-2"
-      labelClassName="text-sm text-fg-2 font-normal"
-      valueClassName="min-w-0 shrink"
+      labelClassName="flex-1 basis-40 text-sm text-fg-2 font-normal"
+      valueClassName="ml-auto min-w-0 max-w-full"
     />
   );
 }
