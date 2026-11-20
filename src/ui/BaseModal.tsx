@@ -47,7 +47,13 @@ export interface BaseModalProps {
   isOpen: boolean;
   onClose: (open: boolean) => void;
   title: string;
-  headerType: 'input' | 'title';
+  headerType?: 'input' | 'title';
+  /** False: no header bar at all (the body's own heading is the title; `title` stays as the
+   *  accessible name). The sheet then has no drag-to-dismiss handle. */
+  header?: boolean;
+  /** False: the user cannot dismiss it: no Escape, no backdrop click, no close cross, no
+   *  back-stack entry, no sheet drag. Only the owner of `isOpen` closes it. */
+  dismissible?: boolean;
   /** Icon to display left of title (headerType='title' only) */
   headerIcon?: ComponentChildren;
   /** Extra classes for the title text (e.g. font-numeric for addresses). */
@@ -97,7 +103,9 @@ export function BaseModal({
   isOpen,
   onClose,
   title,
-  headerType,
+  headerType = 'title',
+  header = true,
+  dismissible = true,
   headerIcon,
   titleClassName,
   headerRight,
@@ -120,11 +128,12 @@ export function BaseModal({
   anchor = 'center',
   closable = true,
 }: BaseModalProps) {
+  const showClose = closable && dismissible;
   const headerBg = contrastHeader ? 'bg-bg-2' : 'bg-bg-1';
   const footerBg = headerBg;
   const inputRef = useRef<HTMLInputElement>(null);
   const titleId = useId();
-  const isSearch = headerType === 'input';
+  const isSearch = header && headerType === 'input';
 
   // Stay mounted through the exit animation (`modal-out` / `sheet-out`, index.css).
   const [mounted, setMounted] = useState(isOpen);
@@ -152,7 +161,7 @@ export function BaseModal({
     };
   }, [mounted]);
 
-  useBack(mounted, () => onClose(false));
+  useBack(mounted && dismissible, () => onClose(false));
 
   // Focus trap, Escape, body scroll lock.
   useEffect(() => {
@@ -222,7 +231,7 @@ export function BaseModal({
   const dragStart = (e: PointerEvent) => {
     const bar = e.currentTarget as HTMLElement;
     const card = cardRef.current;
-    if (isSearch || !card || !matchMedia('(max-width:639.98px)').matches) return;
+    if (isSearch || !header || !dismissible || !card || !matchMedia('(max-width:639.98px)').matches) return;
     if ((e.target as Element).closest('button,a,input')) return;
     drag.current = { y: e.clientY, t: e.timeStamp, card };
     bar.setPointerCapture(e.pointerId);
@@ -263,7 +272,7 @@ export function BaseModal({
       <div
         data-closing={closing || undefined}
         className="modal-scrim fixed inset-0 z-modal bg-scrim backdrop-blur-sm"
-        onPointerDown={(e) => e.target === e.currentTarget && onClose(false)}
+        onPointerDown={(e) => dismissible && e.target === e.currentTarget && onClose(false)}
       />
       <div
         ref={cardRef}
@@ -296,6 +305,7 @@ export function BaseModal({
         </VisuallyHidden>
 
         {/* Header: also the drag surface of the sheet (touch-none; buttons/inputs opt out). */}
+        {header && (
         <div
           className={cn(
             'relative shrink-0 border-b border-border rounded-t-[inherit]',
@@ -339,7 +349,7 @@ export function BaseModal({
               {headerRight}
               {/* Decorative rule; below `sm` its 17px is width the search field needs. */}
               {headerRight && <div className="w-px h-6 bg-border mx-2 max-sm:hidden" />}
-              {closable && (
+              {showClose && (
                 <CloseButton
                   onClick={() => onClose(false)}
                   size={18}
@@ -349,6 +359,7 @@ export function BaseModal({
             </div>
           </div>
         </div>
+        )}
 
         {/* Scrollable Body - max-h lives on the card; min-h-0 lets Confirm scroll into
               view. `bodyHeader` is a SIBLING above the scroller, never a sticky block inside it:

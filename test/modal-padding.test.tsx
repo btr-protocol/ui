@@ -38,3 +38,26 @@ test('ConfirmSheet uses MODAL_PADDING and no px-4/p-4', () => {
   for (const e of d.querySelectorAll('*')) expect(bad.test(e.getAttribute('class') ?? '')).toBe(false);
   unmount();
 });
+
+test('header={false} drops the header bar; dismissible={false} drops X, Escape and backdrop close', () => {
+  let closed = 0;
+  const { unmount } = mount(
+    <BaseModal isOpen onClose={() => closed++} title="Terms" header={false} dismissible={false} footer={<span>foot</span>}>
+      <h1>Own title</h1>
+    </BaseModal>,
+  );
+  const d = document.querySelector('[role=dialog]')!;
+  expect(d.querySelector('button[aria-label^="Close"]')).toBeNull();
+  expect(d.querySelector('.border-b.bg-bg-2')).toBeNull();
+  expect(d.getAttribute('aria-labelledby')).not.toBeNull();
+  document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+  document.querySelector('.modal-scrim')!.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+  expect(closed).toBe(0);
+  unmount();
+});
+
+test('default modal still has header and close', () => {
+  const { unmount } = mount(<BaseModal isOpen onClose={() => {}} title="Plain"><p>x</p></BaseModal>);
+  expect(document.querySelector('button[aria-label="Close Plain"]')).not.toBeNull();
+  unmount();
+});
