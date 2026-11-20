@@ -1,5 +1,6 @@
 import type { ComponentChildren } from 'preact';
 import { cn } from '../lib/cn';
+import { BORDER_RADIUS } from '../lib/design';
 import { Icon, type IconName } from './Icon';
 
 export type StatusTone = 'success' | 'warning' | 'danger';
@@ -12,7 +13,7 @@ const TONE: Record<StatusTone, { cls: string; icon: IconName }> = {
 /** ONE verdict chip for a whole object. Green (`success`) must be earned by every check passing; an unknown is `warning`, never green. */
 export function StatusChip({ tone, children, className }: { tone: StatusTone; children: ComponentChildren; className?: string }) {
   return (
-    <span className={cn('inline-flex h-6 items-center gap-1 rounded-sm px-2 text-xs font-medium', TONE[tone].cls, className)}>
+    <span className={cn('inline-flex h-6 items-center gap-1 px-2 text-xs font-medium', BORDER_RADIUS, TONE[tone].cls, className)}>
       <Icon name={TONE[tone].icon} className="h-3.5 w-3.5" />
       {children}
     </span>

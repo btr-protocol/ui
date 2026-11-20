@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'preact/hooks';
 import { cn } from '../lib/cn';
+import { BORDER_RADIUS } from '../lib/design';
 import { MODAL_PADDING } from './BaseModal';
 import { Badge } from './Badge';
 import { Icon } from './Icon';
@@ -44,7 +45,7 @@ export function SelectionList({ searchPlaceholder = 'Search…', filters, maxHei
             ))}
             <SearchInput variant="bare" className="min-w-[4rem] flex-1" value={search} onChange={setSearch} onKeyDown={v.keyDown} placeholder={chips.length ? 'Search' : searchPlaceholder} />
             {filters?.length ? (
-              <button type="button" aria-label="Filters" title="Filters" onClick={() => setPick(true)} className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-xs text-fg-2 hover:bg-bg-4 hover:text-fg-0">
+              <button type="button" aria-label="Filters" title="Filters" onClick={() => setPick(true)} className={cn('inline-flex h-6 w-6 shrink-0 items-center justify-center text-fg-2 hover:bg-bg-4 hover:text-fg-0', BORDER_RADIUS)}>
                 <Icon name="funnel" className={cn('h-4 w-4', chips.length && 'text-primary')} />
               </button>
             ) : null}

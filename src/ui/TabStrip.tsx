@@ -1,6 +1,7 @@
 import type { ComponentChildren } from 'preact';
 import { useRef, useState } from 'preact/hooks';
 import { cn } from '../lib/cn';
+import { BORDER_RADIUS } from '../lib/design';
 import { Icon } from './Icon';
 
 export interface StripTab {
@@ -109,12 +110,12 @@ export function TabStrip({ tabs, active, onSelect, onClose, onPin, onReorder, cl
               {t.label}
             </button>
             {onPin && t.closable !== false && (
-              <button type="button" tabIndex={roving ? 0 : -1} aria-label={t.pinned ? 'Unpin' : 'Pin'} aria-pressed={!!t.pinned} onClick={() => onPin(t.id)} className={cn('inline-flex h-5 w-5 items-center justify-center rounded-xs hover:bg-bg-4 focus-visible:opacity-100', !t.pinned && 'opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 coarse:opacity-100')}>
+              <button type="button" tabIndex={roving ? 0 : -1} aria-label={t.pinned ? 'Unpin' : 'Pin'} aria-pressed={!!t.pinned} onClick={() => onPin(t.id)} className={cn('inline-flex h-5 w-5 items-center justify-center hover:bg-bg-4 focus-visible:opacity-100', BORDER_RADIUS, !t.pinned && 'opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 coarse:opacity-100')}>
                 <Icon name="pin" className={cn('h-3.5 w-3.5', t.pinned && 'text-primary')} />
               </button>
             )}
             {onClose && !t.pinned && t.closable !== false && (
-              <button type="button" tabIndex={roving ? 0 : -1} aria-label="Close" onClick={() => onClose(t.id)} className="inline-flex h-5 w-5 items-center justify-center rounded-xs hover:bg-bg-4">
+              <button type="button" tabIndex={roving ? 0 : -1} aria-label="Close" onClick={() => onClose(t.id)} className={cn('inline-flex h-5 w-5 items-center justify-center hover:bg-bg-4', BORDER_RADIUS)}>
                 <Icon name="x" className="h-3.5 w-3.5" />
               </button>
             )}

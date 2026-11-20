@@ -1,5 +1,6 @@
 import { type Cell, NA_GLYPH, assertNever } from '../lib/cell';
 import { cn } from '../lib/cn';
+import { BORDER_RADIUS } from '../lib/design';
 import { Button } from './Button';
 import { Icon } from './Icon';
 import { type Ch, ValuePlaceholder, useInBusy } from './Loaders';
@@ -54,7 +55,7 @@ export function Figure<T>({ cell, format, ch, className, placeholderClassName, l
       return (
         <span data-state="stale" className={cls()}>
           <span className="opacity-60">{format(cell.v)}</span>
-          <span className="ml-1.5 rounded-xs bg-bg-3 px-1 text-2xs text-fg-2">stale {ageLabel(cell.asOf)}</span>
+          <span className={cn('ml-1.5 bg-bg-3 px-1 text-2xs text-fg-2', BORDER_RADIUS)}>stale {ageLabel(cell.asOf)}</span>
         </span>
       );
     case 'loading':

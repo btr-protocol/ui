@@ -1,6 +1,7 @@
 import { type ComponentChildren, createContext } from 'preact';
 import { useContext } from 'preact/hooks';
 import { cn } from '../lib/cn';
+import { BORDER_RADIUS } from '../lib/design';
 import { Spinner } from './Spinner';
 
 /* CSS-only loaders: ONE shared keyframe (styles/loaders.css), compositor properties only (transform / opacity), no JS timers, no state,
@@ -13,11 +14,11 @@ export const useInBusy = () => useContext(BusyContext);
 
 /** A block placeholder. `lines` > 1 stacks text-line blocks (the last one shorter). Size it with `className` (`h-24 w-full`). */
 export function Skeleton({ className, lines = 1 }: { className?: string; lines?: number }) {
-  if (lines <= 1) return <span aria-hidden="true" className={cn('sk block h-3.5 w-full rounded-md', className)} />;
+  if (lines <= 1) return <span aria-hidden="true" className={cn('sk block h-3.5 w-full', BORDER_RADIUS, className)} />;
   return (
     <span aria-hidden="true" className="flex w-full flex-col gap-2">
       {Array.from({ length: lines }, (_, i) => (
-        <span key={i} className={cn('sk block h-3.5 rounded-md', i === lines - 1 ? 'w-2/3' : 'w-full', className)} />
+        <span key={i} className={cn('sk block h-3.5', BORDER_RADIUS, i === lines - 1 ? 'w-2/3' : 'w-full', className)} />
       ))}
     </span>
   );
@@ -26,7 +27,7 @@ export function Skeleton({ className, lines = 1 }: { className?: string; lines?:
 /** Stands where a figure will be: `ch` (4-12, tabular figures) reserves its width and `.vp` takes one line box of the slot's own font
  *  size and line height (`1lh`), so the swap to the value shifts neither width nor height, from a table cell to a hero price. */
 export function ValuePlaceholder({ ch = 6, className }: { ch?: Ch; className?: string }) {
-  return <span aria-hidden="true" className={cn('sk vp rounded-md tabular-nums', `ch-${ch}`, className)} />;
+  return <span aria-hidden="true" className={cn('sk vp tabular-nums', BORDER_RADIUS, `ch-${ch}`, className)} />;
 }
 export type Ch = 4 | 5 | 6 | 7 | 8 | 10 | 12;
 

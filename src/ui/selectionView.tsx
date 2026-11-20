@@ -1,6 +1,7 @@
 import type { ComponentChildren } from 'preact';
 import { useEffect, useId, useMemo, useState } from 'preact/hooks';
 import { cn } from '../lib/cn';
+import { BORDER_RADIUS } from '../lib/design';
 import { isStringIcon, isSvgPath, renderIcon } from '../lib/iconHelpers';
 import type { SelectionItem } from '../lib/uiTypes';
 import { useDebounce } from '../lib/useDebounce';
@@ -219,7 +220,7 @@ export function useSelectionView(p: SelectionViewProps) {
           <button type="button" data-sel-row="" disabled={off} aria-current={open || undefined} title={item.id} onClick={click} className="flex min-w-0 flex-1 items-center gap-2 self-stretch text-left outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring disabled:cursor-not-allowed">
             {body}
           </button>
-          <button type="button" disabled={off} aria-label={on ? `Remove ${item.label}` : `Add ${item.label}`} aria-pressed={on} onClick={(e) => toggle(e, item.id)} className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-xs hover:bg-bg-4 disabled:cursor-not-allowed">
+          <button type="button" disabled={off} aria-label={on ? `Remove ${item.label}` : `Add ${item.label}`} aria-pressed={on} onClick={(e) => toggle(e, item.id)} className={cn('inline-flex h-5 w-5 shrink-0 items-center justify-center hover:bg-bg-4 disabled:cursor-not-allowed', BORDER_RADIUS)}>
             {on ? <SelectedCheck /> : <Icon name="plus" className="h-4 w-4 text-fg-2" />}
           </button>
         </div>
