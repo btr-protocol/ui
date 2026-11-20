@@ -439,7 +439,7 @@ export function Dropdown<T = string>({
                   </div>
                 ) : null}
               </div>
-              {selected && !disabled && (
+              {mode === 'multi' && selected && !disabled && (
                 <SelectedCheck className="relative z-raised" />
               )}
             </div>

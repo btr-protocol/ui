@@ -1,6 +1,6 @@
 import { expect, test } from 'bun:test';
 import { render } from 'preact-render-to-string';
-import { Button, ClickMenu, Icon, MultiSelectModal, SelectedCheck, SelectModal } from '../src';
+import { Button, ClickMenu, Dropdown, Icon, MultiSelectModal, SelectedCheck, SelectModal } from '../src';
 import { click, mount, until, useDom } from './dom';
 
 useDom();
@@ -55,6 +55,15 @@ test('SelectModal: single select has no check (selected-row style only), multi c
   const marks = [...document.querySelectorAll('[role=dialog] [data-selected-check]')];
   expect(marks.map((c) => c.closest('button')!.textContent)).toEqual(['Opt 0', 'Opt 2']);
   m.unmount();
+});
+
+test('Dropdown: check only in multi mode', () => {
+  for (const [mode, n] of [['single', 0], ['multi', 1]] as const) {
+    const { host, unmount } = mount(<Dropdown mode={mode} value={mode === 'multi' ? ['a'] : 'a'} onChange={() => {}} items={[{ value: 'a', label: 'A' }, { value: 'b', label: 'B' }]} />);
+    click(host.querySelector('button, [role=button]')!);
+    expect(document.querySelectorAll('[data-dropdown-id] [data-selected-check]').length).toBe(n);
+    unmount();
+  }
 });
 
 test('modal rows expose the selection: aria-current when single, aria-pressed per row when multi', () => {

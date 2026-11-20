@@ -61,7 +61,7 @@ function App() {
       </div>
     );
   return (
-    <div className="p-4"><Dropdown value="a" onChange={() => {}} items={items} /></div>
+    <div className="p-4"><Dropdown mode="multi" value={["a"]} onChange={() => {}} items={items} /></div>
   );
 }
 render(<App />, document.body.appendChild(document.createElement('div')));

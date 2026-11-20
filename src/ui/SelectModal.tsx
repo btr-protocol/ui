@@ -69,13 +69,13 @@ interface Common<T extends string> {
 const toItem = <T extends string>(i: SelectModalItem<T>): SelectionItem => ({ id: i.value, label: i.label, caption: i.caption, note: i.note, badge: i.detail, icon: i.icon, disabled: i.disabled, data: i.data, group: i.group });
 
 /** Single choice: a trigger Button (label + current value) that opens the modal picker. THE selector of the design system: no dropdown popups. */
-export function SelectModal<T extends string>({ value, onChange, items, label, title, searchPlaceholder = 'Search…', routeKey, applyLabel, triggerIcon = false, triggerPrefix, searchable, sortColumns, primaryColumnLabel, listHeader, groups }: Common<T> & { value: T | ''; onChange: (v: T) => void }) {
+export function SelectModal<T extends string>({ value, onChange, items, label, title, searchPlaceholder = 'Search…', routeKey, applyLabel, triggerIcon = false, triggerPrefix, searchable, sortColumns, primaryColumnLabel, listHeader, groups, disabled }: Common<T> & { value: T | ''; onChange: (v: T) => void; disabled?: boolean }) {
   const [open, setOpen] = useOpen(routeKey);
   const sel = useMemo(() => items.map(toItem), [items]);
   const cur = items.find((i) => i.value === value);
   return (
     <>
-      <Button type="button" size="sm" onClick={() => setOpen(true)} aria-haspopup="dialog" aria-expanded={open} rightIcon={<Icon name="caret-down" className="h-3.5 w-3.5 shrink-0 text-fg-3" />}>
+      <Button type="button" size="sm" disabled={disabled} onClick={() => setOpen(true)} aria-haspopup="dialog" aria-expanded={open} rightIcon={<Icon name="caret-down" className="h-3.5 w-3.5 shrink-0 text-fg-3" />}>
         {triggerPrefix}
         {triggerIcon && cur?.icon && typeof cur.icon !== 'string' ? <span className="flex h-5 w-5 shrink-0 items-center justify-center [&>*]:h-5 [&>*]:w-5 [&>*]:text-2xs">{cur.icon}</span> : null}
         <span className="min-w-0 max-w-[10rem] truncate">{cur?.label ?? label}</span>
