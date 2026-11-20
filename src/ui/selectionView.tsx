@@ -171,7 +171,7 @@ export function useSelectionView(p: SelectionViewProps) {
           {head(c.label, c.key, 'right', c.headClassName)}
         </div>
       ))}
-      {mark ? <span className="w-5 shrink-0" aria-hidden="true" /> : <span className="w-4 shrink-0" aria-hidden="true" />}
+      {mark ? <span className="w-5 shrink-0" aria-hidden="true" /> : multi && <span className="w-4 shrink-0" aria-hidden="true" />}
     </div>
   ) : null;
 
@@ -209,8 +209,8 @@ export function useSelectionView(p: SelectionViewProps) {
             ),
         )}
         {item.badge}
-        {/* Trailing selected mark; the slot is reserved on every row so a figure never shifts when a row is picked. */}
-        {!mark && <span className="flex h-4 w-4 shrink-0 items-center justify-center">{on && <SelectedCheck />}</span>}
+        {/* Trailing selected mark, multi only (single = the selected-row style); the slot is reserved on every row so a figure never shifts. */}
+        {!mark && multi && <span className="flex h-4 w-4 shrink-0 items-center justify-center">{on && <SelectedCheck />}</span>}
       </>
     );
     // With a mark the row is a plain div holding TWO sibling controls (the open button fills the row, the mark toggles): no nested interactive.

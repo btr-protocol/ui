@@ -191,7 +191,7 @@ t('ClickMenu: a highlighted row touches both panel edges; the focus ring stays i
   }
 });
 
-t('SelectedCheck: the same 16 px trailing mark in SelectModal, ClickMenu and Dropdown, exposed to AT', async () => {
+t('SelectedCheck: the same 16 px trailing mark in ClickMenu and Dropdown, exposed to AT', async () => {
   const marks: { w: number; h: number; color: string; trailing: boolean; cls: string }[] = [];
   const read = (page: Page, rowSel: string) => page.locator(rowSel).evaluate((row) => {
     const c = row.querySelector('[data-selected-check]') as SVGElement;
@@ -202,14 +202,11 @@ t('SelectedCheck: the same 16 px trailing mark in SelectModal, ClickMenu and Dro
   let page = await open('menu');
   await page.click('#trg');
   marks.push(await read(page, '[role=menuitemradio][aria-checked=true]'));
-  page = await open('select');
-  await page.getByRole('button', { name: /Simulated/ }).click();
-  await dialogOpen(page);
-  marks.push(await read(page, '[role=dialog] button[aria-current=true]'));
+  // Single-select modals carry no check (selected-row style only): checks are for multi rows.
   page = await open('dropdown');
   await page.getByRole('button').first().click();
   marks.push(await read(page, '[data-dropdown-id] div:has(> [data-selected-check])'));
-  expect(marks.length).toBe(3);
+  expect(marks.length).toBe(2);
   for (const m of marks) { expect(m.w).toBe(16); expect(m.h).toBe(16); expect(m.trailing).toBe(true); expect(m).toEqual(marks[0]!); }
 });
 

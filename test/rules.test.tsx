@@ -40,17 +40,21 @@ test('SelectModal: search hidden at 6 options or fewer, shown above, forced by s
   }
 });
 
-test('SelectModal: the picked row shows the trailing check; triggerPrefix leads the label in the one button', () => {
+test('SelectModal: single select has no check (selected-row style only), multi checks the picked rows; triggerPrefix leads the label in the one button', () => {
   const { host, unmount } = mount(<SelectModal routeKey="s-pre" label="X" items={opts(3)} value="v1" onChange={() => {}} triggerPrefix={<span>Simulated ·</span>} />);
   const trg = host.querySelector('button')!;
   expect(host.querySelectorAll('button').length).toBe(1);
   expect(trg.textContent).toContain('Simulated ·');
   expect(trg.textContent!.indexOf('Simulated')).toBeLessThan(trg.textContent!.indexOf('Opt 1'));
   click(trg);
-  const marks = document.querySelectorAll('[role=dialog] [data-selected-check]');
-  expect(marks.length).toBe(1);
-  expect(marks[0]!.closest('button')!.textContent).toContain('Opt 1');
+  expect(document.querySelectorAll('[role=dialog] [data-selected-check]').length).toBe(0);
+  expect(document.querySelector('[role=dialog] [aria-current=true]')!.className).toContain('bg-bg-primary');
   unmount();
+  const m = mount(<MultiSelectModal routeKey="s-multi-check" label="X" items={opts(3)} value={['v0', 'v2']} onChange={() => {}} searchable={false} />);
+  click(m.host.querySelector('button')!);
+  const marks = [...document.querySelectorAll('[role=dialog] [data-selected-check]')];
+  expect(marks.map((c) => c.closest('button')!.textContent)).toEqual(['Opt 0', 'Opt 2']);
+  m.unmount();
 });
 
 test('modal rows expose the selection: aria-current when single, aria-pressed per row when multi', () => {
