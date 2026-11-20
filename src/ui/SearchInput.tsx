@@ -12,7 +12,7 @@ export interface SearchInputProps {
   /**
    * `bare` is the modal-header form: no box, the modal's own header supplies
    * the chrome. `header` is the table/panel header form: borderless, full header height, a left
-   * rule against the title/controls (pair with `PanelHeader`). `boxed` is the standalone page form.
+   * rule against the title/controls (pass as HeaderBar `search`). `boxed` is the standalone page form.
    */
   variant?: 'boxed' | 'bare' | 'header';
   onKeyDown?: (e: JSX.TargetedKeyboardEvent<HTMLInputElement>) => void;

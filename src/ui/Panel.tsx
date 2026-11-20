@@ -1,5 +1,5 @@
 // Canonical Panel: the one card. Family contract shared with Table/ChartShell - `title` +
-// `meta` header at the PanelHeader scale, body at PanelBody scale, block states via PanelState
+// `meta` header via HeaderBar (the only header; PanelHeader/PanelTitle stay internal), body at PanelBody scale, block states via PanelState
 // (PageState/Empty); MetricState is the inline-cell counterpart, not a second block path.
 import { cn } from '../lib/cn';
 import { type ComponentChildren, createContext } from 'preact';
@@ -54,7 +54,7 @@ const PANEL_HEADER_RULE = 'border-b border-border';
 const PANEL_TITLE = 'text-sm font-semibold text-fg-0';
 export const PANEL_BODY = 'px-3 py-3';
 
-export function PanelHeader(
+function PanelHeader(
   props: Omit<HTMLAttributes<HTMLDivElement>, 'className'> & {
     className?: string;
     ref?: Ref<HTMLDivElement>;
@@ -65,7 +65,7 @@ export function PanelHeader(
   return <div className={cn(PANEL_HEADER, rule && PANEL_HEADER_RULE, className)} {...rest} />;
 }
 
-export function PanelTitle(
+function PanelTitle(
   props: Omit<HTMLAttributes<HTMLHeadingElement>, 'className'> & {
     className?: string;
     ref?: Ref<HTMLHeadingElement>;
@@ -100,7 +100,6 @@ export function HeaderBar({ title, meta, search }: { title?: ComponentChildren; 
             className={cn(
               'flex items-stretch shrink-0 scroll-x text-xs text-fg-2 max-sm:basis-full max-sm:border-t max-sm:border-border',
               '[&>*]:flex [&>*]:shrink-0 [&>*]:items-center [&>*]:border-border sm:[&>*]:border-l max-sm:[&>*+*]:border-l',
-              '[&>:not(button):not([role=tablist])]:px-2',
             )}
           >
             {meta}
