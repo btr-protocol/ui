@@ -1,5 +1,6 @@
 import { addNotification } from '../lib/notifications';
-import { type Address, checksumAddress, isAddress } from '../lib/address';
+import { type Address, isAddress } from '../lib/address';
+import { checksumAddress } from '../lib/checksum';
 import { cn } from '../lib/cn';
 import { useId } from 'preact/hooks';
 import { Button } from './Button';

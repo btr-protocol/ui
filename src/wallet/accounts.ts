@@ -1,9 +1,6 @@
 // Account primitives, store-free (the kit store in ./wallet syncs on top of them): an app with its own wallet state imports these alone.
-import type { Address } from '../lib/address';
+import { type Address, isAddress } from '../lib/address';
 import type { Eip1193Provider } from './wallet';
-
-// Local, not lib/address: that module pulls a keccak implementation into every entry that only needs these.
-const isAddress = (v: string): v is Address => /^0x[a-fA-F0-9]{40}$/.test(v);
 
 export const sameAddress = (a?: string | null, b?: string | null): boolean =>
   !!a && !!b && a.toLowerCase() === b.toLowerCase();
