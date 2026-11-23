@@ -8,10 +8,14 @@ import { useCopy } from '../lib/useCopy';
 import { Tooltip } from './FloatingPanel';
 import { Icon } from './Icon';
 
+// Hit area: tall, but sideways under half the row gap (gap-1 / coarse:gap-3) so neighbours never overlap.
+const HIT =
+  'relative hover:text-primary transition-colors after:absolute after:-inset-y-2 after:-inset-x-0.5 after:content-[""] coarse:after:-inset-y-3 coarse:after:-inset-x-1.5';
+
 export function CopyAddressButton({
   value,
   copiedMessage = 'Copied to clipboard',
-  className = 'relative hover:text-primary transition-colors after:absolute after:-inset-2 after:content-[""] coarse:after:-inset-3',
+  className = HIT,
   label = 'Copy address',
   children,
 }: {
@@ -36,7 +40,7 @@ export function CopyAddressButton({
         {children}
         <Icon
           name="copy"
-          className={`w-4 h-4 ${copied ? 'text-success' : 'text-fg-3'} group-hover:text-primary`}
+          className={`w-3 h-3 coarse:w-4 coarse:h-4 ${copied ? 'text-success' : 'text-fg-3'} group-hover:text-primary`}
         />
       </button>
     </Tooltip>
@@ -46,7 +50,7 @@ export function CopyAddressButton({
 export function ExplorerButton({
   href,
   kind = 'address',
-  className = 'relative hover:text-primary transition-colors after:absolute after:-inset-2 after:content-[""] coarse:after:-inset-3',
+  className = HIT,
 }: {
   /** Explorer URL of the value; without one nothing renders (a dead-looking control is worse than none). */
   href?: string;
@@ -68,7 +72,7 @@ export function ExplorerButton({
       >
         <Icon
           name="external-link"
-          className="w-4 h-4 text-fg-3 hover:text-primary"
+          className="w-3 h-3 coarse:w-4 coarse:h-4 text-fg-3 hover:text-primary"
         />
       </button>
     </Tooltip>

@@ -54,44 +54,19 @@ export function FloatingPanel({
   const openTimer = useRef<number>();
   const hideTimer = useRef<number>();
   const hovers = mode !== 'click';
-  // Keyboard path of an INTERACTIVE panel that holds something focusable (links, copy buttons): the
-  // panel is portaled, so Tab can never reach it from the trigger. Enter / Space on the trigger
-  // pins it and, on the key's RELEASE (so the key-up cannot activate what it lands on), moves focus
-  // in; Escape closes it and hands focus back. A text-only panel keeps the plain toggle.
-  //  pending: 'down' = key pressed, waiting for its release; 'up' = released, waiting for the panel.
-  //  swallow: eats the click that Enter / Space would otherwise add on top of the handled key.
-  //  kbIntent: Enter / Space went down on a CLOSED box, which takes the native click path
-  //    untouched; the click that opens it then moves focus in if there is anything to focus.
+  // Keyboard path of an INTERACTIVE panel: it is portaled, so Tab never reaches it from the trigger.
+  // Enter / Space on the trigger act on RELEASE (so the key-up cannot activate what focus lands on):
+  // open + move focus in, or focus into an open box; preventDefault on both edges eats the native
+  // click. Escape closes and hands focus back.
+  //  keyDown: the key went down on the trigger (a release without it is someone else's).
+  //  focusIn: the box was opened by the key; focus moves in once the portal mounts.
   //  quiet: the hand-back focus must not re-open the box; held only across that one focus() call.
-  //  owned: the box is pinned (clicked / keyboard-opened) or focus-opened: it owns Escape. A box
-  //    that only a hover opened does not, and Escape goes through to whatever sits behind it.
-  // The transient flags die with the gesture: trigger focusout, window blur, the next pointerdown
-  // and unmount all clear them, so a keyup that never arrives cannot eat a later real click.
-  const pending = useRef<'down' | 'up' | null>(null);
-  const swallow = useRef(false);
-  const kbIntent = useRef(false);
+  //  owned: pinned (clicked / keyboard-opened): it consumes Escape. A hover- or focus-opened box
+  //    does not, so one Escape still closes it together with a modal behind it.
+  const keyDown = useRef(false);
+  const focusIn = useRef(false);
   const quiet = useRef(false);
   const owned = useRef(false);
-  const disarmRef = useRef<(() => void) | null>(null);
-  const disarm = () => disarmRef.current?.();
-  const reset = () => {
-    swallow.current = false;
-    pending.current = null;
-    kbIntent.current = false;
-    disarm();
-  };
-  const arm = () => {
-    if (disarmRef.current) return;
-    const stop = () => reset();
-    window.addEventListener('blur', stop);
-    document.addEventListener('pointerdown', stop, true);
-    disarmRef.current = () => {
-      window.removeEventListener('blur', stop);
-      document.removeEventListener('pointerdown', stop, true);
-      disarmRef.current = null;
-    };
-  };
-  useEffect(() => reset, []);
 
   const clearTimers = () => {
     clearTimeout(openTimer.current);
@@ -225,15 +200,21 @@ export function FloatingPanel({
     }
     if (kb) {
       clearTimers();
-      owned.current = true;
       setVisible(true);
     }
   };
-  const onFocusOut = (e: FocusEvent) => {
+  // Focus moving to the trigger or any open panel stays inside the box.
+  const staysIn = (e: FocusEvent) => {
     const to = e.relatedTarget as Element | null;
-    if (to && (triggerRef.current?.contains(to) || to.closest?.('.floating-panel'))) return;
-    reset();
+    return !!to && (!!triggerRef.current?.contains(to) || !!to.closest?.('.floating-panel'));
+  };
+  const onFocusOut = (e: FocusEvent) => {
+    if (staysIn(e)) return;
+    keyDown.current = false;
     setVisible(false);
+  };
+  const onPanelFocusOut = (e: FocusEvent) => {
+    if (!staysIn(e)) setVisible(false);
   };
   const focusable = (el: HTMLElement) =>
     el.querySelector<HTMLElement>('button:not(:disabled),a[href],[tabindex="0"]');
@@ -248,64 +229,30 @@ export function FloatingPanel({
   const onKeyDown = (e: KeyboardEvent) => {
     if (e.key === 'Escape' && visible) setVisible(false);
     if (!interactive || !content || !isKey(e)) return;
-    // Closed: the pre-existing path, untouched (native click toggles it open). The click that
-    // opens it moves focus in when the body has something to focus.
-    if (!visible || !panel) {
-      kbIntent.current = true;
-      arm();
-      return;
-    }
-    // Open and text-only: nothing to move into, so Enter / Space keep their click (the toggle).
-    if (!focusable(panel)) return;
     e.preventDefault();
     e.stopPropagation();
     clearTimers();
-    owned.current = true;
-    swallow.current = true;
-    pending.current = 'down';
-    arm();
+    keyDown.current = true;
   };
   const onKeyUp = (e: KeyboardEvent) => {
-    if (!interactive || !isKey(e)) return;
-    // Enter / Space's own click (closed path) arrives inside this task: let it, then stop.
-    if (kbIntent.current)
-      setTimeout(() => {
-        kbIntent.current = false;
-        if (!pending.current) disarm();
-      }, 0);
-    if (!swallow.current) return;
-    e.preventDefault();
+    if (!keyDown.current || !isKey(e)) return;
+    keyDown.current = false;
+    e.preventDefault(); // Firefox fires Space's click on keyup
     e.stopPropagation();
-    // The click some browsers add after Space's release arrives in this task: eat it, then stop.
-    setTimeout(() => {
-      swallow.current = false;
-      if (!pending.current) disarm();
-    }, 0);
-    if (pending.current !== 'down') return;
-    const found = panel && focusable(panel);
-    pending.current = panel ? null : 'up';
-    found?.focus();
-  };
-  const onPanelFocusOut = (e: FocusEvent) => {
-    const to = e.relatedTarget as Element | null;
-    if (to && (triggerRef.current?.contains(to) || to.closest?.('.floating-panel'))) return;
-    setVisible(false);
+    owned.current = true;
+    const found = visible && panel && focusable(panel);
+    if (found) found.focus();
+    else if (!visible) {
+      focusIn.current = true;
+      setVisible(true);
+    } else if (mode !== 'hover') setVisible(false); // open, nothing to focus: the toggle
   };
   useEffect(() => {
-    if (!panel || !pending.current) return;
-    const found = focusable(panel);
-    // No focusable content: the box simply opened. Otherwise focus follows the key's release.
-    if (!found || pending.current === 'up') {
-      pending.current = null;
-      found?.focus();
-      if (!swallow.current && !kbIntent.current) disarm();
-    }
+    if (!panel || !focusIn.current) return;
+    focusIn.current = false;
+    focusable(panel)?.focus();
   }, [panel]);
   const onClick = (e: MouseEvent) => {
-    if (swallow.current) {
-      e.stopPropagation();
-      return;
-    }
     if (mode === 'hover') {
       // Hover has no touch equivalent: a tap toggles (auto-hides after 3s). Taps on a live
       // control are left to that control.
@@ -322,8 +269,6 @@ export function FloatingPanel({
     e.stopPropagation();
     clearTimers();
     owned.current = !visible;
-    // A keyboard open of a closed box: focus follows into it once it is there.
-    if (!visible && kbIntent.current && interactive) pending.current = 'up';
     setVisible((v) => !v);
   };
 
