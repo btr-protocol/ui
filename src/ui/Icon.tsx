@@ -1,78 +1,77 @@
-import {
-  Activity,
-  AlertCircle,
-  AlertTriangle,
-  ArrowDown,
-  ArrowDownUp,
-  ArrowLeftRight,
-  ArrowRight,
-  ArrowUp,
-  BarChart,
-  Bell,
-  BookOpen,
-  Bug,
-  ChartCandlestick,
-  Check,
-  CheckCircle,
-  CheckSquare2,
-  ChevronDown,
-  ChevronLeft,
-  ChevronRight,
-  Clock,
-  Code,
-  Copy,
-  Cpu,
-  Crosshair,
-  Download,
-  Droplet,
-  Edit2,
-  ExternalLink,
-  FileText,
-  Filter,
-  FunctionSquare,
-  Globe,
-  Highlighter,
-  Image,
-  Info,
-  Key,
-  Layers,
-  Link,
-  Loader2,
-  Lock,
-  LogOut,
-  type LucideIcon,
-  type LucideProps,
-  Mail,
-  Maximize2,
-  Menu,
-  Moon,
-  MousePointer2,
-  Package,
-  Palette,
-  Pause,
-  Pin,
-  Play,
-  Plus,
-  Printer,
-  RefreshCw,
-  Save,
-  Search,
-  Settings,
-  Shield,
-  Sparkles,
-  SquareMousePointer,
-  Star,
-  Sun,
-  Target,
-  Trash2,
-  TrendingUp,
-  Upload,
-  Wallet,
-  X,
-  XCircle,
-  Zap,
-  createLucideIcon,
-} from 'lucide-preact';
+/// <reference path="./lucide-icons.d.ts" />
+import type { LucideIcon, LucideProps } from 'lucide-preact';
+// Per-icon modules, never the root barrel (lint ban in .oxlintrc.json).
+import Activity from 'lucide-preact/dist/esm/icons/activity.js';
+import AlertCircle from 'lucide-preact/dist/esm/icons/circle-alert.js';
+import AlertTriangle from 'lucide-preact/dist/esm/icons/triangle-alert.js';
+import ArrowDown from 'lucide-preact/dist/esm/icons/arrow-down.js';
+import ArrowDownUp from 'lucide-preact/dist/esm/icons/arrow-down-up.js';
+import ArrowLeftRight from 'lucide-preact/dist/esm/icons/arrow-left-right.js';
+import ArrowRight from 'lucide-preact/dist/esm/icons/arrow-right.js';
+import ArrowUp from 'lucide-preact/dist/esm/icons/arrow-up.js';
+import BarChart from 'lucide-preact/dist/esm/icons/chart-no-axes-column-increasing.js';
+import Bell from 'lucide-preact/dist/esm/icons/bell.js';
+import BookOpen from 'lucide-preact/dist/esm/icons/book-open.js';
+import Bug from 'lucide-preact/dist/esm/icons/bug.js';
+import ChartCandlestick from 'lucide-preact/dist/esm/icons/chart-candlestick.js';
+import Check from 'lucide-preact/dist/esm/icons/check.js';
+import CheckCircle from 'lucide-preact/dist/esm/icons/circle-check-big.js';
+import CheckSquare2 from 'lucide-preact/dist/esm/icons/square-check.js';
+import ChevronDown from 'lucide-preact/dist/esm/icons/chevron-down.js';
+import ChevronLeft from 'lucide-preact/dist/esm/icons/chevron-left.js';
+import ChevronRight from 'lucide-preact/dist/esm/icons/chevron-right.js';
+import Clock from 'lucide-preact/dist/esm/icons/clock.js';
+import Code from 'lucide-preact/dist/esm/icons/code.js';
+import Copy from 'lucide-preact/dist/esm/icons/copy.js';
+import Cpu from 'lucide-preact/dist/esm/icons/cpu.js';
+import Crosshair from 'lucide-preact/dist/esm/icons/crosshair.js';
+import Download from 'lucide-preact/dist/esm/icons/download.js';
+import Droplet from 'lucide-preact/dist/esm/icons/droplet.js';
+import Edit2 from 'lucide-preact/dist/esm/icons/pen.js';
+import ExternalLink from 'lucide-preact/dist/esm/icons/external-link.js';
+import FileText from 'lucide-preact/dist/esm/icons/file-text.js';
+import Filter from 'lucide-preact/dist/esm/icons/filter.js';
+import FunctionSquare from 'lucide-preact/dist/esm/icons/square-function.js';
+import Globe from 'lucide-preact/dist/esm/icons/globe.js';
+import Highlighter from 'lucide-preact/dist/esm/icons/highlighter.js';
+import Image from 'lucide-preact/dist/esm/icons/image.js';
+import Info from 'lucide-preact/dist/esm/icons/info.js';
+import Key from 'lucide-preact/dist/esm/icons/key.js';
+import Layers from 'lucide-preact/dist/esm/icons/layers.js';
+import Link from 'lucide-preact/dist/esm/icons/link.js';
+import Loader2 from 'lucide-preact/dist/esm/icons/loader-circle.js';
+import Lock from 'lucide-preact/dist/esm/icons/lock.js';
+import LogOut from 'lucide-preact/dist/esm/icons/log-out.js';
+import Mail from 'lucide-preact/dist/esm/icons/mail.js';
+import Maximize2 from 'lucide-preact/dist/esm/icons/maximize-2.js';
+import Menu from 'lucide-preact/dist/esm/icons/menu.js';
+import Moon from 'lucide-preact/dist/esm/icons/moon.js';
+import MousePointer2 from 'lucide-preact/dist/esm/icons/mouse-pointer-2.js';
+import Package from 'lucide-preact/dist/esm/icons/package.js';
+import Palette from 'lucide-preact/dist/esm/icons/palette.js';
+import Pause from 'lucide-preact/dist/esm/icons/pause.js';
+import Pin from 'lucide-preact/dist/esm/icons/pin.js';
+import Play from 'lucide-preact/dist/esm/icons/play.js';
+import Plus from 'lucide-preact/dist/esm/icons/plus.js';
+import Printer from 'lucide-preact/dist/esm/icons/printer.js';
+import RefreshCw from 'lucide-preact/dist/esm/icons/refresh-cw.js';
+import Save from 'lucide-preact/dist/esm/icons/save.js';
+import Search from 'lucide-preact/dist/esm/icons/search.js';
+import Settings from 'lucide-preact/dist/esm/icons/settings.js';
+import Shield from 'lucide-preact/dist/esm/icons/shield.js';
+import Sparkles from 'lucide-preact/dist/esm/icons/sparkles.js';
+import SquareMousePointer from 'lucide-preact/dist/esm/icons/square-mouse-pointer.js';
+import Star from 'lucide-preact/dist/esm/icons/star.js';
+import Sun from 'lucide-preact/dist/esm/icons/sun.js';
+import Target from 'lucide-preact/dist/esm/icons/target.js';
+import Trash2 from 'lucide-preact/dist/esm/icons/trash-2.js';
+import TrendingUp from 'lucide-preact/dist/esm/icons/trending-up.js';
+import Upload from 'lucide-preact/dist/esm/icons/upload.js';
+import Wallet from 'lucide-preact/dist/esm/icons/wallet.js';
+import X from 'lucide-preact/dist/esm/icons/x.js';
+import XCircle from 'lucide-preact/dist/esm/icons/circle-x.js';
+import Zap from 'lucide-preact/dist/esm/icons/zap.js';
+import createLucideIcon from 'lucide-preact/dist/esm/createLucideIcon.js';
 
 /** The order book's spread: an up/down arrow between two horizontal lines (the bid and the ask).
  *  Not in Lucide, so drawn on its grid with the same stroke contract. */

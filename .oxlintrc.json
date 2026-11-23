@@ -1,0 +1,16 @@
+{
+  "rules": {
+    "no-restricted-imports": [
+      "error",
+      {
+        "paths": [
+          {
+            "name": "lucide-preact",
+            "message": "Import one icon: lucide-preact/dist/esm/icons/<name>.js (type-only imports are fine).",
+            "allowTypeImports": true
+          }
+        ]
+      }
+    ]
+  }
+}
