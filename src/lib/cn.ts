@@ -14,7 +14,7 @@ export type ClassValue =
 
 // Conflict groups of the utilities kit + front actually override (audited against tailwind-merge over the
 // full kit + front suites, 2026-11-24). A class outside these groups is never dropped, only deduped.
-// ponytail: hand-kept groups; a new override family (e.g. inset, translate) needs a row here + a cn.test case.
+// ponytail: hand-kept groups; a new override family (e.g. translate, grid-cols) needs a row here + a cn.test case.
 const SIZE = /^text-(?:3xs|2xs|xs|sm|base|lg|[2-9]?xl|\[[\d.]+(?:px|rem|em|%)\])$/;
 const WEIGHT = /^font-(?:thin|extralight|light|normal|medium|semibold|bold|extrabold|black)$/;
 const DISPLAY = /^(?:block|inline-block|inline|flex|inline-flex|grid|inline-grid|hidden|contents|table|flow-root)$/;
@@ -23,6 +23,16 @@ const BORDER_W = /^border(?:-([trblxy]))?(?:-(?:0|2|4|8|\[\d+px\]))?$/;
 const BORDER_STYLE = /^border-(?:solid|dashed|dotted|double|none)$/;
 const RADIUS = /^rounded(?:-([trbl]|tl|tr|bl|br|[se]|s[se]|e[se]))?(?:-(?:none|sm|md|lg|xl|2xl|3xl|full|\[[^\]]+\]))?$/;
 const SPACING = /^-?(p|m|gap|space)(?:-?([xytrblse]))?-/;
+const BG: [RegExp, string][] = [
+  [/^bg-(?:none|gradient-)/, 'bg-image'],
+  [/^bg-(?:cover|contain|auto)$/, 'bg-size'],
+  [/^bg-clip-/, 'bg-clip'],
+  [/^bg-origin-/, 'bg-origin'],
+  [/^bg-(?:repeat(?:-[a-z]+)?|no-repeat)$/, 'bg-repeat'],
+  [/^bg-(?:fixed|local|scroll)$/, 'bg-attach'],
+  [/^bg-(?:center|top|bottom|left|right|(?:left|right)-(?:top|bottom))$/, 'bg-position'],
+];
+const INSET = /^-?(inset(?:-[xy])?|top|right|bottom|left|start|end)-/;
 const PLAIN: [RegExp, string][] = [
   [/^flex-(?:row|col)(?:-reverse)?$/, 'flex-dir'],
   [/^flex-(?:wrap|nowrap|wrap-reverse)$/, 'flex-wrap'],
@@ -35,10 +45,17 @@ const PLAIN: [RegExp, string][] = [
 function group(u: string): string {
   if (DISPLAY.test(u)) return 'display';
   if (POSITION.test(u)) return 'position';
-  if (u.startsWith('text-')) return SIZE.test(u) ? 'text-size' : /^text-(?:left|center|right|justify|start|end)$/.test(u) ? 'text-align' : 'text-color';
+  if (u.startsWith('text-')) {
+    if (SIZE.test(u)) return 'text-size';
+    if (/^text-(?:left|center|right|justify|start|end)$/.test(u)) return 'text-align';
+    if (/^text-(?:wrap|nowrap|balance|pretty)$/.test(u)) return 'text-wrap';
+    return /^text-(?:ellipsis|clip)$/.test(u) ? 'text-overflow' : 'text-color';
+  }
   if (u.startsWith('font-')) return WEIGHT.test(u) ? 'font-weight' : 'font-family';
-  if (u.startsWith('bg-')) return /^bg-(?:none|gradient-)/.test(u) ? 'bg-image' : /^bg-(?:cover|contain|auto)$/.test(u) ? 'bg-size' : 'bg-color';
-  let m = BORDER_W.exec(u);
+  if (u.startsWith('bg-')) return BG.find(([re]) => re.test(u))?.[1] ?? 'bg-color';
+  const ins = INSET.exec(u);
+  if (ins) return ins[1];
+  let m: RegExpExecArray | null = BORDER_W.exec(u);
   if (m) return `border-w${m[1] ?? ''}`;
   if (BORDER_STYLE.test(u)) return 'border-style';
   m = /^border-([trblxy])-/.exec(u);
@@ -56,10 +73,16 @@ function group(u: string): string {
 
 /** Groups a later class also overrides: `p-*` beats `px-*`/`pt-*`, `px-*` beats `pl-*`/`pr-*`, a font size its line height. */
 const AXES: Record<string, string[]> = { x: ['l', 'r', 's', 'e'], y: ['t', 'b'], '': ['x', 'y', 't', 'r', 'b', 'l', 's', 'e'] };
+const CORNERS: Record<string, string[]> = { '': ['t', 'r', 'b', 'l', 's', 'e', 'tl', 'tr', 'bl', 'br', 'ss', 'se', 'es', 'ee'], t: ['tl', 'tr'], r: ['tr', 'br'], b: ['bl', 'br'], l: ['tl', 'bl'], s: ['ss', 'es'], e: ['se', 'ee'] };
+const INSETS: Record<string, string[]> = { inset: ['inset-x', 'inset-y', 'top', 'right', 'bottom', 'left', 'start', 'end'], 'inset-x': ['left', 'right', 'start', 'end'], 'inset-y': ['top', 'bottom'] };
 function covers(g: string): string[] {
   if (g === 'text-size') return ['leading-'];
-  const sp = /^(p|m|gap|space)([xytrblse]?)$/.exec(g);
-  return sp ? (AXES[sp[2]] ?? []).map((a) => sp[1] + a) : [];
+  if (g === 'size-') return ['w-', 'h-'];
+  if (INSETS[g]) return INSETS[g];
+  let m = /^(rounded|border-w)([a-z]*)$/.exec(g);
+  if (m) return ((m[1] === 'rounded' ? CORNERS : AXES)[m[2]] ?? []).map((a) => m![1] + a);
+  m = /^(p|m|gap|space)([xytrblse]?)$/.exec(g);
+  return m ? (AXES[m[2]] ?? []).map((a) => m![1] + a) : [];
 }
 
 /** tailwind-merge's rule over those groups: per variant stack (`sm:hover:`) + `!`, the last class of a group wins. */

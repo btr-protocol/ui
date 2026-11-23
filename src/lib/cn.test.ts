@@ -85,5 +85,14 @@ describe('cn: tailwind-merge parity on the groups the kit merges', () => {
     ['inline-block grid', 'grid'],
     ['disabled:opacity-50 disabled:opacity-40', 'disabled:opacity-40'],
     ['a a b', 'a b'],
+    ['text-fg-1 text-balance text-nowrap', 'text-fg-1 text-nowrap'],
+    ['text-fg-1 text-ellipsis', 'text-fg-1 text-ellipsis'],
+    ['bg-primary bg-clip-text bg-center bg-no-repeat bg-fixed', 'bg-primary bg-clip-text bg-center bg-no-repeat bg-fixed'],
+    ['w-2 h-3 size-4', 'size-4'],
+    ['rounded-t-lg rounded-tl-sm rounded-none', 'rounded-none'],
+    ['rounded-tl-sm rounded-t-lg', 'rounded-t-lg'],
+    ['border-t-2 border-x-4 border-0', 'border-0'],
+    ['top-1 left-2 inset-0', 'inset-0'],
+    ['top-1 top-2 inset-0 top-3', 'inset-0 top-3'],
   ])('%s', (input, want) => expect(cn(input)).toBe(want));
 });
