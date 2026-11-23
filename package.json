@@ -66,8 +66,7 @@
     "@preact/signals": "^2.5.1",
     "lightweight-charts": "^5.0.9",
     "lucide-preact": "^0.468.0",
-    "preact": "^10.22.0",
-    "tailwind-merge": "^2.6.1"
+    "preact": "^10.22.0"
   },
   "homepage": "https://github.com/btr-protocol/ui#readme",
   "bugs": {

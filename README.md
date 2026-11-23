@@ -8,7 +8,7 @@ The btr.markets UI kit: Preact components, the fixed-shell layout (Header, Foote
 { "dependencies": { "@btr-protocol/ui": "github:btr-protocol/ui#<commit>" } }
 ```
 
-Peers: `tailwindcss` 3 (preset). Runtime deps (`preact`, `@preact/signals`, `lucide-preact`, `tailwind-merge`) ship with the kit. Fonts (Mozilla Text, Geist Mono; SIL OFL 1.1, licences in `src/assets/fonts/`) ship with the kit.
+Peers: `tailwindcss` 3 (preset). Runtime deps (`preact`, `@preact/signals`, `lucide-preact`, `@noble/hashes` for `checksumAddress` only) ship with the kit. Fonts (Mozilla Text, Geist Mono; SIL OFL 1.1, licences in `src/assets/fonts/`) ship with the kit.
 
 ## Setup
 
