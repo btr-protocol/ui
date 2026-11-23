@@ -69,11 +69,11 @@ select[aria-invalid="true"]:focus {
  * LOAD-BEARING: zero specificity, so a call site's own `absolute`/`sticky` utility still wins.
  */
 @media (pointer: coarse) {
-  :where(button, a, .tap-target):where(:not([data-notap])) {
+  :where(button, a, .tap-target):where(:not(.markdown-content *, [data-notap])) {
     position: relative;
   }
 
-  :where(button, a, .tap-target):where(:not([data-notap]))::after {
+  :where(button, a, .tap-target):where(:not(.markdown-content *, [data-notap]))::after {
     content: "";
     position: absolute;
     top: 50%;
@@ -358,10 +358,12 @@ select,
 /* Book/ladder figures: the row is role=button for click-to-fill; that rule
    would otherwise stamp Mozilla Text over the mono stack. */
 [role="button"].font-mono,
-[role="button"].font-mono span,
+[role="button"].font-mono span {
+  font-family: var(--font-mono) !important;
+}
 [role="button"].font-numeric,
 [role="button"].font-numeric span {
-  font-family: var(--font-mono) !important;
+  font-family: var(--font-numbers) !important;
 }
 
 /* Print: chrome is `.no-print`, paper is white. */
@@ -457,6 +459,7 @@ main,
 button,
 a,
 [role="button"],
+.row-press,
 [role="tab"],
 input,
 select,
@@ -474,6 +477,7 @@ footer {
   user-select: none;
   -webkit-touch-callout: none;
 }
+.markdown-content,
 input,
 textarea {
   -webkit-user-select: text;
@@ -481,7 +485,7 @@ textarea {
 }
 /* A finger has no hover: dim on press instead. Instant (colour-only transitions ignore filter). */
 @media (pointer: coarse) {
-  :is(button, a, [role="button"], [role="tab"], label.tap-target):active:not(
+  :is(button, a, [role="button"], .row-press, [role="tab"], label.tap-target):active:not(
       :disabled,
       [aria-disabled="true"]
     ) {
@@ -502,7 +506,7 @@ textarea {
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
-  .animate-spin {
+  .animate-spin:not(.spinner) {
     animation-duration: 2s !important;
     animation-iteration-count: infinite !important;
   }
