@@ -31,6 +31,8 @@ export function ScrollPane({
   children,
   className,
   scrollClassName,
+  role,
+  label,
 }: {
   /** Drawn above the scroller, never inside it. */
   header?: ComponentChildren;
@@ -40,8 +42,12 @@ export function ScrollPane({
   children: ComponentChildren;
   className?: string;
   scrollClassName?: string;
+  /** Landmark role of the whole pane (header + body), e.g. `table`, with its accessible name. */
+  role?: import('preact').JSX.AriaRole;
+  label?: string;
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const headRef = useRef<HTMLDivElement>(null);
   const [gutter, setGutter] = useState(0);
 
   useEffect(() => {
@@ -57,13 +63,25 @@ export function ScrollPane({
   }, []);
 
   return (
-    <div className={cn('flex min-h-0 flex-1 flex-col', className)}>
+    <div role={role} aria-label={label} className={cn('flex min-h-0 flex-1 flex-col', className)}>
       {header ? (
-        <div className={cn('shrink-0', headerClassName)} style={{ paddingRight: gutter }}>
+        // `overflow-hidden` + the scroller's `scrollLeft` mirrored below: a grid wider than the pane
+        // scrolls its rows sideways, and a header that stayed put sat over the wrong columns.
+        <div
+          ref={headRef}
+          className={cn('shrink-0 overflow-hidden', headerClassName)}
+          style={{ paddingRight: gutter }}
+        >
           {header}
         </div>
       ) : null}
-      <div ref={scrollRef} className={cn('min-h-0 flex-1 overflow-y-auto', scrollClassName)}>
+      <div
+        ref={scrollRef}
+        onScroll={(e) => {
+          if (headRef.current) headRef.current.scrollLeft = e.currentTarget.scrollLeft;
+        }}
+        className={cn('min-h-0 flex-1 overflow-y-auto', scrollClassName)}
+      >
         {children}
       </div>
     </div>
