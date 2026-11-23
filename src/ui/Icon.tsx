@@ -71,7 +71,18 @@ import {
   X,
   XCircle,
   Zap,
+  createLucideIcon,
 } from 'lucide-preact';
+
+/** The order book's spread: an up/down arrow between two horizontal lines (the bid and the ask).
+ *  Not in Lucide, so drawn on its grid with the same stroke contract. */
+const Spread = createLucideIcon('spread', [
+  ['path', { d: 'M3 4h18', key: 'ask' }],
+  ['path', { d: 'M3 20h18', key: 'bid' }],
+  ['path', { d: 'M12 8v8', key: 'shaft' }],
+  ['path', { d: 'm9 10.5 3-3 3 3', key: 'up' }],
+  ['path', { d: 'm9 13.5 3 3 3-3', key: 'down' }],
+]);
 
 /** Static registry: dynamic namespace access would retain all ~1,550 Lucide modules. */
 const ICONS = {
@@ -134,6 +145,7 @@ const ICONS = {
   shield: Shield,
   'sign-out': LogOut,
   sparkles: Sparkles,
+  spread: Spread,
   star: Star,
   sun: Sun,
   target: Target,

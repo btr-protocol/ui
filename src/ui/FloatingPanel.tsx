@@ -96,10 +96,11 @@ export function FloatingPanel({
   }, [mode, interactive]);
 
   // The panel is portaled: it is inside for dismissal purposes, whichever instance owns it.
+  const inBox = (t: Node) => !!triggerRef.current?.contains(t) || !!(t as Element).closest?.('.floating-panel');
   useDismiss(
     visible && (mode !== 'hover' || interactive),
     () => setVisible(false),
-    (t) => !!triggerRef.current?.contains(t) || !!(t as Element).closest?.('.floating-panel'),
+    inBox,
   );
 
   // Escape belongs to the open box first. A `window` capture listener runs before every `document`
@@ -206,7 +207,7 @@ export function FloatingPanel({
   // Focus moving to the trigger or any open panel stays inside the box.
   const staysIn = (e: FocusEvent) => {
     const to = e.relatedTarget as Element | null;
-    return !!to && (!!triggerRef.current?.contains(to) || !!to.closest?.('.floating-panel'));
+    return !!to && inBox(to);
   };
   const onFocusOut = (e: FocusEvent) => {
     if (staysIn(e)) return;
