@@ -51,7 +51,7 @@ const COMPACT_ROW_H = 28;
  * virtual and non-virtual bodies.
  */
 /** Header cell: sticky so a scrolled body keeps its labels. */
-const TABLE_HEAD_CELL = 'px-3 py-1.5 coarse:py-3 font-medium bg-bg-3 sticky top-0 z-raised';
+const TABLE_HEAD_CELL = 'px-3 py-1.5 font-medium bg-bg-3 sticky top-0 z-raised';
 /** A sortable header is a click target and must not select its own label on double-click. */
 const TABLE_HEAD_SORTABLE = 'cursor-pointer select-none hover:text-fg-1';
 /** Body cell. Vertical padding is added per body: the virtual one pays its rhythm with a fixed
@@ -63,9 +63,10 @@ const TABLE_ROW_BORDER = 'border-b border-border last:border-0';
  *  an outset ring on a full-bleed row is clipped by the frame's `overflow-hidden`. */
 export const ROW_FOCUS =
   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring';
-/** Phones get the desktop table: horizontal scroll, sticky first column, compact 2xs cells. */
+/** Phones get the desktop table: horizontal scroll (nowrap cells; `min-w-full`, not `min-w-max`, which
+ *  resolves a `width:100%` column to ~1e6px), sticky first column, compact 2xs cells. */
 const PHONE =
-  'max-sm:overflow-x-auto max-sm:[&_table]:min-w-max max-sm:[&_table]:text-2xs max-sm:[&_td]:whitespace-nowrap max-sm:[&_th]:whitespace-nowrap max-sm:[&_td]:px-2 max-sm:[&_th]:px-2 ' +
+  'max-sm:overflow-x-auto max-sm:[&_table]:min-w-full max-sm:[&_table]:text-2xs max-sm:[&_td]:whitespace-nowrap max-sm:[&_th]:whitespace-nowrap max-sm:[&_td]:px-2 max-sm:[&_th]:px-2 ' +
   'max-sm:[&_td:first-child]:sticky max-sm:[&_th:first-child]:sticky max-sm:[&_td:first-child]:left-0 max-sm:[&_th:first-child]:left-0 max-sm:[&_td:first-child]:z-base max-sm:[&_th:first-child]:z-base max-sm:[&_td:first-child]:bg-bg-1 max-sm:[&_th:first-child]:bg-bg-1';
 const TABLE_BASE = 'w-full text-sm';
 
