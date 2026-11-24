@@ -305,12 +305,10 @@ select[aria-invalid="true"]:focus {
 }
 
 /* Pseudo-element chrome shared by call sites (cheaper than `before:`/`after:` utilities, which each
-   repeat `content`): safe-area fills behind the fixed header/footer, the slider hit area, the
-   toolbar's trailing fade. */
+   repeat `content`): safe-area fills behind the fixed header/footer, the slider hit area. */
 .safe-t::before,
 .safe-b::before,
-.slider-hit::before,
-.toolbar-fade::after {
+.slider-hit::before {
   content: "";
   position: absolute;
 }
@@ -331,14 +329,31 @@ select[aria-invalid="true"]:focus {
 .slider-hit::before {
   inset: -0.75rem 0;
 }
-.toolbar-fade::after {
-  position: sticky;
-  right: 0;
-  width: 1.5rem;
-  height: 2rem;
-  flex-shrink: 0;
-  pointer-events: none;
-  background-image: linear-gradient(to left, var(--bg-0), rgb(255 255 255 / 0));
+/* Trailing fade of a horizontal scroller: a mask driven by its own scroll position, so it takes no
+   space, shows only while more content sits to the right, and is gone when the row fits (an
+   inactive scroll timeline leaves --fade-r at 0). No scroll-timeline support: no fade. */
+@property --fade-r {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 0px;
+}
+.toolbar-fade {
+  mask-image: linear-gradient(to left, transparent, #000 var(--fade-r));
+}
+@supports (animation-timeline: scroll()) {
+  .toolbar-fade {
+    animation: toolbar-fade linear both;
+    animation-timeline: scroll(self inline);
+  }
+}
+@keyframes toolbar-fade {
+  0%,
+  96% {
+    --fade-r: 1.5rem;
+  }
+  100% {
+    --fade-r: 0px;
+  }
 }
 
 /* Enforce font-title on all interactive UI elements */
