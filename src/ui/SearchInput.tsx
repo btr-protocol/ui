@@ -24,10 +24,10 @@ export interface SearchInputProps {
   inputProps?: Partial<InputProps>;
 }
 
-/** Stretches to its row's full height (parent `items-stretch`, no padding): the left rule spans the
- *  header; below `sm` it wraps to its own full-width row with a top rule instead. */
+/** Stretches to its row's full height (parent `items-stretch`, no padding), the left rule spans the
+ *  header. Phones keep one row: the field folds to its glyph and opens on focus or with a query. */
 const HEADER_SEARCH =
-  'self-stretch min-h-8 px-3 border-border max-sm:basis-full max-sm:border-t sm:border-l';
+  'self-stretch shrink-0 min-h-8 px-3 border-l border-border max-sm:w-10 max-sm:focus-within:w-40 max-sm:has-[input:not(:placeholder-shown)]:w-40 transition-[width]';
 
 /**
  * THE search input: one magnifier, one clear affordance, one set of metrics. Modal headers

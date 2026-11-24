@@ -83,7 +83,7 @@ const t = (name: string, fn: () => Promise<void>) =>
   }, 30000);
 
 for (const w of [375, 1440])
-  t(`${w}px: title + freshness + segments + search share the header; search full height, ruled, no overflow`, async () => {
+  t(`${w}px: title + freshness + segments + search share one header row; search full height, ruled, no overflow`, async () => {
     const page = await open(w);
     const m = await page.evaluate(() => {
       const r = (s: string) => document.querySelector(s)!.getBoundingClientRect();
@@ -102,16 +102,12 @@ for (const w of [375, 1440])
     expect(m.s.bottom).toBeCloseTo(m.hdr.bottom - m.hb, 0); // flush to the header rule
     expect(m.s.left).toBeGreaterThanOrEqual(m.hdr.left - 0.5);
     expect(m.s.right).toBeLessThanOrEqual(m.hdr.right + 0.5);
-    if (w === 1440) {
-      expect(m.s.top).toBeCloseTo(m.hdr.top, 0); // full height, divider spans it
-      expect(m.s.height).toBeCloseTo(m.hdr.height - m.hb, 0);
-      expect(m.bl).toBe(1);
-      expect(m.s.left).toBeGreaterThanOrEqual(m.seg.right);
-    } else {
-      expect(m.s.width).toBeCloseTo(m.hdr.width, 0); // own full-width row
-      expect(m.s.top).toBeGreaterThanOrEqual(Math.max(m.title.bottom, m.fresh.bottom, m.seg.bottom) - 0.5); // no overlap
-      expect(m.bt).toBe(1);
-    }
+    // One row on every width: full height, left rule, after the controls; a phone folds it to its glyph.
+    expect(m.s.top).toBeCloseTo(m.hdr.top, 0);
+    expect(m.s.height).toBeCloseTo(m.hdr.height - m.hb, 0);
+    expect(m.bl).toBe(1);
+    expect(m.s.left).toBeGreaterThanOrEqual(m.seg.right - 0.5);
+    if (w !== 1440) expect(m.s.width).toBeCloseTo(40, 0);
   });
 
 t('Escape clears; changing the segment resets the query', async () => {
