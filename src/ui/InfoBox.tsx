@@ -83,11 +83,11 @@ export function InfoTip({
         <button
           type="button"
           // No `text-sm`: the trigger INHERITS its caller's type size.
-          className="inline-flex cursor-help items-center gap-1 text-inherit transition-colors hover:text-fg-1"
+          className={cn('inline-flex cursor-help items-center gap-1 text-inherit transition-colors hover:text-fg-1', !glyph && LINK)}
           aria-label={label}
           aria-expanded={open}
         >
-          {children != null && <span className={glyph ? undefined : LINK}>{children}</span>}
+          {children}
           {glyph && <Icon name={icon} className={iconClassName} />}
         </button>
       )}

@@ -516,6 +516,8 @@ interface SelectionModalProps {
   isOpen: boolean;
   onClose: () => void;
   title: string;
+  /** Visible title node (an InfoTip term) when the header shows a title. */
+  heading?: ComponentChildren;
   searchPlaceholder?: string;
   items: SelectionItem[];
   selectedIds: string[];
@@ -560,6 +562,7 @@ export function SelectionModal({
   isOpen,
   onClose,
   title,
+  heading,
   searchPlaceholder = 'Search...',
   searchable: searchableProp,
   items,
@@ -707,6 +710,7 @@ export function SelectionModal({
       isOpen={isOpen}
       onClose={onClose}
       title={title}
+      heading={heading}
       headerType={searchable ? 'input' : 'title'}
       placeholder={searchPlaceholder}
       searchValue={search}

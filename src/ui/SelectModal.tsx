@@ -44,6 +44,8 @@ interface Common<T extends string> {
   label: string;
   /** Modal title; defaults to `label`. */
   title?: string;
+  /** Visible modal title node (an InfoTip term); `title` stays the accessible name. */
+  heading?: ComponentChildren;
   searchPlaceholder?: string;
   /** History key: the modal is a route entry (Back closes it). Required: every sheet is routed. */
   routeKey: string;
@@ -88,7 +90,7 @@ function Trigger({ disabled, onClick, open, children }: { disabled?: boolean; on
 }
 
 /** Single choice: a trigger Button (label + current value) that opens the modal picker. THE selector of the design system: no dropdown popups. */
-export function SelectModal<T extends string>({ value, onChange, items, label, title, searchPlaceholder = 'Search…', routeKey, applyLabel, triggerIcon = false, triggerPrefix, searchable, sortColumns, primaryColumnLabel, listHeader, groups, disabled }: Common<T> & { value: T | ''; onChange: (v: T) => void; disabled?: boolean }) {
+export function SelectModal<T extends string>({ value, onChange, items, label, title, heading, searchPlaceholder = 'Search…', routeKey, applyLabel, triggerIcon = false, triggerPrefix, searchable, sortColumns, primaryColumnLabel, listHeader, groups, disabled }: Common<T> & { value: T | ''; onChange: (v: T) => void; disabled?: boolean }) {
   const [open, setOpen] = useOpen(routeKey);
   const sel = useMemo(() => items.map(toItem), [items]);
   const cur = items.find((i) => i.value === value);
@@ -103,6 +105,7 @@ export function SelectModal<T extends string>({ value, onChange, items, label, t
         isOpen={open}
         onClose={() => setOpen(false)}
         title={title ?? label}
+        heading={heading}
         searchPlaceholder={searchPlaceholder}
         searchable={searchable}
         items={sel}

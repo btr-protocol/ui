@@ -56,6 +56,8 @@ export interface BaseModalProps {
   dismissible?: boolean;
   /** Icon to display left of title (headerType='title' only) */
   headerIcon?: ComponentChildren;
+  /** Visible title when it is richer than text (an InfoTip term); `title` stays the accessible name. */
+  heading?: ComponentChildren;
   /** Extra classes for the title text (e.g. font-numeric for addresses). */
   titleClassName?: string;
   headerRight?: ComponentChildren;
@@ -107,6 +109,7 @@ export function BaseModal({
   header = true,
   dismissible = true,
   headerIcon,
+  heading,
   titleClassName,
   headerRight,
   bodyHeader,
@@ -341,7 +344,7 @@ export function BaseModal({
             ) : (
               <h2 className="text-sm font-semibold flex-1 min-w-0 flex items-center gap-2 text-fg-0">
                 {headerIcon && <span className="text-fg-0 shrink-0">{headerIcon}</span>}
-                <span className={cn('truncate', titleClassName)}>{title}</span>
+                <span className={cn('truncate', titleClassName)}>{heading ?? title}</span>
               </h2>
             )}
 
