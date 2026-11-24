@@ -12,6 +12,7 @@ import { CloseButton } from './CloseButton';
 import type { InputProps } from './Input';
 import { ScrollPane } from './ScrollPane';
 import { SearchInput } from './SearchInput';
+import { HEADER_TITLE } from './toolbar';
 
 /** Body scroll lock is shared: refcounted, because swapping one dialog for another (search ->
  *  settings) unmounts the old one after the new one mounted, and a per-dialog save/restore would
@@ -172,10 +173,12 @@ export function BaseModal({
     if (!mounted || !card) return;
     const focusables = () => Array.from(card.querySelectorAll<HTMLElement>(FOCUSABLE));
 
-    // Focus the first element only while focus is still outside: refocusing would yank the caret
-    // out of a search input mid-typing. Touch: never open the keyboard unasked; the card takes it.
+    // Initial focus: a desktop search field takes it (type at once); otherwise the card itself, so no
+    // control (the header close X) opens wearing a focus ring and touch never opens the keyboard
+    // unasked. Tab from the card enters at the first control. Only while focus is still outside:
+    // refocusing would yank the caret out of a search input mid-typing.
     const first = focusables()[0];
-    const target = first && first.matches('input,textarea') && matchMedia('(pointer:coarse)').matches ? card : first;
+    const target = first?.matches('input,textarea') && !matchMedia('(pointer:coarse)').matches ? first : card;
     const focusTimer = setTimeout(() => {
       if (target && !card.contains(document.activeElement)) target.focus();
       openedRef.current?.(card);
@@ -344,7 +347,7 @@ export function BaseModal({
                 />
               </>
             ) : (
-              <h2 className="text-sm font-semibold flex-1 min-w-0 flex items-center gap-2 text-fg-0">
+              <h2 className={cn(HEADER_TITLE, 'flex-1 min-w-0 flex items-center gap-2')}>
                 {headerIcon && <span className="text-fg-0 shrink-0">{headerIcon}</span>}
                 <span className={cn('truncate', titleClassName)}>{heading ?? title}</span>
               </h2>
