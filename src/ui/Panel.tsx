@@ -5,7 +5,7 @@ import { cn } from '../lib/cn';
 import { type ComponentChildren, createContext } from 'preact';
 import type { Ref } from 'preact';
 import type { HTMLAttributes } from 'preact/compat';
-import { InHeader } from './toolbar';
+import { HEADER_TITLE, InHeader } from './toolbar';
 
 export type PanelVariant = 'default' | 'plain';
 
@@ -51,7 +51,6 @@ export function Panel({
 /** One header scale for every card: Panel title/meta, Table title bar, SignerRoster head. */
 const PANEL_HEADER = 'px-3 py-2 flex items-center justify-between gap-3 flex-wrap';
 const PANEL_HEADER_RULE = 'border-b border-border';
-const PANEL_TITLE = 'text-sm font-semibold text-fg-0';
 /** THE section header row (HeaderBar; ChartPanel's header reads it too). */
 export const HEADER_BAR = 'p-0 gap-0 flex-nowrap items-stretch min-h-8 bg-bg-1 leading-5';
 export const PANEL_BODY = 'px-3 py-3';
@@ -74,7 +73,7 @@ function PanelTitle(
   },
 ) {
   const { className, ...rest } = props;
-  return <h2 className={cn(PANEL_TITLE, className)} {...rest} />;
+  return <h2 className={cn(HEADER_TITLE, className)} {...rest} />;
 }
 
 export function PanelBody(

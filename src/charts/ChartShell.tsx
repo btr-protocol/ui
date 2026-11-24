@@ -6,6 +6,7 @@ import { DataSpinner } from '../ui/Spinner';
 import { cn } from '../lib/cn';
 import type { ComponentChildren, JSX } from 'preact';
 import { useRef } from 'preact/hooks';
+import { HEADER_TITLE } from '../ui/toolbar';
 
 interface ChartShellProps {
   title?: string;
@@ -28,7 +29,7 @@ const watermarkSize = (title: string) =>
 export function ChartHeader({ title, className }: { title: string; className?: string }) {
   return (
     <div className={cn('px-3 pt-1.5 pb-0.5 shrink-0', className)}>
-      <h3 className="text-sm font-semibold text-fg-0 truncate">{title}</h3>
+      <h3 className={cn(HEADER_TITLE, 'truncate')}>{title}</h3>
     </div>
   );
 }

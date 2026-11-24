@@ -10,6 +10,7 @@ import { numCol, textCol } from '../ui/tableCols';
 import { MetricChart, type MetricPaneSpec, type MetricSeriesSpec } from './MetricChart';
 import { formatter, type MetricValueFormat } from './metricChartMath';
 import { extent } from './seriesMath';
+import { HEADER_TITLE } from '../ui/toolbar';
 
 export interface StackPane {
   id: string;
@@ -129,7 +130,7 @@ export function ChartStack({ title, panes, controls, table, tableWidth = 'clamp(
   return (
     <section className={cn('surface overflow-hidden rounded-lg border border-border bg-bg-1', className)}>
       <header className="flex flex-wrap items-center gap-x-4 gap-y-1.5 border-b border-border px-3 py-2">
-        <h3 className="mr-auto min-w-0 truncate font-title text-sm font-semibold text-fg-0">{title}</h3>
+        <h3 className={cn(HEADER_TITLE, 'mr-auto min-w-0 truncate')}>{title}</h3>
         <span ref={dateRef} className="font-numeric text-xs tabular-nums text-fg-2" aria-live="off" />
         {controls && <div className="flex flex-wrap items-center gap-2 [&>*]:shrink-0">{controls}</div>}
       </header>

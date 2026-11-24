@@ -4,6 +4,9 @@ import { cn } from '../lib/cn';
 /** One toolbar cell (chart toolbar, depth toolbar, table/panel header): h-8, text-xs, no inner box. */
 export const TOOLBAR_CELL = 'toolbar-btn gap-1 text-xs whitespace-nowrap';
 
+/** THE header title (chart, table, panel): the toolbar cell's size, so a title never outsizes its row. */
+export const HEADER_TITLE = 'font-title text-xs font-semibold text-fg-0';
+
 /** True inside a HeaderBar's control row: SelectModal, SegmentedControl and InfoTip render as flush
  *  toolbar cells there instead of boxed buttons, so every header reads like the chart toolbar. */
 export const InHeader = createContext(false);

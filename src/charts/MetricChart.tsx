@@ -1,3 +1,4 @@
+import { HEADER_TITLE } from '../ui/toolbar';
 /**
  * MetricChart: the metrics-page time-series chart.
  *
@@ -928,7 +929,7 @@ export function MetricChart({
           className={cn('flex flex-col min-w-0 rounded-md bg-glass backdrop-blur px-1.5 py-0.5 pointer-events-auto', !legend && 'hidden')}
           ref={legendRef}
         >
-          {title && <h3 className="shrink-0 text-sm font-semibold text-fg-0">{title}</h3>}
+          {title && <h3 className={cn(HEADER_TITLE, 'shrink-0')}>{title}</h3>}
           <div className="flex items-center gap-x-3 gap-y-0.5 min-w-0 max-sm:flex-nowrap max-sm:scroll-x sm:flex-wrap">
             {series.map((s) => {
               const selected = hasMatch && matches(s);

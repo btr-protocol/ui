@@ -11,6 +11,7 @@ import { cn } from '../lib/cn';
 import { useModalRoute } from '../lib/modalRoute';
 import { Button } from '../ui/Button';
 import { Icon } from '../ui/Icon';
+import { HEADER_TITLE } from '../ui/toolbar';
 
 /** Floor of the chart area (px-free, rem): phones and short tables. */
 export const CHART_MIN_H = 'min-h-[18rem] sm:min-h-[22rem]';
@@ -87,7 +88,7 @@ export function ChartPanel({ title, value, date, valueRef, dateRef, controls, ta
       <header className="flex shrink-0 flex-wrap items-center gap-x-4 gap-y-1.5 border-b border-border px-3 py-2 sm:gap-y-2 sm:py-2.5">
         {/* Phones: title and value share one line (the header is ~2 rows, not 4, so the chart stays in the first viewport). */}
         <div className="mr-auto min-w-0 max-sm:flex max-sm:items-baseline max-sm:gap-2">
-          <h3 id={titleId} className="truncate font-title text-sm font-semibold text-fg-0">{title}</h3>
+          <h3 id={titleId} className={cn(HEADER_TITLE, 'truncate')}>{title}</h3>
           <div className="flex flex-wrap items-baseline gap-x-2" aria-live="off">
             <span ref={valueRef} className="font-title text-xl font-semibold tabular-nums text-fg-0">{value}</span>
             <span ref={dateRef} className="font-title text-xs tabular-nums text-fg-3">{date}</span>
