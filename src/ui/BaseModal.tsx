@@ -328,6 +328,8 @@ export function BaseModal({
           <div className={cn('flex items-center gap-2 sm:gap-3 h-12', MODAL_PADDING)}>
             {headerType === 'input' ? (
               <>
+                {/* The search field replaces the title; `heading` (label + InfoTip) stays beside it. */}
+                {heading && <span className="shrink-0 text-sm font-semibold text-fg-0 flex items-center gap-1">{heading}</span>}
                 {inputPrefix}
                 <SearchInput
                   variant="bare"
