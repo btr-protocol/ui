@@ -1,4 +1,4 @@
-// InfoBox / FloatingPanel keyboard spec in real Chromium (playwright-core): focus, key-up clicks and
+// InfoTip / FloatingPanel keyboard spec in real Chromium (playwright-core): focus, key-up clicks and
 // capture-phase ordering are the browser's, not a shim's. Needs Chromium (`bunx playwright install chromium`).
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test';
 import { existsSync, mkdirSync, readdirSync, writeFileSync } from 'node:fs';
@@ -28,10 +28,10 @@ async function setup() {
   const exe = chromium();
   if (!exe) throw new Error('no Chromium: bunx playwright install chromium (or set CHROMIUM_PATH)');
   mkdirSync(cache, { recursive: true });
-  const built = await Bun.build({ entrypoints: [join(root, 'test/fixtures/infobox-page.tsx')], outdir: cache, naming: 'page.js', format: 'iife', target: 'browser', define: { 'import.meta.url': JSON.stringify(`file://${root}/src/lib/assets.ts`) } });
+  const built = await Bun.build({ entrypoints: [join(root, 'test/fixtures/infotip-page.tsx')], outdir: cache, naming: 'page.js', format: 'iife', target: 'browser', define: { 'import.meta.url': JSON.stringify(`file://${root}/src/lib/assets.ts`) } });
   if (!built.success) throw new Error(built.logs.join('\n'));
   writeFileSync(join(cache, 'in.css'), `@import "${join(root, 'src/styles/index.css')}";`);
-  writeFileSync(join(cache, 'tw.config.js'), `import preset from '${join(root, 'src/styles/tailwind.preset.js')}'; export default { presets: [preset], content: ['${root}/src/**/*.{ts,tsx}', '${root}/test/fixtures/infobox-page.tsx'] };`);
+  writeFileSync(join(cache, 'tw.config.js'), `import preset from '${join(root, 'src/styles/tailwind.preset.js')}'; export default { presets: [preset], content: ['${root}/src/**/*.{ts,tsx}', '${root}/test/fixtures/infotip-page.tsx'] };`);
   const tw = Bun.spawnSync([join(root, 'node_modules/.bin/tailwindcss'), '-c', join(cache, 'tw.config.js'), '-i', join(cache, 'in.css'), '-o', join(cache, 'page.css')], { stderr: 'pipe' });
   if (tw.exitCode) throw new Error(tw.stderr.toString());
   writeFileSync(join(cache, 'index.html'), '<!doctype html><html class="dark"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="stylesheet" href="page.css"></head><body><script src="page.js"></script></body></html>');
@@ -63,7 +63,7 @@ async function tabTo(page: Page, sel: string) {
   expect(await on(page, sel)).toBe(true);
 }
 
-describe('InfoBox with focusable content', () => {
+describe('InfoTip with focusable content', () => {
   for (const key of ['Enter', 'Space']) {
     test(`${key} on the trigger moves focus in and fires no stray click`, async () => {
       const page = await open();
@@ -170,7 +170,7 @@ describe('InfoBox with focusable content', () => {
   });
 });
 
-describe('text-only InfoBox keeps its plain toggle', () => {
+describe('text-only InfoTip keeps its plain toggle', () => {
   for (const key of ['Enter', 'Space']) {
     test(`${key} toggles the box and focus stays on the trigger`, async () => {
       const page = await open();

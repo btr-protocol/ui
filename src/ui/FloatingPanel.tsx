@@ -29,7 +29,7 @@ export interface FloatingPanelProps {
 }
 
 /**
- * The one popover engine behind Tooltip, Popover and InfoBox: trigger wrapper, portaled panel,
+ * The one popover engine behind Tooltip, Popover and InfoTip: trigger wrapper, portaled panel,
  * viewport containment, hover bridge, outside-press / Escape / Back dismissal.
  */
 export function FloatingPanel({

@@ -1,4 +1,4 @@
-// Canonical Table: sortable headers, search, virtual window, mobile card stack. Family contract
+// Canonical Table: sortable headers, search, virtual window, phone horizontal scroll with a sticky first column. Family contract
 // with Panel/ChartShell: `title` + `meta` header, `loading`, empty as `emptyMessage`. Sort is ONE
 // cycle (asc, desc, off) via useTableSort; SortHeader is the only sort control, `<th>` only
 // carries aria-sort.
@@ -12,7 +12,7 @@ import { cn } from '../lib/cn';
 import type { ComponentChildren, JSX } from 'preact';
 import { useContext, useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { Icon, type IconName } from './Icon';
-import { InfoBox } from './InfoBox';
+import { InfoTip } from './InfoBox';
 import { HeaderBar, InFrame, Panel } from './Panel';
 import { SearchInput } from './SearchInput';
 import type { InputProps } from './Input';
@@ -48,7 +48,7 @@ const COMPACT_ROW_H = 28;
  * THE table geometry, named once. Every table in the app - the semantic `<Table>` below and the
  * grid tables that cannot use it (PoolsPage) - reads these instead of re-typing the strings, so
  * a padding or a divider changes in ONE place and cannot drift between two tables, between the
- * virtual and non-virtual bodies, or between desktop and the mobile stack.
+ * virtual and non-virtual bodies.
  */
 /** Header cell: sticky so a scrolled body keeps its labels. */
 const TABLE_HEAD_CELL = 'px-3 py-1.5 coarse:py-3 font-medium bg-bg-3 sticky top-0 z-raised';
@@ -63,18 +63,10 @@ const TABLE_ROW_BORDER = 'border-b border-border last:border-0';
  *  an outset ring on a full-bleed row is clipped by the frame's `overflow-hidden`. */
 export const ROW_FOCUS =
   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring';
-/** Mobile stack: a row becomes a card of label/value lines. */
-const MOBILE_ROW = 'px-3 py-2 space-y-1';
-const MOBILE_ROW_TAP = 'cursor-pointer hover:bg-bg-2';
-const MOBILE_LINE = 'flex items-start justify-between gap-3 text-sm';
-const MOBILE_LABEL = 'text-xs text-fg-3 shrink-0';
-const MOBILE_VALUE = 'text-right min-w-0 flex-1 flex justify-end';
-/** Where the table turns into a stack: the desktop body shows from the breakpoint up, the stack
- *  (and its phone sort chips) below it. Literal classes, so Tailwind sees them. */
-const STACK = {
-  md: { desktop: 'hidden md:block', mobile: 'md:hidden' },
-  lg: { desktop: 'hidden lg:block', mobile: 'lg:hidden' },
-} as const;
+/** Phones get the desktop table: horizontal scroll, sticky first column, compact 2xs cells. */
+const PHONE =
+  'max-sm:overflow-x-auto max-sm:[&_table]:min-w-max max-sm:[&_table]:text-2xs max-sm:[&_td]:whitespace-nowrap max-sm:[&_th]:whitespace-nowrap max-sm:[&_td]:px-2 max-sm:[&_th]:px-2 ' +
+  'max-sm:[&_td:first-child]:sticky max-sm:[&_th:first-child]:sticky max-sm:[&_td:first-child]:left-0 max-sm:[&_th:first-child]:left-0 max-sm:[&_td:first-child]:z-base max-sm:[&_th:first-child]:z-base max-sm:[&_td:first-child]:bg-bg-1 max-sm:[&_th:first-child]:bg-bg-1';
 const TABLE_BASE = 'w-full text-sm';
 
 const alignCls = (a?: 'left' | 'right' | 'center') =>
@@ -235,18 +227,12 @@ export interface TableProps<Row> {
   frame?: boolean;
   rowKey: (row: Row, idx: number) => string;
   /** Rows held above the body: never searched, sorted or counted as empty (aggregates that frame
-   *  the rows beneath them). Plain desktop table only: the virtual body and the mobile stack
-   *  ignore it. */
+   *  the rows beneath them). Plain table only: the virtual body ignores it. */
   pinned?: Row[];
   emptyMessage?: string;
   initialSort?: { key: string; dir: SortDir };
-  /** The row as a card in the stack below `stackBelow`. Desktop keeps the columns; without it the
-   *  stack is label/value lines. */
-  renderCard?: (row: Row) => JSX.Element;
-  /** Breakpoint under which rows stack as cards. Tables past ~6 columns need `lg`. */
-  stackBelow?: 'md' | 'lg';
   /**
-   * Optional per-row class on the desktop `<tr>` and the mobile stack card - used to
+   * Optional per-row class on the `<tr>` - used to
    * grey out rows whose underlying market is closed. Return `undefined` for no override.
    */
   rowClassName?: (row: Row) => string | undefined;
@@ -345,7 +331,7 @@ function HeadRow<Row>({
               {/* Outside the sort target: the header sorts on click and the hint pins on click,
                   and the ⓘ stops the event so one gesture cannot do both. */}
               {col.hint && (
-                <InfoBox
+                <InfoTip
                   label={col.hint.label}
                   content={col.hint.content}
                   maxWidth="20rem"
@@ -398,22 +384,6 @@ function SpacerRow({ height, cols }: { height: number; cols: number }) {
   );
 }
 
-/** One row of the mobile stack: every column becomes a label/value line. */
-function MobileCells<Row>({ columns, row }: { columns: TableColumn<Row>[]; row: Row }) {
-  return (
-    <>
-      {columns.map((col) => (
-        <div key={col.key} className={MOBILE_LINE}>
-          <span className={MOBILE_LABEL}>{col.label}</span>
-          <div className={MOBILE_VALUE}>
-            {col.render ? col.render(row) : (defaultValue(col, row) ?? '')}
-          </div>
-        </div>
-      ))}
-    </>
-  );
-}
-
 export function Table<Row>({
   columns,
   data,
@@ -434,8 +404,6 @@ export function Table<Row>({
   pinned,
   emptyMessage = 'No results',
   initialSort,
-  renderCard,
-  stackBelow = 'md',
   rowClassName,
   maxHeight,
   scrollX = false,
@@ -446,7 +414,7 @@ export function Table<Row>({
   const compact = variant === 'compact';
   // Inside a framed Panel the container draws the one border: flush unless the caller says.
   const framed = frame ?? !useContext(InFrame);
-  const desktop = compact ? 'min-h-0 flex flex-col flex-1' : STACK[stackBelow].desktop;
+  const desktop = cn(compact && 'min-h-0 flex flex-col flex-1', PHONE);
   const [query, setQuery] = useState('');
   useEffect(() => setQuery(''), [resetKey]);
   const { sortKey, sortDir, toggleSort } = useTableSort(initialSort);
@@ -463,7 +431,6 @@ export function Table<Row>({
   // OUTSIDE the scroller, so it pads itself by the same measured amount and
   // right-aligned headers stay over their amounts instead of drifting left.
   const [sbGutter, setSbGutter] = useState(0);
-  const [mobileLimit, setMobileLimit] = useState(50);
   const pageRef = useRef(false);
   useEffect(() => {
     if (!virtual?.loadingMore) pageRef.current = false;
@@ -538,7 +505,6 @@ export function Table<Row>({
   };
   const tableRole = selectable ? ({ role: 'grid', 'aria-label': title } as const) : {};
 
-  const sortable = columns.filter((c) => c.sortable);
   const head = (
     <HeadRow
       columns={columns}
@@ -564,7 +530,7 @@ export function Table<Row>({
       placeholder={searchPlaceholder}
       ariaLabel={title ? `Search ${title}` : undefined}
       inputProps={query ? ({ 'data-esc-clear': '' } as Partial<InputProps>) : undefined}
-      className={title || meta ? 'sm:w-64' : 'flex-1 max-sm:border-t-0 sm:border-l-0'}
+      className={title || meta ? 'sm:w-64' : 'flex-1 border-l-0 max-sm:w-auto'}
     />
   );
 
@@ -752,94 +718,6 @@ export function Table<Row>({
           </div>
         )}
 
-        {/* Mobile */}
-        {!loading && !compact && (
-          <div className={cn(STACK[stackBelow].mobile, 'divide-y divide-border')}>
-            {sortable.length > 0 && (
-              // Sort is a header click on desktop; the stack has no header, so the same
-              // `SortHeader` toggles ride here, one per sortable column.
-              <div
-                role="group"
-                aria-label="Sort by"
-                className="scroll-x flex items-center gap-3 px-3 py-1 text-xs text-fg-3"
-              >
-                <span className="shrink-0">Sort</span>
-                {sortable.map((c) => (
-                  <SortHeader
-                    key={c.key}
-                    label={c.label}
-                    sortKey={c.key}
-                    active={sortKey === c.key && sortDir !== null}
-                    dir={sortKey === c.key ? sortDir : null}
-                    onToggle={toggleSort}
-                    align="left"
-                    className="shrink-0 py-1.5"
-                  />
-                ))}
-              </div>
-            )}
-            {sorted.length === 0 ? (
-              <div className="p-4">
-                <Empty>{emptyMessage}</Empty>
-              </div>
-            ) : (
-              (() => {
-                const win = isVirtual
-                  ? virtualWindow(
-                      scrollTop,
-                      MAX_BODY_H,
-                      sorted.length,
-                      rowH,
-                      virtual?.overscan ?? 8,
-                    )
-                  : null;
-                const view = win ? sorted.slice(win.start, win.end) : sorted;
-                // One stack, both bodies: the virtual one windows its slice and pages the rest
-                // behind a "show more"; the plain one is the whole list at offset 0.
-                const shown = win ? view.slice(0, mobileLimit) : view;
-                const offset = win?.start ?? 0;
-                return (
-                  <>
-                    {shown.map((row, idx) => {
-                      const key = rowKey(row, offset + idx);
-                      const { 'aria-selected': sel, ...mobileSel } = selProps(row, key) as {
-                        'aria-selected'?: boolean;
-                      };
-                      return (
-                        <div
-                          key={key}
-                          {...rowProps?.(row)}
-                          {...mobileSel}
-                          aria-current={sel ? 'true' : undefined}
-                          className={cn(
-                            MOBILE_ROW,
-                            (onRowClick || selectable) && MOBILE_ROW_TAP,
-                            selectable && ROW_FOCUS,
-                            key === selectedKey && SELECTED_ROW,
-                            rowClassName?.(row),
-                          )}
-                          onClick={() => pick(row, key)}
-                        >
-                          {renderCard?.(row) ?? <MobileCells columns={columns} row={row} />}
-                        </div>
-                      );
-                    })}
-                    {win && view.length > mobileLimit && (
-                      <button
-                        type="button"
-                        className="w-full py-3 text-xs text-fg-2 hover:text-fg-1"
-                        onClick={() => setMobileLimit((n) => n + 50)}
-                      >
-                        Show {Math.min(50, view.length - mobileLimit)} more of{' '}
-                        {view.length.toLocaleString('en-US')}
-                      </button>
-                    )}
-                  </>
-                );
-              })()
-            )}
-          </div>
-        )}
       </Panel>
     </div>
   );

@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+- `InfoBox` is now `InfoTip` (same file `ui/InfoBox`): the only `cursor-help`. `children` = term label (dotted underline, no glyph), none = the ⓘ glyph. Panel order: `content`, optional `context`, `more` (the one "Learn more" link). `InTip` context is true inside its panel. `RecapHint` and `HintLabel` are removed: use `InfoTip` with a label child. CONSUMERS: rename `InfoBox`/`RecapHint`/`HintLabel`.
+- `Table`: no mobile card stack. `renderCard` and `stackBelow` are removed; phones render the table with horizontal scroll, a sticky first column and `text-2xs` cells.
+- `HeaderBar`: one row on every width (`HEADER_BAR`: bg-bg-1, min-h-8, leading-5, truncating title); the header `SearchInput` folds to its glyph on phones and opens on focus or with a query.
+- Selection rows (every picker): label and caption on one row, caption right-aligned; `note` stays its own line.
+
 ## 0.15.0 (note)
 - No `"sideEffects"` field in package.json: Bun's bundler skipped the init of used modules with it (a bundled page failed with `BusyContext` undefined). Entry code imports `Loader`/`Figure` from deep paths instead.
 

@@ -34,6 +34,6 @@ export interface DropdownItem<T = string> {
   href?: string;
   /** Muted right-aligned value on the row (an amount, a count). Inert: the whole row stays the hit target. */
   detail?: ComponentChildren;
-  /** Control rendered immediately after the label (e.g. InfoBox), before the check. */
+  /** Control rendered immediately after the label (e.g. InfoTip), before the check. */
   trailing?: ComponentChildren;
 }

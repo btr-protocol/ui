@@ -70,5 +70,5 @@ export { ExportButton, type ExportButtonProps } from './ExportButton';
 export { TabStrip, reorderTabs, type TabStripProps, type StripTab } from './TabStrip';
 export { numCol, textCol } from './tableCols';
 export { CommandPalette, rank, score, type PaletteItem } from './CommandPalette';
-export { MatrixTable, HintLabel, type MatrixRow } from './MatrixTable';
+export { MatrixTable, type MatrixRow } from './MatrixTable';
 export * from './toolbar';

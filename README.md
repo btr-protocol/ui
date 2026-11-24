@@ -82,7 +82,7 @@ import { MasterDetail, Table, StackedIcons, Timeline, ChainMultiSelect } from '@
   placeholder={<Empty>Select a Safe</Empty>}
   master={
     <Table noHeader searchable={false} columns={cols} data={safes} rowKey={(s) => s.addr}
-      selectedKey={safeId} onSelect={(_, key) => setSafeId(key)} stackBelow="lg" />
+      selectedKey={safeId} onSelect={(_, key) => setSafeId(key)} />
   }
   detail={<SafeDetail id={safeId} />}
 />

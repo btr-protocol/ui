@@ -1,6 +1,6 @@
 // Page for test/infobox-keys.browser.test.tsx: a modal that closes on Escape (`useDismiss`, as the real ones do)
-// holding one InfoBox with a focusable body and one text-only InfoBox.
-import { InfoBox } from '../../src/ui/InfoBox';
+// holding one InfoTip with a focusable body and one text-only InfoTip.
+import { InfoTip } from '../../src/ui/InfoBox';
 import { useDismiss } from '../../src/ui/useDismiss';
 import { render } from 'preact';
 import { useRef, useState } from 'preact/hooks';
@@ -20,7 +20,7 @@ function App() {
       <output id="clicks">{clicks}</output>
       {open && (
         <div id="modal" ref={modal} style={{ display: 'flex', gap: 40, padding: 24 }}>
-          <InfoBox
+          <InfoTip
             label="Linked"
             content={
               <button type="button" id="inner" onClick={() => setClicks((c) => c + 1)}>
@@ -28,7 +28,7 @@ function App() {
               </button>
             }
           />
-          <InfoBox label="Plain" content="just words" />
+          <InfoTip label="Plain" content="just words" />
         </div>
       )}
     </div>

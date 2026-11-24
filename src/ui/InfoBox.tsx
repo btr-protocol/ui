@@ -1,5 +1,5 @@
 import { cn } from '../lib/cn';
-import type { ComponentChildren } from 'preact';
+import { type ComponentChildren, createContext } from 'preact';
 import { useContext } from 'preact/hooks';
 import { FloatingPanel } from './FloatingPanel';
 import { InHeader } from './toolbar';
@@ -15,56 +15,50 @@ export const TIP_BODY = 'whitespace-normal text-xs font-normal leading-snug text
 /** Links inside tooltips / info boxes - same dotted rule, one fg rung up from the body. */
 export const TOOLTIP_LINK = `text-fg-1 ${LINK}`;
 
-/** Label as one hover block; `hideIcon` for tight rows (routing). */
-export function RecapHint({
-  title,
-  content,
-  children,
-  hideIcon = false,
-}: {
-  title: string;
-  content: ComponentChildren;
-  children: ComponentChildren;
-  hideIcon?: boolean;
-}) {
-  return (
-    <InfoBox label={title} content={content} hideIcon={hideIcon}>
-      <span className={LINK}>{children}</span>
-    </InfoBox>
-  );
-}
+/** True inside an InfoTip's panel: a glossary term there is plain text (the tip ends with its one link). */
+export const InTip = createContext(false);
 
 /**
- * ⓘ button for CLICKABLE content (glossary links): hover opens it, the panel bridges the gap so the
- * pointer can travel in and click a link, and a click toggles it. Outside press / Escape / Back close it.
+ * THE infotip (the only `cursor-help` in the app). Trigger: `children` as a term label (dotted
+ * underline, no glyph) or, without children, the ⓘ glyph. Panel, fixed order: `content` (the
+ * definition), optional `context` (a live line), then `more` (the single "Learn more ->" link).
+ * Hover/focus opens it, the panel bridges the gap so the pointer can reach the link, a click
+ * toggles it. Outside press / Escape / Back close it.
  */
-export function InfoBox({
+export function InfoTip({
   content,
+  context,
+  more,
   label,
   side = 'bottom',
   maxWidth = '280px',
   iconClassName = 'w-3 h-3',
   icon = 'info',
-  hideIcon = false,
+  hideIcon,
   children,
   className,
 }: {
-  content: ComponentChildren;
+  content?: ComponentChildren;
+  /** Second line: live context (the selected window, say). */
+  context?: ComponentChildren;
+  /** Last line: the one "Learn more" link. */
+  more?: ComponentChildren;
   /** Accessible name. Say what it explains ("About paid spread"), not "info". */
   label: string;
-  /** Trigger body when hideIcon is set (the caller's row/label IS the affordance). */
+  /** Term label: the trigger is this text with a dotted underline. */
   children?: ComponentChildren;
   side?: 'top' | 'bottom' | 'left' | 'right';
   maxWidth?: string;
   iconClassName?: string;
   /** Glyph in the ⓘ slot: a status (warning, closed) swaps the glyph, never the slot or size. */
   icon?: IconName;
-  /** Render no ⓘ glyph: the caller's own content IS the trigger (a whole row, say). */
+  /** Glyph beside the label; defaults to on without children, off with them. */
   hideIcon?: boolean;
   /** Classes on the TRIGGER wrapper - responsive visibility, not styling. */
   className?: string;
 }) {
   const inHeader = useContext(InHeader);
+  const glyph = !(hideIcon ?? children != null);
   return (
     <FloatingPanel
       mode="both"
@@ -75,18 +69,26 @@ export function InfoBox({
       side={side}
       maxWidth={maxWidth}
       wrapClass={cn(inHeader ? 'inline-flex' : 'inline-flex p-2 -m-2 align-middle', className)}
-      content={<div className={TIP_BODY}>{content}</div>}
+      content={
+        <InTip.Provider value={true}>
+          <div className={TIP_BODY}>
+            {content}
+            {context != null && <span className="mt-1 block">{context}</span>}
+            {more != null && <span className="mt-1 block">{more}</span>}
+          </div>
+        </InTip.Provider>
+      }
     >
       {(open) => (
         <button
           type="button"
           // No `text-sm`: the trigger INHERITS its caller's type size.
-          className="inline-flex cursor-pointer items-center gap-1 text-inherit transition-colors hover:text-fg-1"
+          className="inline-flex cursor-help items-center gap-1 text-inherit transition-colors hover:text-fg-1"
           aria-label={label}
           aria-expanded={open}
         >
-          {children}
-          {!hideIcon && <Icon name={icon} className={iconClassName} />}
+          {children != null && <span className={glyph ? undefined : LINK}>{children}</span>}
+          {glyph && <Icon name={icon} className={iconClassName} />}
         </button>
       )}
     </FloatingPanel>

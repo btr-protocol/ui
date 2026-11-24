@@ -24,7 +24,7 @@ test('Table selectable: aria-selected, fused style, roving tabindex', () => {
   expect(html).toContain('aria-selected="false"');
   expect(html).toContain('bg-bg-primary hover:bg-bg-primary text-primary font-semibold');
   // only the selected row is a tab stop
-  expect(html.match(/tabindex="0"/g)?.length).toBe(2); // desktop tr + mobile card
+  expect(html.match(/tabindex="0"/g)?.length).toBe(1); // one table on every width
   expect(render(<Table columns={cols} data={rows} rowKey={(r) => r.id} />)).not.toContain('aria-selected');
 });
 

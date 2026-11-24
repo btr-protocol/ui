@@ -94,8 +94,8 @@ interface DropdownProps<T = string> {
   /** Accessible name for the trigger. Required when no visible label sits beside the control:
    *  the trigger otherwise announces only its current value ("7d"), which does not say of what. */
   ariaLabel?: string;
-  /** Control rendered INSIDE the default trigger between the label and the caret - an InfoBox
-   *  ⓘ explaining the current value, say. It must stop its own pointer events (InfoBox does)
+  /** Control rendered INSIDE the default trigger between the label and the caret - an InfoTip
+   *  ⓘ explaining the current value, say. It must stop its own pointer events (InfoTip does)
    *  so touching it does not toggle the menu, and it must stay visible: the label truncates,
    *  the adornment does not. */
   adornment?: ComponentChildren;
