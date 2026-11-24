@@ -21,6 +21,7 @@ import { fieldSizing, inputVariants } from './Input';
 import { FormRow } from './Primitives';
 import { useDismiss } from './useDismiss';
 import { safeHref } from '../lib/safeHref';
+import { usePhone } from '../lib/useMedia';
 
 export type { DropdownItem, SelectionItem } from '../lib/uiTypes';
 export type { SelectionGroup, SelectionLabels, SelectionSortColumn } from './selectionView';
@@ -150,6 +151,8 @@ export function Dropdown<T = string>({
   const panelRef = useRef<HTMLDivElement>(null);
   const dropdownId = useId();
 
+  // Phones: the menu is a bottom sheet (owner rule: modal selects, no floating dropdowns). Same rows.
+  const sheet = usePhone();
   const isControlled = controlledOpen !== undefined;
   const isOpen = isControlled ? controlledOpen : internalOpen;
 
@@ -169,8 +172,9 @@ export function Dropdown<T = string>({
   setOpenRef.current = setOpen;
   // Outside press / Escape / Back. Escape also hands focus back to the trigger and is not passed
   // on, so a chart or drawing surface below cannot act on the same key.
+  // The sheet brings its own Escape, Back and scrim dismissal.
   useDismiss(
-    isOpen,
+    isOpen && !sheet,
     (e) => {
       const esc = e?.type === 'keydown';
       if (esc) {
@@ -362,7 +366,7 @@ export function Dropdown<T = string>({
 
   const panelContent = (
     <>
-      <div className="max-h-64 overflow-y-auto">
+      <div className={cn(!sheet && 'max-h-64 overflow-y-auto')}>
         {items.map((item) => {
           const selectableItems = items.filter((i) => !i.disabled);
           const selectableIdx = selectableItems.findIndex((i) => i.value === item.value);
@@ -379,7 +383,7 @@ export function Dropdown<T = string>({
             <div
               className={cn(
                 'relative w-full flex items-center gap-1 font-title font-medium transition-colors',
-                itemSizeClasses.item,
+                sheet ? cn('min-h-12 text-sm', MODAL_PADDING) : itemSizeClasses.item,
                 !disabled && 'hover:bg-bg-2',
                 isHighlighted && !disabled && 'bg-bg-3',
                 selected && !disabled && 'bg-bg-primary',
@@ -473,8 +477,14 @@ export function Dropdown<T = string>({
     </>
   );
 
-  const panel =
-    isOpen && position
+  const title = ariaLabel ?? (typeof placeholder === 'string' ? placeholder : 'Select');
+  const panel = sheet ? (
+    <BaseModal isOpen={isOpen} onClose={() => setOpen(false)} title={title} size="sm">
+      <div ref={panelRef} data-dropdown-id={dropdownId} className="font-title">
+        {panelContent}
+      </div>
+    </BaseModal>
+  ) : isOpen && position
       ? createPortal(
           <div
             ref={panelRef}
@@ -581,7 +591,7 @@ export function SelectionModal({
   hasActiveFilters = false,
   size = 'md',
   multiSelect = false,
-  applyLabel = 'Ok',
+  applyLabel = 'Apply',
   labels,
   groups,
   presets,
@@ -789,7 +799,7 @@ export function FilterButton({
   return (
     <button
       onClick={onClick}
-      className="flex items-center gap-1.5 h-8 px-2.5 rounded-sm transition-colors bg-bg-primary border border-primary"
+      className="flex items-center gap-1.5 h-[var(--ctl-m)] px-2.5 rounded-sm transition-colors bg-bg-primary border border-primary"
     >
       <span className="text-sm text-primary font-medium">{label}</span>
       <div className="flex items-center gap-0.5">
