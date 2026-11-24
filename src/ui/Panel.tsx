@@ -96,7 +96,7 @@ export function PanelBody(
 export function HeaderBar({ title, meta, search }: { title?: ComponentChildren; meta?: ComponentChildren; search?: ComponentChildren }) {
   return (
     <PanelHeader className={HEADER_BAR}>
-      <div className="flex flex-1 min-w-0 items-center px-3 py-1.5">{title ? <PanelTitle className="min-w-0 truncate leading-5">{title}</PanelTitle> : null}</div>
+      <div className="flex flex-1 min-w-0 items-center px-3 py-1.5 has-[button]:py-0">{title ? <PanelTitle className="min-w-0 truncate leading-5">{title}</PanelTitle> : null}</div>
       {meta ? (
         <InHeader.Provider value={true}>
           <div
