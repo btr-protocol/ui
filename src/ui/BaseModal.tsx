@@ -355,9 +355,13 @@ export function BaseModal({
               {/* Decorative rule; below `sm` its 17px is width the search field needs. */}
               {headerRight && <div className="w-px h-6 bg-border mx-2 max-sm:hidden" />}
               {showClose && (
+                // 40px box, icon kept on the px-3 edge; own box instead of the 44px ::after,
+                // which would poke past the card's right edge (scrollWidth +1).
                 <CloseButton
                   onClick={() => onClose(false)}
                   size={18}
+                  className="-mr-[11px] inline-flex size-10 items-center justify-center"
+                  notap
                   aria-label={`Close ${title}`}
                 />
               )}

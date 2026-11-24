@@ -8,6 +8,8 @@ interface CloseButtonProps {
   /** Name the thing being closed ("Close settings"); a bare "Close" is the fallback. */
   'aria-label'?: string;
   disabled?: boolean;
+  /** Opt out of the kit's 44px touch ::after (the caller sizes the box itself). */
+  notap?: boolean;
 }
 
 export function CloseButton({
@@ -16,6 +18,7 @@ export function CloseButton({
   className,
   'aria-label': ariaLabel = 'Close',
   disabled,
+  notap,
 }: CloseButtonProps) {
   return (
     <button
@@ -24,6 +27,7 @@ export function CloseButton({
       className={cn('opacity-70 hover:opacity-100 transition-opacity', className)}
       aria-label={ariaLabel}
       disabled={disabled}
+      data-notap={notap || undefined}
     >
       <Icon name="x" size={size} />
     </button>
