@@ -10,6 +10,7 @@ import {
 import { cn } from '../lib/cn';
 import { cva } from '../lib/cva';
 import { forwardRef } from 'preact/compat';
+import { useLayoutEffect, useRef } from 'preact/hooks';
 import type { HTMLAttributes, Ref } from 'preact/compat';
 
 export type InputVariant = 'default' | 'amount' | 'address' | 'number' | 'bare';
@@ -70,21 +71,44 @@ export const fieldSizing = (variant: InputVariant, size: Size | AmountSize) => {
   return cn(SIZE_HEIGHTS[s], SIZE_PADDINGS[s], SIZE_TEXT[s], 'coarse:text-base');
 };
 
+/** `amount`: a figure wider than its field shrinks (to 60% at most) instead of clipping its leading digits. */
+function fitText(el: HTMLInputElement) {
+  el.style.fontSize = '';
+  const { scrollWidth: s, clientWidth: c } = el;
+  if (c > 0 && s > c) el.style.fontSize = `${Math.max(0.6, c / s) * parseFloat(getComputedStyle(el).fontSize)}px`;
+}
+
 export const Input = forwardRef<HTMLInputElement, InputProps>(
-  ({ className, variant = 'default', size = 'default', type, ...props }, ref) => (
-    <input
-      type={type}
-      className={inputVariants({
-        variant,
-        className: cn(
-          fieldSizing(variant, size),
-          typeof className === 'string' ? className : undefined,
-        ),
-      })}
-      lang="en-US"
-      inputMode={type === 'number' ? 'decimal' : undefined}
-      ref={ref}
-      {...props}
-    />
-  ),
+  ({ className, variant = 'default', size = 'default', type, onInput, ...props }, ref) => {
+    const own = useRef<HTMLInputElement | null>(null);
+    const fit = variant === 'amount';
+    // Every render: a controlled value changes by re-render; typing into an uncontrolled one goes through onInput.
+    useLayoutEffect(() => {
+      if (fit && own.current) fitText(own.current);
+    });
+    return (
+      <input
+        type={type}
+        className={inputVariants({
+          variant,
+          className: cn(
+            fieldSizing(variant, size),
+            typeof className === 'string' ? className : undefined,
+          ),
+        })}
+        lang="en-US"
+        inputMode={type === 'number' ? 'decimal' : undefined}
+        ref={(el) => {
+          own.current = el;
+          if (typeof ref === 'function') ref(el);
+          else if (ref) ref.current = el;
+        }}
+        onInput={(e) => {
+          if (fit) fitText(e.currentTarget);
+          onInput?.(e);
+        }}
+        {...props}
+      />
+    );
+  },
 );
