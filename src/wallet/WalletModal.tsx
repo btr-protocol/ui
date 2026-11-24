@@ -256,10 +256,15 @@ export function WalletModal({
         key={w.id}
         name={w.name}
         icon={<WalletGlyph id={w.id} name={w.name} size={28} />}
-        caption={browse ? l.opensInApp : w.id === lastWallet ? l.lastUsed : undefined}
+        caption={w.id === lastWallet ? l.lastUsed : undefined}
+        // One row height for all: "opens in the app" is a trailing glyph + accessible name, not a second line.
+        ariaLabel={browse ? `${w.name}. ${l.opensInApp}` : undefined}
+        rightIcon={browse ? <Icon name="external-link" className="h-4 w-4 shrink-0 text-fg-2" aria-hidden="true" /> : undefined}
         variant={detected.includes(w.id) ? 'detected' : 'default'}
         href={browse ? browseHref(w) : uri ? walletHref(w, uri) : undefined}
-        disabled={!browse && !uri}
+        // Preparing the pairing: busy spinner, full opacity; `launch` ignores taps until the URI exists.
+        isConnecting={!browse && !uri && !pairError}
+        disabled={!browse && !!pairError}
         onClick={(e) => launch(w, e)}
       />
     );
