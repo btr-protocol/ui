@@ -194,10 +194,13 @@ export function useSelectionView(p: SelectionViewProps) {
             <div className={`flex h-8 w-8 items-center justify-center ${on ? 'text-primary' : 'text-fg-2'}`}>{renderIcon(item.icon, 'w-5 h-5')}</div>
           ))}
         <div className="min-w-0 flex-1 text-left">
-          <div className={cn('mt-0.5 truncate font-title text-sm', open ? 'font-medium' : on && !mark && 'font-medium text-primary')} title={item.label}>
-            {item.label}
+          {/* Label and caption on ONE row (chain name + id): the caption right-aligned, truncating first. */}
+          <div className="flex min-w-0 items-baseline justify-between gap-3">
+            <span className={cn('truncate font-title text-sm', open ? 'font-medium' : on && !mark ? 'font-medium text-primary' : 'text-fg-0')} title={item.label}>
+              {item.label}
+            </span>
+            {item.caption && <span className={cn('min-w-0 truncate text-xs tabular-nums', open ? 'text-primary' : 'text-fg-3')} title={item.caption}>{item.caption}</span>}
           </div>
-          {item.caption && <div className={cn('-mt-1 truncate text-xs', open ? 'text-primary' : 'text-fg-3')}>{item.caption}</div>}
           {item.note && <div className="whitespace-normal break-words text-xs text-red">{item.note}</div>}
         </div>
         {sortColumns?.map(

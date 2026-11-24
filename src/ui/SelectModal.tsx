@@ -11,7 +11,7 @@ import { cn } from '../lib/cn';
 export interface SelectModalItem<T extends string = string> {
   value: T;
   label: string;
-  /** Muted caption under the label. */
+  /** Muted caption, right of the label on the same row. */
   caption?: string;
   /** Own wrapped line under the caption (why a row is disabled, a warning). */
   note?: string;
