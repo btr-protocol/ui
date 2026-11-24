@@ -338,7 +338,7 @@ select[aria-invalid="true"]:focus {
   initial-value: 0px;
 }
 .toolbar-fade {
-  mask-image: linear-gradient(to left, transparent, #000 var(--fade-r));
+  mask-image: linear-gradient(to left, transparent, #000 var(--fade-r, 0px));
 }
 @supports (animation-timeline: scroll()) {
   .toolbar-fade {

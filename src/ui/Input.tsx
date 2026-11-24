@@ -10,7 +10,7 @@ import {
 import { cn } from '../lib/cn';
 import { cva } from '../lib/cva';
 import { forwardRef } from 'preact/compat';
-import { useLayoutEffect, useRef } from 'preact/hooks';
+import { useCallback, useLayoutEffect, useRef } from 'preact/hooks';
 import type { HTMLAttributes, Ref } from 'preact/compat';
 
 export type InputVariant = 'default' | 'amount' | 'address' | 'number' | 'bare';
@@ -82,6 +82,14 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
   ({ className, variant = 'default', size = 'default', type, onInput, ...props }, ref) => {
     const own = useRef<HTMLInputElement | null>(null);
     const fit = variant === 'amount';
+    const setRef = useCallback(
+      (el: HTMLInputElement | null) => {
+        own.current = el;
+        if (typeof ref === 'function') ref(el);
+        else if (ref) ref.current = el;
+      },
+      [ref],
+    );
     // Every render: a controlled value changes by re-render; typing into an uncontrolled one goes through onInput.
     useLayoutEffect(() => {
       if (fit && own.current) fitText(own.current);
@@ -98,11 +106,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
         })}
         lang="en-US"
         inputMode={type === 'number' ? 'decimal' : undefined}
-        ref={(el) => {
-          own.current = el;
-          if (typeof ref === 'function') ref(el);
-          else if (ref) ref.current = el;
-        }}
+        ref={setRef}
         onInput={(e) => {
           if (fit) fitText(e.currentTarget);
           onInput?.(e);

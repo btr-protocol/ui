@@ -16,4 +16,4 @@ export function useMedia(query: string): boolean {
 }
 
 /** Below Tailwind `sm` (640px): the one phone breakpoint every app's JS layout switch reads. */
-export const usePhone = () => !useMedia('(min-width: 640px)');
+export const usePhone = () => useMedia('(max-width: 639.98px)'); // false without matchMedia (SSR/tests): desktop
