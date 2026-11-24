@@ -36,7 +36,7 @@ export function PercentLadderSlider({
 
   return (
     <div className={cn('flex items-center gap-2', className)}>
-      <span className="inline-flex w-24 items-center">
+      <span className="inline-flex min-w-24 flex-1 items-center">
         <Slider
           value={[ladderIndexOf(value, stops)]}
           min={0}

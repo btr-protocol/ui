@@ -58,7 +58,7 @@ export function InfoRowCompact({
 }: InfoRowCompactProps) {
   return (
     <FormRow
-      className={cn('px-1 text-sm', className)}
+      className={cn('text-sm', className)}
       labelClassName={labelClassName}
       valueClassName={cn('font-numeric', valueClassName)}
       label={label}

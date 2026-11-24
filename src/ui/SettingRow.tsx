@@ -6,12 +6,14 @@ export interface SettingRowProps {
   /** One line saying what changing the setting does. Rendered under the label. */
   description?: string;
   children: ComponentChildren;
+  /** The control takes its own full-width line under the label (a slider, a wide segmented control). */
+  stack?: boolean;
 }
 
 /** Label left, control right, one line. The label grows from a 10rem basis, so the control only
  *  wraps when label + control cannot share the width; it then sits right-aligned below the text
  *  (`ml-auto`). Same rule for every control kind. */
-export function SettingRow({ label, description, children }: SettingRowProps) {
+export function SettingRow({ label, description, children, stack }: SettingRowProps) {
   return (
     <FormRow
       label={
@@ -27,7 +29,7 @@ export function SettingRow({ label, description, children }: SettingRowProps) {
       value={children}
       className="flex-wrap gap-x-4 gap-y-2"
       labelClassName="flex-1 basis-40 text-sm text-fg-2 font-normal"
-      valueClassName="ml-auto min-w-0 max-w-full"
+      valueClassName={stack ? 'flex min-w-0 basis-full [&>*]:min-w-0 [&>*]:flex-1' : 'ml-auto min-w-0 max-w-full'}
     />
   );
 }
