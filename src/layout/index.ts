@@ -11,7 +11,7 @@ export {
 export { TabBar, TAB_BAR_ROW, type TabBarProps } from './TabBar';
 export { NavBadge, type NavBadgeProps } from './NavBadge';
 export { PageShell } from './PageShell';
-export { PageToolbar } from './PageToolbar';
+export { PageToolbar, tabsArePick, type PageToolbarTabs } from './PageToolbar';
 export { Notifications } from './Notifications';
 export { type NavItem, isNavActive } from './nav';
 export { AuthShell, type AuthShellProps } from './AuthShell';
