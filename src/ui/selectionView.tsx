@@ -36,7 +36,7 @@ export const SELECTION_LABELS: SelectionLabels = {
   selected: (n) => `${n} selected`,
   selectAll: 'Select All',
   unselectAll: 'Unselect All',
-  unselectAllBut: (n) => `Unselect all but ${n}`,
+  unselectAllBut: (n) => `Keep first ${n}`,
   reset: 'Reset',
   quickPicks: 'Quick picks',
   noteSep: '· ',
@@ -183,7 +183,8 @@ export function useSelectionView(p: SelectionViewProps) {
     const cls = cn(
           `flex w-full cursor-pointer items-center py-2 text-left transition-colors focus-visible:-outline-offset-2 coarse:min-h-14 ${mark ? 'gap-2 px-3' : `gap-3 ${MODAL_PADDING}`}`,
           off ? 'cursor-not-allowed opacity-60' : idx === selectedIndex ? 'bg-bg-2' : 'hover:bg-bg-2',
-          open ? 'bg-bg-primary text-primary' : on && (mark ? 'bg-bg-3' : 'bg-bg-primary'),
+          // Multi marks a selected row with its trailing check, not a fill (a fill on half the list reads as noise).
+          open ? 'bg-bg-primary text-primary' : on && (mark ? 'bg-bg-3' : !multi && 'bg-bg-primary'),
         );
     const body = (
       <>
@@ -196,7 +197,7 @@ export function useSelectionView(p: SelectionViewProps) {
         <div className="min-w-0 flex-1 text-left">
           {/* Label and caption on ONE row (chain name + id): the caption right-aligned, truncating first. */}
           <div className="flex min-w-0 items-baseline justify-between gap-3">
-            <span className={cn('truncate font-title text-sm', open ? 'font-medium' : on && !mark ? 'font-medium text-primary' : 'text-fg-0')} title={item.label}>
+            <span className={cn('truncate font-title text-sm', item.caption && 'max-w-[60%] shrink-0', open ? 'font-medium' : on && !mark && !multi ? 'font-medium text-primary' : 'text-fg-0')} title={item.label}>
               {item.label}
             </span>
             {item.caption && <span className={cn('min-w-0 truncate text-xs tabular-nums', open ? 'text-primary' : 'text-fg-3')} title={item.caption}>{item.caption}</span>}
