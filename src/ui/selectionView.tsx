@@ -201,7 +201,7 @@ export function useSelectionView(p: SelectionViewProps) {
             </span>
             {item.caption && <span className={cn('min-w-0 truncate text-xs tabular-nums', open ? 'text-primary' : 'text-fg-3')} title={item.caption}>{item.caption}</span>}
           </div>
-          {item.note && <div className="whitespace-normal break-words text-xs text-red">{item.note}</div>}
+          {item.note && <div className="whitespace-normal break-words text-xs text-fg-2">{item.note}</div>}
         </div>
         {sortColumns?.map(
           (c) =>
