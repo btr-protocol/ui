@@ -23,7 +23,7 @@ export { copyText } from './lib/clipboard';
 export { configureHaptic, haptic } from './lib/haptic';
 export { scrollPane } from './lib/scroll';
 export { LOGO_URL, LOGO_MARK_URL, SOCIAL_ICONS } from './lib/assets';
-export { type Address, type Hex, isAddress, shortenAddress, shortAddr } from './lib/address';
+export { type Address, type Hex, isAddress, shortenAddress, shortAddr, shortHex } from './lib/address';
 export { checksumAddress } from './lib/checksum';
 export * from './lib/format';
 export { SWATCH_COUNT, SWATCH_NAMES, swatchColor } from './lib/swatch';

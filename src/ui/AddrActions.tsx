@@ -91,7 +91,6 @@ export function AddressDisplay({
   explorerHref,
   kind = 'address',
   full = false,
-  lead,
   text,
   copiedMessage,
   className,
@@ -99,12 +98,13 @@ export function AddressDisplay({
   title,
 }: {
   value: string;
-  /** Human name shown before the short address ("Treasury 0x4B1D…1521"). */
+  /** Human name shown before the short address ("Treasury 0x4B1D.1521"). */
   name?: string;
   explorerHref?: string;
   kind?: 'address' | 'token' | 'tx';
   /** Render the whole value instead of the shortened form. */
   full?: boolean;
+  /** @deprecated accepted for published callers and ignored: there is one short form now. */
   lead?: number;
   /** Shown in place of the shortened value (a feed id's own short form); copy still takes `value`. */
   text?: string;
@@ -116,7 +116,7 @@ export function AddressDisplay({
   title?: string;
 }) {
   if (!value) return null;
-  const label = text ?? (full ? value : shortAddr(value, lead));
+  const label = text ?? (full ? value : shortAddr(value));
   return (
     <span className={cn('inline-flex items-center gap-1 coarse:gap-3 align-middle', className)}>
       {name && <span className="font-medium text-fg-0">{name}</span>}

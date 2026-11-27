@@ -88,12 +88,13 @@ export function PanelBody(
 
 /**
  * THE card header (Panel, Table): the title cell, then each `meta` child as a flush toolbar cell
- * (border-l dividers, h-8, text-xs: the chart toolbar grid), then `search` flush at the end. Controls
- * inside read `InHeader` and drop their own box. One row on every breakpoint: the title truncates,
- * the cells scroll sideways, the header search folds to its glyph on phones and opens on focus.
+ * (border-l dividers, h-8, text-xs: the chart toolbar grid), then `search` flush, then `actions`
+ * (the table's expand control) at the very end. Controls inside read `InHeader` and drop their own
+ * box. One row on every breakpoint: the title truncates, the cells scroll sideways, the header
+ * search folds to its glyph on phones and opens on focus.
  * One spec for every table and chart section: bg-bg-1, min-h-8, leading-5.
  */
-export function HeaderBar({ title, meta, search }: { title?: ComponentChildren; meta?: ComponentChildren; search?: ComponentChildren }) {
+export function HeaderBar({ title, meta, search, actions }: { title?: ComponentChildren; meta?: ComponentChildren; search?: ComponentChildren; actions?: ComponentChildren }) {
   return (
     <PanelHeader className={HEADER_BAR}>
       <div className="flex flex-1 min-w-0 items-center px-3 py-1.5 has-[button]:py-0">{title ? <PanelTitle className="min-w-0 truncate leading-5">{title}</PanelTitle> : null}</div>
@@ -110,6 +111,11 @@ export function HeaderBar({ title, meta, search }: { title?: ComponentChildren; 
         </InHeader.Provider>
       ) : null}
       {search}
+      {actions ? (
+        <InHeader.Provider value={true}>
+          <div className="flex items-stretch border-l border-border [&>*]:flex [&>*]:items-center">{actions}</div>
+        </InHeader.Provider>
+      ) : null}
     </PanelHeader>
   );
 }

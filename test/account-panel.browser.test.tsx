@@ -75,7 +75,7 @@ const t = (name: string, fn: () => Promise<void>, ms = 30000) =>
 type Store = { address?: string; wallet?: string };
 const state = (page: Page) => page.evaluate(() => (window as unknown as { __state: () => Store }).__state());
 const walletIs = (page: Page, name: string) => page.waitForFunction((n) => (window as unknown as { __state: () => Store }).__state().wallet === n, name, { timeout: 5000 });
-const accountRow = (page: Page) => page.locator('[role=dialog] button.border-b', { hasText: '0xaB7B…0760' });
+const accountRow = (page: Page) => page.locator('[role=dialog] button.border-b', { hasText: '0xaB7B.0760' });
 // The glyph beside the address in the modal's header: the announced mark's src, or 'generic' for the kit's wallet icon.
 const headerIcon = (page: Page) => page.evaluate(() => (document.querySelector('[role=dialog] [title^="0x"]')?.previousElementSibling as HTMLElement | null)?.querySelector('img')?.getAttribute('src') ?? 'generic');
 
@@ -84,7 +84,7 @@ t('the warning is a row of the account list: same edges, same divider, no card; 
   const m = await page.evaluate(() => {
     const dlg = document.querySelector('[role=dialog]')!;
     const row = [...dlg.querySelectorAll('li')].find((d) => d.textContent?.startsWith('Your wallet is on') && d.classList.contains('border-b') && d.classList.contains('px-3'))!;
-    const acct = [...dlg.querySelectorAll('button')].find((b) => b.textContent?.includes('0xaB7B…0760') && b.classList.contains('border-b'))!;
+    const acct = [...dlg.querySelectorAll('button')].find((b) => b.textContent?.includes('0xaB7B.0760') && b.classList.contains('border-b'))!;
     const a = row.getBoundingClientRect(), b = acct.getBoundingClientRect();
     const cs = getComputedStyle(row), cb = getComputedStyle(acct);
     return { left: [a.left, b.left], right: [a.right, b.right], radius: cs.borderRadius, bw: [cs.borderTopWidth, cs.borderBottomWidth, cb.borderBottomWidth], overflow: row.scrollWidth > row.clientWidth, px: [cs.paddingLeft, cb.paddingLeft], icon: !!row.querySelector('svg'), tag: row.tagName, inList: row.parentElement?.tagName, nestedSurface: !!row.closest('.surface')?.parentElement?.closest('.surface') };
@@ -162,7 +162,7 @@ t('the current row has no pointer and no focus stop; an actionable row is a focu
   const page = await open('match', 1440, 'dark', false);
   const m = await page.evaluate(() => {
     const cur = document.querySelector('[role=dialog] [aria-current=true]') as HTMLElement;
-    const act = [...document.querySelectorAll('[role=dialog] button')].find((b) => b.textContent?.includes('0xaB7B…0760') && b.classList.contains('border-b')) as HTMLElement;
+    const act = [...document.querySelectorAll('[role=dialog] button')].find((b) => b.textContent?.includes('0xaB7B.0760') && b.classList.contains('border-b')) as HTMLElement;
     return { cursor: getComputedStyle(cur).cursor, tag: cur.tagName, tab: cur.tabIndex, aTag: act.tagName };
   });
   expect(m).toEqual({ cursor: 'default', tag: 'DIV', tab: -1, aTag: 'BUTTON' });

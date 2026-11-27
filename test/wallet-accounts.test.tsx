@@ -189,8 +189,8 @@ describe('WalletButton account modal', () => {
     const switched: string[] = [];
     open({ address: SESSION, sessionAddress: SESSION, activeAddress: OTHER, accounts: [OTHER, SESSION], chainId: 143, chains, onSwitchAccount: (a) => (switched.push(a), true) });
     await until(() => text().includes('Switch wallet to'));
-    expect(byText('Switch wallet to 0xaB7B…0760')).toBeTruthy();
-    expect(byText('Use 0x0b83…1111 instead')).toBeTruthy();
+    expect(byText('Switch wallet to 0xaB7B.0760')).toBeTruthy();
+    expect(byText('Use 0x0b83.1111 instead')).toBeTruthy();
     click(byText('Switch wallet to') as HTMLElement);
     await until(() => switched.length > 0);
     expect(switched).toEqual([SESSION]);
@@ -205,10 +205,10 @@ describe('WalletButton account modal', () => {
     expect(text()).toContain('Signed in');
     expect((text().match(/Signer(?!s)/g) ?? []).length).toBeGreaterThanOrEqual(2);
     // the current account's row is selected, full contrast, and not a switch target: a plain row, not a button
-    expect(buttons().find((b) => b.textContent?.includes('0xaB7B…0760'))).toBeUndefined();
-    expect(document.body.querySelector('[aria-current=true]')?.textContent).toContain('0xaB7B…0760');
+    expect(buttons().find((b) => b.textContent?.includes('0xaB7B.0760'))).toBeUndefined();
+    expect(document.body.querySelector('[aria-current=true]')?.textContent).toContain('0xaB7B.0760');
     expect(switched).toEqual([]);
-    const row = buttons().find((b) => b.textContent?.includes('0x0b83…1111')) as HTMLButtonElement;
+    const row = buttons().find((b) => b.textContent?.includes('0x0b83.1111')) as HTMLButtonElement;
     click(row);
     await until(() => switched.length > 0);
     expect(switched).toEqual([OTHER]);

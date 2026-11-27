@@ -80,6 +80,33 @@ test('Table search: per-table label, Escape clears a non-empty query, resetKey c
   unmount();
 });
 
+test('Table expand: a safe anchor right of the search; absent without expand or for an unsafe href', () => {
+  const link = (host: HTMLElement) =>
+    host.querySelector<HTMLAnchorElement>('a[aria-label="Open table in a new window"]');
+  const { host, unmount } = mount(
+    <Table title="Legs" columns={cols} data={rows} rowKey={(r) => r.name} expand={{ href: 'https://e.example/activity' }} />,
+  );
+  const search = host.querySelector('[role=search]')!;
+  const a = link(host)!;
+  expect(a).not.toBeNull();
+  expect(a.getAttribute('href')).toBe('https://e.example/activity');
+  expect(a.getAttribute('target')).toBe('_blank');
+  expect(a.getAttribute('rel')).toBe('noopener noreferrer');
+  expect(a.closest('[role=search]')).toBeNull(); // never inside the search cell
+  expect(search.nextElementSibling?.contains(a)).toBe(true); // immediately right of it
+  unmount();
+
+  const plain = mount(<Table title="Legs" columns={cols} data={rows} rowKey={(r) => r.name} />);
+  expect(link(plain.host)).toBeNull();
+  plain.unmount();
+
+  const unsafe = mount(
+    <Table title="Legs" columns={cols} data={rows} rowKey={(r) => r.name} expand={{ href: 'javascript:alert(1)' }} />,
+  );
+  expect(link(unsafe.host)).toBeNull(); // safeHref -> undefined renders nothing
+  unsafe.unmount();
+});
+
 test('Table search inside a BaseModal: Escape with a query clears it and keeps the modal; the next Escape closes', async () => {
   const { BaseModal } = await import('../src');
   let closed = 0;

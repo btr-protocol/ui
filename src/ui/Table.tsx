@@ -4,13 +4,14 @@
 // carries aria-sort.
 
 import { SEVERITY_ICON } from '../lib/severity';
-import { virtualWindow } from '../lib/virtualWindow';
+import { safeHref } from '../lib/safeHref';
+import { itemAt, itemOffsets, virtualWindow } from '../lib/virtualWindow';
 import { Empty, PageState } from './Feedback';
 import { DataSpinner } from './Spinner';
 import { Tooltip } from './FloatingPanel';
 import { cn } from '../lib/cn';
 import type { ComponentChildren, JSX } from 'preact';
-import { useContext, useEffect, useMemo, useRef, useState } from 'preact/hooks';
+import { useContext, useEffect, useId, useMemo, useRef, useState } from 'preact/hooks';
 import { Icon, type IconName } from './Icon';
 import { InfoTip } from './InfoBox';
 import { HeaderBar, InFrame, Panel } from './Panel';
@@ -43,6 +44,10 @@ export function rowNavTarget(key: string, index: number, count: number): number 
 }
 const VIRTUAL_ROW_H = 32;
 const COMPACT_ROW_H = 28;
+/** Height of a virtual body's day separator (the one non-data item in the height model). */
+const DAY_ROW_H = 24;
+/** Load more when this few DATA rows remain below the viewport (counted from item offsets, not pixels). */
+const LOAD_MORE_ROWS = 10;
 
 /**
  * THE table geometry, named once. Every table in the app - the semantic `<Table>` below and the
@@ -254,7 +259,34 @@ export interface TableProps<Row> {
     loadingMore?: boolean;
     onLoadMore?: () => void;
   };
+  /** Day separators in the virtual body: a full-width row before the first data row of each day.
+   *  ONLY rendered while the active sort is `key` (any direction), so the caller must sort by the
+   *  time column (usually `initialSort`) for separators to appear. `dayOf` returns the local day. */
+  groupByDay?: {
+    /** The time/day column the separators belong to; the separators require it as the active sort. */
+    key: string;
+    dayOf: (row: Row) => string | number;
+    label: (day: string | number) => ComponentChildren;
+    /** ISO value for the row's `<time datetime>` (the label stays human-readable). */
+    dateTime?: (day: string | number) => string;
+  };
+  /** Header icon right of the search: opens this table's full page in a new window. Unsafe hrefs
+   *  (`javascript:`, `data:`) render nothing. */
+  expand?: { href: string; label?: string };
 }
+
+/** One item in the virtual body: a data row, or a visual day separator before the first row of a day. */
+type BodyItem<Row> =
+  | { kind: 'row'; row: Row; dataIndex: number; describedBy?: string; height: number }
+  | {
+      kind: 'day';
+      day: string | number;
+      dataIndex: number;
+      id: string;
+      label: ComponentChildren;
+      dateTime?: string;
+      height: number;
+    };
 
 export function defaultValue<Row>(
   col: TableColumn<Row>,
@@ -385,6 +417,25 @@ function SpacerRow({ height, cols }: { height: number; cols: number }) {
   );
 }
 
+/** Visual full-width day separator: no header semantics, but its text describes the day's first row. */
+function DayRow({
+  id,
+  label,
+  dateTime,
+  cols,
+}: { id: string; label: ComponentChildren; dateTime?: string; cols: number }) {
+  return (
+    <tr id={id} aria-hidden="true" style={{ height: DAY_ROW_H }}>
+      <td
+        colSpan={cols}
+        className="bg-bg-2 px-3 text-left align-middle text-2xs font-normal uppercase tracking-wide text-fg-3"
+      >
+        {dateTime ? <time dateTime={dateTime}>{label}</time> : <span>{label}</span>}
+      </td>
+    </tr>
+  );
+}
+
 export function Table<Row>({
   columns,
   data,
@@ -409,6 +460,8 @@ export function Table<Row>({
   maxHeight,
   scrollX = false,
   virtual,
+  groupByDay,
+  expand,
   loading = false,
   loadingTitle = 'Loading',
 }: TableProps<Row>) {
@@ -417,7 +470,6 @@ export function Table<Row>({
   const framed = frame ?? !useContext(InFrame);
   const desktop = cn(compact && 'min-h-0 flex flex-col flex-1', PHONE);
   const [query, setQuery] = useState('');
-  useEffect(() => setQuery(''), [resetKey]);
   const { sortKey, sortDir, toggleSort } = useTableSort(initialSort);
   // Virtual window - only when virtual prop set
   const isVirtual = !!virtual;
@@ -433,6 +485,19 @@ export function Table<Row>({
   // right-aligned headers stay over their amounts instead of drifting left.
   const [sbGutter, setSbGutter] = useState(0);
   const pageRef = useRef(false);
+  // A new data source/segment opens the list at the top: query, scroll offset, the DOM's own
+  // scroll position and the load-more latch all reset together. The previous key is also held so
+  // THIS render already windows from 0 instead of painting the new list at the old offset.
+  const resetRef = useRef(resetKey);
+  const resetChanged = resetRef.current !== resetKey;
+  const viewScrollTop = resetChanged ? 0 : scrollTop;
+  useEffect(() => {
+    resetRef.current = resetKey;
+    setQuery('');
+    setScrollTop(0);
+    if (bodyRef.current) bodyRef.current.scrollTop = 0;
+    pageRef.current = false;
+  }, [resetKey]);
   useEffect(() => {
     if (!virtual?.loadingMore) pageRef.current = false;
   }, [virtual?.loadingMore]);
@@ -468,6 +533,61 @@ export function Table<Row>({
     if (!col) return filtered;
     return compareSorted(filtered, (row) => defaultValue(col, row), sortDir);
   }, [filtered, sortKey, sortDir, columns]);
+
+  // Separators only while the time column is the ACTIVE sort; no sort (or another column) is plain.
+  const { dayOf, label: dayLabel, dateTime } = groupByDay ?? {};
+  const grouping =
+    !!groupByDay && !!sortKey && sortKey === groupByDay.key && sortDir != null;
+  // Callbacks are read through refs so an inline `groupByDay` object (new every parent render)
+  // does not invalidate the whole prefix-sum walk.
+  const dayOfRef = useRef(dayOf);
+  const dayLabelRef = useRef(dayLabel);
+  const dateTimeRef = useRef(dateTime);
+  dayOfRef.current = dayOf;
+  dayLabelRef.current = dayLabel;
+  dateTimeRef.current = dateTime;
+  const uid = useId();
+  // The virtual body's items and their prefix sums. Data rows keep `dataIndex` into `sorted`
+  // (rowKey and selection must see that index, never the flattened one); day rows are extra
+  // items of DAY_ROW_H. A day row's id is what `aria-describedby` on its first data row points to.
+  const body = useMemo(() => {
+    const items: BodyItem<Row>[] = [];
+    const of = dayOfRef.current;
+    const labelOf = dayLabelRef.current;
+    const timeOf = dateTimeRef.current;
+    let prev: string | number | undefined;
+    sorted.forEach((row, dataIndex) => {
+      let describedBy: string | undefined;
+      if (grouping && of && labelOf) {
+        const day = of(row);
+        if (dataIndex === 0 || day !== prev) {
+          const id = `${uid}-day-${dataIndex}`;
+          describedBy = id;
+          items.push({
+            kind: 'day',
+            day,
+            dataIndex,
+            id,
+            label: labelOf(day),
+            dateTime: timeOf?.(day),
+            height: DAY_ROW_H,
+          });
+        }
+        prev = day;
+      }
+      items.push({ kind: 'row', row, dataIndex, describedBy, height: rowH });
+    });
+    const dataBefore = new Int32Array(items.length + 1);
+    for (let i = 0; i < items.length; i++) {
+      dataBefore[i + 1] = dataBefore[i]! + (items[i]!.kind === 'row' ? 1 : 0);
+    }
+    return {
+      items,
+      offsets: itemOffsets(items.map((item) => item.height)),
+      dataBefore,
+      dataRows: dataBefore[items.length]!,
+    };
+  }, [sorted, groupByDay?.key, rowH, grouping, uid]);
 
   const selectable = !!onSelect;
   // Roving tabindex: the selected row is the tab stop, else the first row.
@@ -534,6 +654,21 @@ export function Table<Row>({
       className={title || meta ? 'sm:w-64' : 'flex-1 border-l-0 max-sm:w-auto'}
     />
   );
+  // Right of the search, never inside it: a new window is a different view of the same rows,
+  // not a search refinement. A real anchor keeps middle-click, Cmd-click and AT; safeHref drops
+  // javascript:/data: links (nothing renders at all).
+  const expandHref = expand && safeHref(expand.href);
+  const expandButton = expandHref ? (
+    <a
+      href={expandHref}
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label={expand?.label ?? 'Open table in a new window'}
+      className="flex min-h-8 min-w-8 items-center justify-center text-fg-2 transition-colors hover:bg-bg-2 hover:text-fg-0"
+    >
+      <Icon name="external-link" className="h-4 w-4" />
+    </a>
+  ) : undefined;
 
   return (
     <div className={cn(compact ? 'flex flex-col min-h-0 h-full' : 'space-y-3', className)}>
@@ -542,19 +677,25 @@ export function Table<Row>({
         // the framed Panel's it sits in
         className={cn('overflow-hidden', !framed && 'rounded-none border-0 bg-transparent shadow-none', compact && 'flex flex-col flex-1 min-h-0')}
       >
-        {(title || meta || search) && <HeaderBar title={title} meta={meta} search={search || undefined} />}
+        {(title || meta || search || expandHref) && (
+          <HeaderBar
+            title={title}
+            meta={meta}
+            search={search || undefined}
+            actions={expandButton}
+          />
+        )}
         {loading ? (
           <DataSpinner label={loadingTitle} className="py-8" />
         ) : isVirtual ? (
           (() => {
             const win = virtualWindow(
-              scrollTop,
+              viewScrollTop,
               MAX_BODY_H,
-              sorted.length,
-              rowH,
+              body.offsets,
               virtual?.overscan ?? 8,
             );
-            const view = sorted.slice(win.start, win.end);
+            const view = body.items.slice(win.start, win.end);
             return (
               <div className={desktop}>
                 <table
@@ -573,9 +714,8 @@ export function Table<Row>({
                     setScrollTop(el.scrollTop);
                     const maybe = virtual?.onLoadMore;
                     if (maybe && virtual?.hasMore && !virtual?.loadingMore && !pageRef.current) {
-                      const rowsToBottom =
-                        (el.scrollHeight - el.scrollTop - el.clientHeight) / rowH;
-                      if (rowsToBottom <= 10) {
+                      const at = itemAt(body.offsets, el.scrollTop + el.clientHeight);
+                      if (body.dataRows - body.dataBefore[at]! <= LOAD_MORE_ROWS) {
                         pageRef.current = true;
                         maybe();
                       }
@@ -606,14 +746,26 @@ export function Table<Row>({
                           {win.padTop > 0 && (
                             <SpacerRow height={win.padTop} cols={columns.length} />
                           )}
-                          {view.map((row, i) => {
-                            const idx = win.start + i;
-                            const key = rowKey(row, idx);
+                          {view.map((item) => {
+                            if (item.kind === 'day') {
+                              return (
+                                <DayRow
+                                  key={`day:${item.dataIndex}`}
+                                  id={item.id}
+                                  label={item.label}
+                                  dateTime={item.dateTime}
+                                  cols={columns.length}
+                                />
+                              );
+                            }
+                            const { row, dataIndex } = item;
+                            const key = rowKey(row, dataIndex);
                             return (
                               <tr
                                 key={key}
                                 {...rowProps?.(row)}
                                 {...selProps(row, key)}
+                                aria-describedby={item.describedBy}
                                 style={{ height: rowH }}
                                 className={cn(
                                   TABLE_ROW_BORDER,

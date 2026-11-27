@@ -102,6 +102,14 @@ for (const w of [375, 1440])
     expect(m.s.bottom).toBeCloseTo(m.hdr.bottom - m.hb, 0); // flush to the header rule
     expect(m.s.left).toBeGreaterThanOrEqual(m.hdr.left - 0.5);
     expect(m.s.right).toBeLessThanOrEqual(m.hdr.right + 0.5);
+    // The expand cell is a 32px h-8 cell, so a header carrying it stays the one-row h-8 height.
+    if (w === 1440) {
+      const expandH = await page.evaluate(() => {
+        const hdr = document.querySelector('#x [aria-label="Open table in a new window"]')!.closest('.flex-nowrap')!;
+        return hdr.getBoundingClientRect().height - parseFloat(getComputedStyle(hdr).borderBottomWidth);
+      });
+      expect(expandH).toBeCloseTo(32, 0);
+    }
     // One row on every width: full height, left rule, after the controls; a phone folds it to its glyph.
     expect(m.s.top).toBeCloseTo(m.hdr.top, 0);
     expect(m.s.height).toBeCloseTo(m.hdr.height - m.hb, 0);

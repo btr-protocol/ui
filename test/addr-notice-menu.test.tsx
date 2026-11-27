@@ -1,22 +1,32 @@
 import { expect, test } from 'bun:test';
 import { render } from 'preact-render-to-string';
-import { AddressDisplay, ClickMenu, KeyValueTable, PageHeader, PageShell, Notice, NoticeSlot, Table, groupNotices, pickNotice, shortAddr } from '../src';
+import { AddressDisplay, ClickMenu, KeyValueTable, PageHeader, PageShell, Notice, NoticeSlot, Table, groupNotices, pickNotice, shortAddr, shortHex } from '../src';
 import { click, key, mount, until, useDom } from './dom';
 
 const ADDR = '0x4B1D26DD52Ec0e5285BFC9f2C1DE314074801521';
+const TX = `0x${'ab'.repeat(32)}`;
 
-test('shortAddr: 0x4B1D…1521', () => {
-  expect(shortAddr(ADDR)).toBe('0x4B1D…1521');
+test('shortHex: one form for a 20-byte address and a 32-byte hash; shortAddr is its alias', () => {
+  expect(shortHex(ADDR)).toBe('0x4B1D.1521');
+  expect(shortHex(TX)).toBe('0xabab.abab');
+  expect(shortAddr(ADDR)).toBe(shortHex(ADDR));
+  expect(shortAddr(TX)).toBe(shortHex(TX));
+  // Too short to shorten: a feed id or an empty-ish value prints as itself, never a duplicate.
+  expect(shortHex('feed-1')).toBe('feed-1');
+  expect(shortHex('0x1234')).toBe('0x1234');
+  expect(shortHex('')).toBe('');
+  expect(shortAddr(ADDR, 6)).toBe('0x4B1D.1521'); // deprecated lead accepted and ignored
 });
 
 test('AddressDisplay renders name, short address, copy and explorer inline', () => {
   const html = render(<AddressDisplay value={ADDR} name="Treasury" explorerHref="https://e.example/address/x" />);
   expect(html).toContain('Treasury');
-  expect(html).toContain('0x4B1D…1521');
+  expect(html).toContain('0x4B1D.1521');
   expect(html).not.toContain(`>${ADDR}<`);
   expect(html).toContain('inline-flex'); // one inline row
   expect((html.match(/<button/g) ?? []).length).toBe(2); // copy + explorer
-  expect(html.indexOf('Treasury')).toBeLessThan(html.indexOf('0x4B1D…1521'));
+  expect(html.indexOf('Treasury')).toBeLessThan(html.indexOf('0x4B1D.1521'));
+  expect(render(<AddressDisplay value={ADDR} lead={6} />)).toContain('0x4B1D.1521'); // deprecated lead ignored
 });
 
 test('pickNotice: highest severity wins, first of equals, falsy skipped', () => {

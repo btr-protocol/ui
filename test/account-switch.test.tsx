@@ -481,7 +481,7 @@ describe('account panel with two wallets', () => {
     expect(text()).toContain('Signing now would fail');
     expect(document.body.querySelector('li [role=alert]')?.textContent).toContain('Signing now would fail');
     expect(document.body.querySelector('.rounded-lg.border')).toBeNull(); // no wrapping card
-    const row = byText('0xaB7B…0760') as HTMLElement;
+    const row = byText('0xaB7B.0760') as HTMLElement;
     expect(row.tagName).toBe('BUTTON');
     click(row);
     await until(() => seen.length > 0);
@@ -544,7 +544,7 @@ describe('account panel with two wallets', () => {
       const { ea } = await openPanel({ exposed: [RABBY_ACCT] }, { onSwitch: async () => (how === 'false' ? false : Promise.reject(new Error('sign-in refused'))) });
       click(byText('Switch wallet to') as HTMLElement);
       await until(() => text().includes('The previous wallet is back'));
-      expect(text()).toContain('Could not switch to 0xaB7B…0760. The previous wallet is back. Try again.');
+      expect(text()).toContain('Could not switch to 0xaB7B.0760. The previous wallet is back. Try again.');
       expect(walletEntry.value).toBe(ea);
       expect(walletAddress.value).toBe(AMBIRE_ACCT);
       expect(localStorage.getItem(LAST_WALLET_KEY)).toBe('com.ambire');
@@ -590,7 +590,7 @@ describe('account panel with two wallets', () => {
 
   test('the account row is a real, focusable button and the current row is not', async () => {
     await openPanel({ exposed: [RABBY_ACCT] });
-    const row = byText('0xaB7B…0760') as HTMLButtonElement;
+    const row = byText('0xaB7B.0760') as HTMLButtonElement;
     expect(row.tagName).toBe('BUTTON');
     row.focus();
     expect(document.activeElement).toBe(row); // Enter / Space activate a native button (asserted in Chromium: account-panel.browser.test)
