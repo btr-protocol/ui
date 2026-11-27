@@ -1,6 +1,10 @@
 # Changelog
 
 ## Unreleased
+- ONE short form: `shortHex(a)` = `0x` + 4 hex + `.` + last 4 hex (`0x4B1D.1521`) for a 20-byte address and a 32-byte tx hash alike; `shortAddr` is its alias. `shortAddr`'s `lead` and `AddressDisplay`'s `lead` are deprecated and ignored (kept so existing callers compile); `shortenAddress` is unchanged for explicit `start/end/sep`. CONSUMERS: any label that asserted `0x4B1D…1521` or a 6-hex tx lead now renders the new form; pass `text` for a value whose own short form differs.
+- `Table.groupByDay({ key, dayOf, label, dateTime? })`: full-width day separators inside the virtual body, only while the table is sorted by `key` (asc or desc). Rows carry `aria-describedby` to their day; day rows are visual only. The virtual window is now prefix-sum based (per-item heights, a 24 px day row), `rowKey` still receives the DATA index, and `resetKey` resets the scroll offset and the load-more latch. CONSUMERS: sort by the day key when grouping is on.
+- `Table.expand({ href, label? })` puts a safe `<a target="_blank" rel="noopener noreferrer">` after the header search (a same-page route, never `javascript:`); `HeaderBar` gained the `actions` slot it renders in.
+- `virtualWindow` takes per-item prefix offsets (`itemOffsets`); the published fixed-height signature `(scrollTop, viewportH, total, rowH, overscan?)` still works through an overload.
 - `InfoBox` is now `InfoTip` (same file `ui/InfoBox`): the only `cursor-help`. `children` = term label (dotted underline, no glyph), none = the ⓘ glyph. Panel order: `content`, optional `context`, `more` (the one "Learn more" link). `InTip` context is true inside its panel. `RecapHint` and `HintLabel` are removed: use `InfoTip` with a label child. CONSUMERS: rename `InfoBox`/`RecapHint`/`HintLabel`.
 - `Table`: no mobile card stack. `renderCard` and `stackBelow` are removed; phones render the table with horizontal scroll, a sticky first column and `text-2xs` cells.
 - `HeaderBar`: one row on every width (`HEADER_BAR`: bg-bg-1, min-h-8, leading-5, truncating title); the header `SearchInput` folds to its glyph on phones and opens on focus or with a query.
