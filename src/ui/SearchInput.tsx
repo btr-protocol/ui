@@ -77,7 +77,9 @@ export function SearchInput({
           onChange={handle}
           onKeyDown={onKeyDown}
           aria-label={ariaLabel ?? placeholder}
-          className={`w-full pr-7 touch:min-h-11 ${variant === 'boxed' ? 'pl-9' : ''}`}
+          // `pr-7` only while the clear button exists: an always-reserved lane cut the
+          // placeholder short and left an empty strip at the field's right edge.
+          className={`w-full touch:min-h-11 ${value ? 'pr-7' : 'pr-2'} ${variant === 'boxed' ? 'pl-9' : ''}`}
           // Preact-flavoured intrinsic attrs (autocomplete, spellcheck) on a
           // compat-typed component: the DOM takes them, the two prop tables differ.
           {...(inputProps as InputProps)}
