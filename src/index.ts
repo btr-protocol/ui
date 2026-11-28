@@ -20,6 +20,7 @@ export { configureNav } from './lib/nav';
 export { ImportFailure, configureImportGuard, type ImportFailureKind, type ImportGuardOptions, type ImportTexts } from './lib/importGuard';
 export { ROUTE_EVENT, useModalRoute, useOpen } from './lib/modalRoute';
 export { copyText } from './lib/clipboard';
+export { POPUP_FEATURES, openPopout } from './lib/popout';
 export { configureHaptic, haptic } from './lib/haptic';
 export { scrollPane } from './lib/scroll';
 export { LOGO_URL, LOGO_MARK_URL, SOCIAL_ICONS } from './lib/assets';

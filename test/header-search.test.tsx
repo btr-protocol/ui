@@ -1,6 +1,6 @@
 import { expect, test } from 'bun:test';
 import { useState } from 'preact/hooks';
-import { SearchInput, Table } from '../src';
+import { POPUP_FEATURES, SearchInput, Table } from '../src';
 import { act, click, mount, useDom } from './dom';
 
 useDom();
@@ -124,5 +124,40 @@ test('Table search inside a BaseModal: Escape with a query clears it and keeps t
   expect(closed).toBe(0);
   act(() => { input().dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })); });
   expect(closed).toBe(1);
+  unmount();
+});
+
+test('Table expand opens the headless popup; a modifier click follows the anchor', () => {
+  const calls: { url: string; name: string; features?: string }[] = [];
+  const orig = globalThis.open;
+  const fake = {
+    focus() {},
+    location: { href: '' },
+  } as unknown as Window;
+  globalThis.open = ((url: string, name: string, features?: string) => {
+    calls.push({ url, name, features });
+    return fake;
+  }) as typeof globalThis.open;
+  const { host, unmount } = mount(
+    <Table
+      title="Legs"
+      columns={cols}
+      data={rows}
+      rowKey={(r) => r.name}
+      expand={{ href: '/table/flow-activity?pool=core', name: 'btr-table-flow' }}
+    />,
+  );
+  const a = host.querySelector<HTMLAnchorElement>('a[aria-label="Open table in a new window"]')!;
+  const plain = new MouseEvent('click', { bubbles: true, cancelable: true, button: 0 });
+  act(() => { a.dispatchEvent(plain); });
+  expect(plain.defaultPrevented).toBe(true);
+  expect(calls).toEqual([
+    { url: '/table/flow-activity?pool=core', name: 'btr-table-flow', features: POPUP_FEATURES },
+  ]);
+  const modified = new MouseEvent('click', { bubbles: true, cancelable: true, button: 0, metaKey: true });
+  act(() => { a.dispatchEvent(modified); });
+  expect(modified.defaultPrevented).toBe(false);
+  expect(calls).toHaveLength(1);
+  globalThis.open = orig;
   unmount();
 });

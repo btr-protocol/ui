@@ -69,7 +69,9 @@ export function SearchInput({
           ref={ref}
           type="text"
           variant={variant === 'boxed' ? 'default' : 'bare'}
-          size="sm"
+          // The header row is 12px (title, toolbar buttons, pickers): the field must match it.
+          // Touch keeps the 16px lane (Input's `coarse:text-base`), so iOS never zooms on focus.
+          size={variant === 'header' ? 'xs' : 'sm'}
           placeholder={placeholder}
           value={value}
           onChange={handle}

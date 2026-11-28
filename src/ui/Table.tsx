@@ -4,6 +4,7 @@
 // carries aria-sort.
 
 import { SEVERITY_ICON } from '../lib/severity';
+import { openPopout } from '../lib/popout';
 import { safeHref } from '../lib/safeHref';
 import { itemAt, itemOffsets, virtualWindow } from '../lib/virtualWindow';
 import { Empty, PageState } from './Feedback';
@@ -270,9 +271,10 @@ export interface TableProps<Row> {
     /** ISO value for the row's `<time datetime>` (the label stays human-readable). */
     dateTime?: (day: string | number) => string;
   };
-  /** Header icon right of the search: opens this table's full page in a new window. Unsafe hrefs
-   *  (`javascript:`, `data:`) render nothing. */
-  expand?: { href: string; label?: string };
+  /** Header icon right of the search: opens this table's full page in a headless popup (the anchor
+   *  stays the fallback when the popup is refused). Unsafe hrefs (`javascript:`, `data:`) render
+   *  nothing. `name` reuses one popup per table. */
+  expand?: { href: string; label?: string; name?: string };
 }
 
 /** One item in the virtual body: a data row, or a visual day separator before the first row of a day. */
@@ -656,7 +658,8 @@ export function Table<Row>({
   );
   // Right of the search, never inside it: a new window is a different view of the same rows,
   // not a search refinement. A real anchor keeps middle-click, Cmd-click and AT; safeHref drops
-  // javascript:/data: links (nothing renders at all).
+  // javascript:/data: links (nothing renders at all). A plain left click opens the headless popup
+  // the chart expand uses; a refused popup falls through to the anchor.
   const expandHref = expand && safeHref(expand.href);
   const expandButton = expandHref ? (
     <a
@@ -664,9 +667,13 @@ export function Table<Row>({
       target="_blank"
       rel="noopener noreferrer"
       aria-label={expand?.label ?? 'Open table in a new window'}
+      onClick={(e) => {
+        if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+        if (openPopout(expandHref, expand?.name ?? 'btr-table')) e.preventDefault();
+      }}
       className="flex min-h-8 min-w-8 items-center justify-center text-fg-2 transition-colors hover:bg-bg-2 hover:text-fg-0"
     >
-      <Icon name="external-link" className="h-4 w-4" />
+      <Icon name="corners-out" className="h-4 w-4" />
     </a>
   ) : undefined;
 
