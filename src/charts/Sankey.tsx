@@ -1,9 +1,14 @@
-// Sankey: two columns of nodes joined by value-weighted ribbons. HTML/SVG labels, SVG ribbons;
+// Sankey: two columns of nodes joined by value-weighted ribbons. SVG bars/ribbons, SVG labels;
 // both columns share one px-per-value scale, so a source bar and a sink bar mean the same money.
 // Unpriced links are counted by the caller's table, never drawn as a zero-width ribbon.
 import { useState } from 'preact/hooks';
 import { cn } from '../lib/cn';
-import { type SankeyLink, type SankeyNodeBox, type SankeySide, sankeyLayout } from './sankeyMath';
+import {
+  type SankeyLink,
+  type SankeySide,
+  placeLabels,
+  sankeyLayout,
+} from './sankeyMath';
 
 export interface SankeyProps {
   left: readonly SankeySide[];
@@ -39,22 +44,54 @@ export function Sankey({
   className,
 }: SankeyProps) {
   const [hover, setHover] = useState<string | null>(null);
-  const active = hover ?? selected;
+  // A poll can replace the links under the pointer: an id that no longer exists must not dim the
+  // whole chart or leave the caller's table describing a vanished pair.
+  const [walk, setWalk] = useState<number | null>(null);
   const g = sankeyLayout(left, right, links, width, height);
-  const hot = active == null ? null : active;
+  const ids = g.ribbons.map((r) => r.id);
+  const known = (id: string | null): id is string => id != null && ids.includes(id);
+  const active = known(hover) ? hover : known(selected) ? selected : null;
+  const walked = walk != null && ids.length > 0 ? ids[((walk % ids.length) + ids.length) % ids.length]! : null;
+  const hot = active ?? walked;
   const clear = () => {
     setHover(null);
+    setWalk(null);
     onHover?.(null);
   };
+  const step = (d: number) => {
+    const next = walk == null ? (d > 0 ? 0 : ids.length - 1) : walk + d;
+    setWalk(next);
+    onHover?.(ids[((next % ids.length) + ids.length) % ids.length]!);
+  };
+  const canWalk = ids.length > 0 && (!!onHover || !!onSelect);
   return (
     <div className={cn('relative min-h-0 w-full', className)} style={{ height }}>
       <svg
-        role="img"
-        aria-label={label}
+        role="group"
+        aria-label={`${label}. ${
+          canWalk ? 'Use the arrow keys to step through the flows, Enter to pin one.' : ''
+        }`}
         width={width}
         height={height}
-        className="overflow-visible"
+        className="overflow-visible focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        tabIndex={canWalk ? 0 : undefined}
         onMouseLeave={clear}
+        onBlur={clear}
+        onKeyDown={(e) => {
+          if (!canWalk) return;
+          if (e.key === 'ArrowDown' || e.key === 'ArrowRight') {
+            e.preventDefault();
+            step(1);
+          } else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
+            e.preventDefault();
+            step(-1);
+          } else if ((e.key === 'Enter' || e.key === ' ') && walked) {
+            e.preventDefault();
+            onSelect?.(walked);
+          } else if (e.key === 'Escape') {
+            clear();
+          }
+        }}
       >
         <g>
           {g.ribbons.map((r) => {
@@ -89,7 +126,7 @@ export function Sankey({
                 className="text-fg-2"
               />
             ))}
-            {placeLabels(side, height).map(({ id, x, y, label }) => (
+            {placeLabels(side, height, i === 0 ? 'left' : 'right').map(({ id, x, y, label: text }) => (
               <text
                 key={id}
                 x={i === 0 ? x - 6 : x + 6}
@@ -98,7 +135,7 @@ export function Sankey({
                 text-anchor={i === 0 ? 'end' : 'start'}
                 className="fill-current text-2xs text-fg-2"
               >
-                {label}
+                {text}
               </text>
             ))}
           </g>
@@ -106,27 +143,4 @@ export function Sankey({
       </svg>
     </div>
   );
-}
-
-const LABEL_LINE = 11;
-
-/**
- * One line per label, never two on top of each other: the tail of a rail is a run of 1 px nodes,
- * so each label sits on its own node where it can and slides down to the next free line where it
- * cannot. A label that would leave the plot is dropped, not clipped.
- */
-function placeLabels(
-  side: readonly SankeyNodeBox[],
-  height: number,
-): { id: string; label: string; x: number; y: number }[] {
-  const out: { id: string; label: string; x: number; y: number }[] = [];
-  let floor = -Infinity;
-  for (const n of side) {
-    const want = n.y + Math.min(n.height, LABEL_LINE) / 2;
-    const y = Math.max(want, floor + LABEL_LINE);
-    if (y > height - LABEL_LINE / 2) continue;
-    floor = y;
-    out.push({ id: n.id, label: n.label, x: n.x + n.width, y });
-  }
-  return out;
 }

@@ -72,7 +72,7 @@ export interface MetricPaneSpec {
   bounds?: [number, number];
 }
 
-/** Basis points to at most 2dp: '4 bps', '0.25 bps'. */
+/** Basis points, always two decimals: '4.00 bps', '0.25 bps'. */
 export const fmtBps = (v: number) =>
   Number.isFinite(v) ? `${Number(v.toFixed(2)).toFixed(2)} bps` : DASH;
 /** `fmtBps` with the decimals an axis span asks for (more than its 2dp only where the span needs them). */

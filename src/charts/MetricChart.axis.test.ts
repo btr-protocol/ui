@@ -85,11 +85,11 @@ describe('yield and bps follow the axis span too', () => {
       expect(formatter('bps', 0.02)(v)).toBe('-');
     }
   });
-  test('bps: a thin span prints the decimals it needs, no span keeps 2dp', () => {
+  test('bps: a thin span prints the decimals it needs, no span keeps exactly 2dp', () => {
     const labels = [4.5, 4.52, 4.54].map((v) => trimZeros(formatter('bps', 0.02)(v)));
     expect(new Set(labels).size).toBe(3);
-    expect(formatter('bps')(4.5)).toBe('4.5 bps');
-    expect(formatter('bps', 500)(4.5)).toBe('4.5 bps');
+    expect(formatter('bps')(4.5)).toBe('4.50 bps');
+    expect(formatter('bps', 500)(4.5)).toBe('4.50 bps');
   });
 });
 

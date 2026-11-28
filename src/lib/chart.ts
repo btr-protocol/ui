@@ -7,7 +7,7 @@ import { formatUsd } from './format';
 
 export type ChartValueFormat = 'usd' | 'count' | 'bps' | 'compact';
 
-/** Basis points to at most 2dp: '4 bps', '0.25 bps'. */
+/** Basis points, always two decimals: '4.00 bps', '0.25 bps'. */
 export const fmtBps = (v: number) => `${Number(v.toFixed(2)).toFixed(2)} bps`;
 
 /** A tick that is float noise around zero reads 0, not "0.0₁₄694%". */

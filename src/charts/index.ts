@@ -6,7 +6,7 @@ export { ChartPanel, type ChartPanelProps } from './ChartPanel';
 export { Heatmap, type HeatmapProps } from './Heatmap';
 export { Doughnut, type DoughnutProps } from './Doughnut';
 export { Sankey, type SankeyProps } from './Sankey';
-export { sankeyLayout, type SankeySide, type SankeyLink, type SankeyGeometry, type SankeyNodeBox, type SankeyRibbon } from './sankeyMath';
+export { sankeyLayout, placeLabels, type SankeySide, type SankeyLink, type SankeyGeometry, type SankeyNodeBox, type SankeyRibbon, type SankeyLabel } from './sankeyMath';
 export { seriesCss, heatDomain, heatTone, arcs, type HeatDomain, type Slice, type Arc } from './heatmapMath';
 export { ChartStack, type ChartStackProps, type StackPane } from './ChartStack';
 export { Histogram, type HistogramProps, type HistogramMarker } from './Histogram';
