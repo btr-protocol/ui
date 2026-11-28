@@ -21,6 +21,10 @@ export function openPopout(url: string, name: string): Window | null {
   } catch {
     // Cross-origin: the freshly opened window already holds `url`.
   }
-  popup.focus();
+  try {
+    popup.focus();
+  } catch {
+    // A closed or browser-managed window: the caller's anchor remains the fallback.
+  }
   return popup;
 }
