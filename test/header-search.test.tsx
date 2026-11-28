@@ -132,7 +132,7 @@ test('Table expand opens the headless popup; a modifier click follows the anchor
   const orig = globalThis.open;
   const fake = {
     focus() {},
-    location: { href: '' },
+    location: { href: '', replace() {} },
   } as unknown as Window;
   globalThis.open = ((url: string, name: string, features?: string) => {
     calls.push({ url, name, features });
@@ -151,9 +151,8 @@ test('Table expand opens the headless popup; a modifier click follows the anchor
   const plain = new MouseEvent('click', { bubbles: true, cancelable: true, button: 0 });
   act(() => { a.dispatchEvent(plain); });
   expect(plain.defaultPrevented).toBe(true);
-  expect(calls).toEqual([
-    { url: '/table/flow-activity?pool=core', name: 'btr-table-flow', features: POPUP_FEATURES },
-  ]);
+  expect(calls).toEqual([{ url: '', name: 'btr-table-flow', features: POPUP_FEATURES }]);
+  expect((fake.location as Location).href).toBe('/table/flow-activity?pool=core');
   const modified = new MouseEvent('click', { bubbles: true, cancelable: true, button: 0, metaKey: true });
   act(() => { a.dispatchEvent(modified); });
   expect(modified.defaultPrevented).toBe(false);

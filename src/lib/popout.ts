@@ -13,13 +13,14 @@ export const POPUP_FEATURES =
 /** Open `url` in the named popup, reloading a window of that name, or null when refused/SSR. */
 export function openPopout(url: string, name: string): Window | null {
   if (typeof window === 'undefined') return null;
-  const popup = window.open(url, name, POPUP_FEATURES);
+  // Open blank, then navigate: one load, and a named window that already exists is pointed at the
+  // caller's current URL instead of keeping its old one.
+  const popup = window.open('', name, POPUP_FEATURES);
   if (!popup) return null;
   try {
-    // A named window that already exists keeps its old URL; the caller's state is newer.
     popup.location.href = url;
   } catch {
-    // Cross-origin: the freshly opened window already holds `url`.
+    popup.location.replace(url);
   }
   try {
     popup.focus();
