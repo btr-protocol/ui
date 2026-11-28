@@ -37,7 +37,12 @@ export function Panel({
     <div
       ref={ref}
       className={cn(
-        variant === 'default' && 'surface bg-bg-1 border border-border rounded-lg shadow-sm',
+        // The radius owner clips: a header or table head paints its own background flush to the
+        // frame, and without the clip its square box covers the 16px corner arcs. Menus and tips
+        // inside a Panel portal to the body (`FloatingPanel`, `Select`), so nothing needs to
+        // escape it.
+        variant === 'default' &&
+          'surface bg-bg-1 border border-border rounded-lg shadow-sm overflow-hidden',
         className,
       )}
       {...props}
